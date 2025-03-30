@@ -10,6 +10,7 @@
   <Import Project="$(MSBuildThisFileDirectory)../../Global.props" />
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\FluentMigrator.Analyzers\FluentMigrator.Analyzers.csproj" OutputItemType="Analyzer" />
     <ProjectReference Include="..\..\src\FluentMigrator\FluentMigrator.csproj" />
     <ProjectReference Include="..\..\src\FluentMigrator.Runner\FluentMigrator.Runner.csproj" />
   </ItemGroup>

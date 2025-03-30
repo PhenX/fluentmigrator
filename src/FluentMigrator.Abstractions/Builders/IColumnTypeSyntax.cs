@@ -22,6 +22,8 @@ using System.Data;
 using FluentMigrator.Infrastructure;
 using FluentMigrator.Model;
 
+using JetBrains.Annotations;
+
 namespace FluentMigrator.Builders
 {
     /// <summary>
@@ -134,7 +136,7 @@ namespace FluentMigrator.Builders
         /// <param name="size">The number of digits</param>
         /// <param name="precision">The number of digits after the comma</param>
         /// <returns>The next step</returns>
-        TNext AsDecimal(int size, int precision);
+        TNext AsDecimal(int size, [ValueRange(0, 28)] int precision);
 
         /// <summary>
         /// Defines the column type as <see cref="double"/>

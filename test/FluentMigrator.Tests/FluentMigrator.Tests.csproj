@@ -44,6 +44,7 @@
     <PackageReference Include="Testcontainers.Db2" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\FluentMigrator.Analyzers\FluentMigrator.Analyzers.csproj" OutputItemType="Analyzer" />
     <ProjectReference Include="..\..\src\FluentMigrator.Console\FluentMigrator.Console.csproj" />
     <ProjectReference Include="..\..\src\FluentMigrator.Runner\FluentMigrator.Runner.csproj" />
     <ProjectReference Include="..\..\src\FluentMigrator.Runner.Core\FluentMigrator.Runner.Core.csproj" />
