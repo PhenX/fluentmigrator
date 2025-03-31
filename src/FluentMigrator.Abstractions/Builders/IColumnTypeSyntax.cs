@@ -17,12 +17,10 @@
 #endregion
 
 using System;
-using System.Data;
+using System.ComponentModel.DataAnnotations;
 
 using FluentMigrator.Infrastructure;
 using FluentMigrator.Model;
-
-using JetBrains.Annotations;
 
 namespace FluentMigrator.Builders
 {
@@ -136,7 +134,7 @@ namespace FluentMigrator.Builders
         /// <param name="size">The number of digits</param>
         /// <param name="precision">The number of digits after the comma</param>
         /// <returns>The next step</returns>
-        TNext AsDecimal(int size, [ValueRange(0, 28)] int precision);
+        TNext AsDecimal(int size, [Range(0, 28)] int precision);
 
         /// <summary>
         /// Defines the column type as <see cref="double"/>

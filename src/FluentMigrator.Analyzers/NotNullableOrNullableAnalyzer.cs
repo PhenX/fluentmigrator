@@ -33,11 +33,20 @@ namespace FluentMigrator.Analyzers
 
         private static readonly LocalizableString Title = "NotNullable, Nullable or PrimaryKey required";
         private static readonly LocalizableString MessageFormat = "Column '{0}' must specify NotNullable(), Nullable() or PrimaryKey()";
-        private static readonly LocalizableString Description = "Columns must specify NotNullable(), Nullable() or PrimaryKey() after specifying the type";
+        private static readonly LocalizableString Description = "Columns must specify NotNullable(), Nullable() or PrimaryKey() after specifying the type.";
 
-        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description);
+        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
+            DiagnosticId,
+            Title,
+            MessageFormat,
+            Category,
+            DiagnosticSeverity.Info,
+            isEnabledByDefault: true,
+            description: Description
+        );
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
+            ImmutableArray.Create(Rule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -63,7 +72,7 @@ namespace FluentMigrator.Analyzers
             }
         }
 
-        private bool IsColumnMethod(InvocationExpressionSyntax invocation)
+        private static bool IsColumnMethod(InvocationExpressionSyntax invocation)
         {
             if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
             {

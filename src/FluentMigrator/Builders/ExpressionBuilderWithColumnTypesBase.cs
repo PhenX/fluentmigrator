@@ -1,9 +1,9 @@
+using System.ComponentModel.DataAnnotations;
 using System.Data;
+
 using FluentMigrator.Expressions;
 using FluentMigrator.Infrastructure;
 using FluentMigrator.Model;
-
-using JetBrains.Annotations;
 
 namespace FluentMigrator.Builders
 {
@@ -148,7 +148,7 @@ namespace FluentMigrator.Builders
         }
 
         /// <inheritdoc />
-        public TNext AsDecimal(int size, [ValueRange(0, 28)] int precision)
+        public TNext AsDecimal(int size, [Range(0, 28)] int precision)
         {
             Column.Type = DbType.Decimal;
             Column.Size = size;

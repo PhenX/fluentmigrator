@@ -54,7 +54,7 @@ namespace FluentMigrator.Analyzers.Tests
                                     """;
 
             var expectedDiagnostic = new DiagnosticResult(ValueRangeAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
-                .WithSpan(8, 50, 8, 52)
+                .WithSpan(8, 48, 8, 50)
                 .WithArguments(30, "precision", 0, 28);
 
             TestState.ExpectedDiagnostics.Add(expectedDiagnostic);
@@ -147,10 +147,10 @@ namespace FluentMigrator.Analyzers.Tests
             var expectedDiagnostics = new[]
             {
                 new DiagnosticResult(ValueRangeAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
-                    .WithSpan(8, 50, 8, 52)
+                    .WithSpan(8, 48, 8, 50)
                     .WithArguments(30, "precision", 0, 28),
                 new DiagnosticResult(ValueRangeAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
-                    .WithSpan(9, 54, 9, 56)
+                    .WithSpan(9, 51, 9, 53)
                     .WithArguments(29, "precision", 0, 28)
             };
 
@@ -178,7 +178,7 @@ namespace FluentMigrator.Analyzers.Tests
                                     """;
 
             var expectedDiagnostic = new DiagnosticResult(ValueRangeAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
-                .WithSpan(8, 53, 8, 55)
+                .WithSpan(8, 50, 8, 52)
                 .WithArguments(30, "precision", 0, 28);
 
             TestState.ExpectedDiagnostics.Add(expectedDiagnostic);

@@ -33,6 +33,9 @@ namespace FluentMigrator.Analyzers.Tests
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     public class NotNullableOrNullableAnalyzerTests : VerifyTest
     {
+        private static DiagnosticResult GetExpectedDiagnostic() =>
+            new(NotNullableOrNullableAnalyzer.DiagnosticId, DiagnosticSeverity.Info);
+
         public NotNullableOrNullableAnalyzerTests()
         {
             TestState.AdditionalReferences.Add(typeof(Migration).Assembly);
@@ -57,7 +60,7 @@ namespace FluentMigrator.Analyzers.Tests
                                     }
                                     """;
 
-            TestState.ExpectedDiagnostics.Add(new DiagnosticResult(NotNullableOrNullableAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
+            TestState.ExpectedDiagnostics.Add(GetExpectedDiagnostic()
                 .WithSpan(8, 25, 8, 31)
                 .WithArguments("\"Name\""));
 
@@ -133,10 +136,10 @@ namespace FluentMigrator.Analyzers.Tests
 
             var expectedDiagnostics = new[]
             {
-                new DiagnosticResult(NotNullableOrNullableAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
+                GetExpectedDiagnostic()
                     .WithSpan(8, 25, 8, 31)
                     .WithArguments("\"Name\""),
-                new DiagnosticResult(NotNullableOrNullableAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
+                GetExpectedDiagnostic()
                     .WithSpan(9, 25, 9, 32)
                     .WithArguments("\"Login\"")
             };
@@ -171,7 +174,7 @@ namespace FluentMigrator.Analyzers.Tests
                                     }
                                     """;
 
-            var expectedDiagnostic = new DiagnosticResult(NotNullableOrNullableAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
+            var expectedDiagnostic = GetExpectedDiagnostic()
                 .WithSpan(9, 25, 9, 33)
                 .WithArguments("\"UserId\"");
 
@@ -198,7 +201,7 @@ namespace FluentMigrator.Analyzers.Tests
                                     }
                                     """;
 
-            var expectedDiagnostic = new DiagnosticResult(NotNullableOrNullableAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
+            var expectedDiagnostic = GetExpectedDiagnostic()
                 .WithSpan(8, 24, 8, 31)
                 .WithArguments("\"Email\"");
 
@@ -250,10 +253,10 @@ namespace FluentMigrator.Analyzers.Tests
 
             var expectedDiagnostics = new[]
             {
-                new DiagnosticResult(NotNullableOrNullableAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
+                GetExpectedDiagnostic()
                     .WithSpan(8, 24, 8, 31)
                     .WithArguments("\"Email\""),
-                new DiagnosticResult(NotNullableOrNullableAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
+                GetExpectedDiagnostic()
                     .WithSpan(9, 24, 9, 37)
                     .WithArguments("\"PhoneNumber\"")
             };

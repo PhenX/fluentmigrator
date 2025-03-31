@@ -33,13 +33,19 @@ namespace FluentMigrator.Analyzers
         public const string DiagnosticId = "FM0002";
         private const string Category = "FluentMigrator";
 
+        private static readonly LocalizableString Title = "Value out of allowed range";
+        private static readonly LocalizableString MessageFormat = "Value '{0}' for parameter '{1}' is not in the allowed range {2}-{3}";
+        private static readonly LocalizableString Description = "Value out of allowed range specified by Range attribute.";
+
         private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
-            title: "Value out of allowed range",
-            messageFormat: "Value '{0}' for parameter '{1}' is not in the allowed range {2}-{3}",
+            Title,
+            MessageFormat,
             Category,
             DiagnosticSeverity.Error,
-            isEnabledByDefault: true);
+            isEnabledByDefault: true,
+            description: Description
+        );
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
             ImmutableArray.Create(Rule);
@@ -57,9 +63,8 @@ namespace FluentMigrator.Analyzers
         private static void AnalyzeMethodCall(SyntaxNodeAnalysisContext context)
         {
             var expression = context.Node;
-            var methodSymbol = context.SemanticModel.GetSymbolInfo(expression).Symbol as IMethodSymbol;
 
-            if (methodSymbol == null)
+            if (!(context.SemanticModel.GetSymbolInfo(expression).Symbol is IMethodSymbol methodSymbol))
             {
                 return;
             }
@@ -73,7 +78,7 @@ namespace FluentMigrator.Analyzers
                 var parameter = GetParameterForArgument(parameters, argument, i);
 
                 var rangeAttribute = parameter?.GetAttributes()
-                    .FirstOrDefault(a => a.AttributeClass?.Name.StartsWith("ValueRange") == true);
+                    .FirstOrDefault(a => a.AttributeClass?.Name.StartsWith("Range") == true);
 
                 if (rangeAttribute == null)
                 {
