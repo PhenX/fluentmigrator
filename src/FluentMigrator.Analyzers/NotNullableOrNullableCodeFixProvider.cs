@@ -34,7 +34,8 @@ namespace FluentMigrator.Analyzers
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(NotNullableOrNullableCodeFixProvider)), Shared]
     public class NotNullableOrNullableCodeFixProvider : CodeFixProvider
     {
-        private const string Title = "Add Nullable() after AsXXX()";
+        private const string TitleNullable = "Add Nullable() after AsXXX()";
+        private const string TitleNotNullable = "Add NotNullable() before AsXXX()";
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds =>
             ImmutableArray.Create(NotNullableOrNullableAnalyzer.DiagnosticId);
@@ -67,25 +68,34 @@ namespace FluentMigrator.Analyzers
                 return;
             }
 
+            // Adds NotNullable() after AsXXX() invocation
             context.RegisterCodeFix(
                 Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
-                    title: Title,
-                    createChangedDocument: c => AddNullableAsync(context.Document, invocationExpr, c),
-                    equivalenceKey: Title),
+                    title: TitleNotNullable,
+                    createChangedDocument: c => AddNullableAsync(context.Document, invocationExpr, false, c),
+                    equivalenceKey: TitleNotNullable),
+                diagnostic);
+
+            // Adds Nullable() after AsXXX() invocation
+            context.RegisterCodeFix(
+                Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
+                    title: TitleNullable,
+                    createChangedDocument: c => AddNullableAsync(context.Document, invocationExpr, true, c),
+                    equivalenceKey: TitleNullable),
                 diagnostic);
         }
 
-        private static async Task<Document> AddNullableAsync(Document document, InvocationExpressionSyntax invocationExpr, CancellationToken cancellationToken)
+        private static async Task<Document> AddNullableAsync(Document document, InvocationExpressionSyntax invocationExpr, bool nullable, CancellationToken cancellationToken)
         {
             var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
 
-            // NotNullable() expression with correct trivia
+            // [Not]Nullable() expression with correct trivia
             var memberAccessExpr = SyntaxFactory.MemberAccessExpression(
                 SyntaxKind.SimpleMemberAccessExpression,
                 invocationExpr.WithoutTrailingTrivia(),
-                SyntaxFactory.IdentifierName("NotNullable"));
+                SyntaxFactory.IdentifierName(nullable ? "Nullable" : "NotNullable"));
 
-            // Wrap AsXXX() invocation with NotNullable()
+            // Wrap AsXXX() invocation with [Not]Nullable()
             var nullableInvocation = SyntaxFactory.InvocationExpression(memberAccessExpr)
                 .WithTrailingTrivia(invocationExpr.GetTrailingTrivia())
                 .WithAdditionalAnnotations(Formatter.Annotation, Simplifier.Annotation);
