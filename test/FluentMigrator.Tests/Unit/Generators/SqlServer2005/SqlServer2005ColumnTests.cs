@@ -329,36 +329,36 @@ namespace FluentMigrator.Tests.Unit.Generators.SqlServer2005
         public override void CanCreateColumnWithComputedExpression()
         {
             var expression = GeneratorTestHelper.GetCreateColumnExpressionWithComputed();
-            
+
             var result = Generator.Generate(expression);
-            result.ShouldBe("ALTER TABLE [dbo].[TestTable1] ADD [TestColumn1] AS (Price * Quantity) NOT NULL");
+            result.ShouldBe("ALTER TABLE [dbo].[TestTable1] ADD [TestColumn1] AS (Price * Quantity) NOT NULL;");
         }
 
         [Test]
         public override void CanCreateColumnWithStoredComputedExpression()
         {
             var expression = GeneratorTestHelper.GetCreateColumnExpressionWithStoredComputed();
-            
+
             var result = Generator.Generate(expression);
-            result.ShouldBe("ALTER TABLE [dbo].[TestTable1] ADD [TestColumn1] AS (Price * Quantity) PERSISTED NOT NULL");
+            result.ShouldBe("ALTER TABLE [dbo].[TestTable1] ADD [TestColumn1] AS (Price * Quantity) PERSISTED NOT NULL;");
         }
 
         [Test]
         public override void CanAlterColumnToAddComputedExpression()
         {
             var expression = GeneratorTestHelper.GetAlterColumnExpressionWithComputed();
-            
+
             var result = Generator.Generate(expression);
-            result.ShouldBe("ALTER TABLE [dbo].[TestTable1] ALTER COLUMN [TestColumn1] AS (Price * Quantity) NOT NULL");
+            result.ShouldBe("ALTER TABLE [dbo].[TestTable1] ALTER COLUMN [TestColumn1] AS (Price * Quantity) NOT NULL;");
         }
 
         [Test]
         public override void CanAlterColumnToAddStoredComputedExpression()
         {
             var expression = GeneratorTestHelper.GetAlterColumnExpressionWithStoredComputed();
-            
+
             var result = Generator.Generate(expression);
-            result.ShouldBe("ALTER TABLE [dbo].[TestTable1] ALTER COLUMN [TestColumn1] AS (Price * Quantity) PERSISTED NOT NULL");
+            result.ShouldBe("ALTER TABLE [dbo].[TestTable1] ALTER COLUMN [TestColumn1] AS (Price * Quantity) PERSISTED NOT NULL;");
         }
     }
 }
