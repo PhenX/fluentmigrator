@@ -16,6 +16,7 @@
 
 using System.Text;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Expressions;
 using FluentMigrator.Model;
 

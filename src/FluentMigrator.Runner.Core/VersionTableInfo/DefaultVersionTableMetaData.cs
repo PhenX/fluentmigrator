@@ -20,6 +20,7 @@
 
 using System;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Expressions;
 using FluentMigrator.Runner.Conventions;
 using FluentMigrator.Runner.Initialization;

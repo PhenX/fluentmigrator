@@ -19,6 +19,7 @@
 using System;
 using System.Reflection;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Exceptions;
 using FluentMigrator.Runner;
 using FluentMigrator.Runner.Conventions;
@@ -270,7 +271,7 @@ namespace FluentMigrator.MSBuild
                         .AddSqlServer2012()
                         .AddSqlServer2014()
                         .AddSqlServer2016()
-                    
+
                         );
             return services;
         }

@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Runner.Conventions;
 
 using JetBrains.Annotations;

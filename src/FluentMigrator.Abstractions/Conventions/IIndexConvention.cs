@@ -16,18 +16,18 @@
 
 using FluentMigrator.Expressions;
 
-namespace FluentMigrator.Runner.Conventions
+namespace FluentMigrator.Conventions
 {
     /// <summary>
-    /// A convention working on <see cref="IFileSystemExpression"/> implementations
+    /// A convention working on <see cref="IIndexExpression"/> implementations
     /// </summary>
-    public interface IRootPathConvention
+    public interface IIndexConvention
     {
         /// <summary>
-        /// Applies a convention to a <see cref="IFileSystemExpression"/>
+        /// Applies a convention to a <see cref="IIndexExpression"/>
         /// </summary>
         /// <param name="expression">The expression this convention should be applied to</param>
         /// <returns>The same or a new expression. The underlying type must stay the same.</returns>
-        IFileSystemExpression Apply(IFileSystemExpression expression);
+        IIndexExpression Apply(IIndexExpression expression);
     }
 }

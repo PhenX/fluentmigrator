@@ -18,7 +18,7 @@ using System.Collections.Generic;
 
 using FluentMigrator.Expressions;
 
-namespace FluentMigrator.Runner.Conventions
+namespace FluentMigrator.Conventions
 {
     /// <summary>
     /// A set of conventions to be applied to expressions
@@ -33,11 +33,7 @@ namespace FluentMigrator.Runner.Conventions
         /// <summary>
         /// Gets the default schema name convention to be applied to <see cref="ISchemaExpression"/> implementations
         /// </summary>
-        /// <remarks>
-        /// This class cannot be overridden. The <see cref="IDefaultSchemaNameConvention"/>
-        /// must be implemented/provided instead.
-        /// </remarks>
-        DefaultSchemaConvention SchemaConvention { get; }
+        ISchemaConvention SchemaConvention { get; }
 
         /// <summary>
         /// Gets the conventions to be applied to <see cref="IColumnsExpression"/> implementations

@@ -16,6 +16,7 @@
 
 using System.Linq;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Expressions;
 using FluentMigrator.Runner;
 using FluentMigrator.Runner.Conventions;
@@ -157,11 +158,11 @@ namespace FluentMigrator.Tests.Unit.Initialization
         }
 
         // ReSharper disable once UnusedMember.Global
-        public class CustomConventionSet : ConventionSet
+        public class CustomConventionSet : DefaultConventionSet
         {
-            public CustomConventionSet()
+            /// <inheritdoc />
+            public CustomConventionSet() : base("public", null)
             {
-                base.SchemaConvention = new DefaultSchemaConvention("custom-schema");
             }
         }
     }

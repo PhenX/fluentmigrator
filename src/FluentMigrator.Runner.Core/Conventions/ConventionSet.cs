@@ -16,6 +16,7 @@
 
 using System.Collections.Generic;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Expressions;
 
 namespace FluentMigrator.Runner.Conventions
@@ -37,7 +38,7 @@ namespace FluentMigrator.Runner.Conventions
         /// This class cannot be overridden. The <see cref="IDefaultSchemaNameConvention"/>
         /// must be implemented/provided instead.
         /// </remarks>
-        public DefaultSchemaConvention SchemaConvention { get; set; }
+        public ISchemaConvention SchemaConvention { get; set; }
 
         /// <inheritdoc />
         public IList<IColumnsConvention> ColumnsConventions { get; } = new List<IColumnsConvention>();

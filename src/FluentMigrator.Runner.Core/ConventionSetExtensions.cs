@@ -16,6 +16,7 @@
 
 using System.Collections.Generic;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Expressions;
 using FluentMigrator.Runner.Conventions;
 

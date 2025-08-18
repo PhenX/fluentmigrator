@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Runner.Conventions;
 using FluentMigrator.Runner.Processors;
 

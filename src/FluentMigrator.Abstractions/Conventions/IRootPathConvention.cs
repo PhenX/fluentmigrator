@@ -1,5 +1,5 @@
-﻿#region License
-// Copyright (c) 2018, Fluent Migrator Project
+#region License
+// Copyright (c) 2007-2024, Fluent Migrator Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,18 +16,18 @@
 
 using FluentMigrator.Expressions;
 
-namespace FluentMigrator.Runner.Conventions
+namespace FluentMigrator.Conventions
 {
     /// <summary>
-    /// A convention working on <see cref="IAutoNameExpression"/> implementations
+    /// A convention working on <see cref="IFileSystemExpression"/> implementations
     /// </summary>
-    public interface IAutoNameConvention
+    public interface IRootPathConvention
     {
         /// <summary>
-        /// Applies a convention to a <see cref="IAutoNameExpression"/>
+        /// Applies a convention to a <see cref="IFileSystemExpression"/>
         /// </summary>
         /// <param name="expression">The expression this convention should be applied to</param>
         /// <returns>The same or a new expression. The underlying type must stay the same.</returns>
-        IAutoNameExpression Apply(IAutoNameExpression expression);
+        IFileSystemExpression Apply(IFileSystemExpression expression);
     }
 }

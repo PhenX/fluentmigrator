@@ -14,21 +14,20 @@
 // limitations under the License.
 #endregion
 
-namespace FluentMigrator.Runner.Conventions
+using FluentMigrator.Expressions;
+
+namespace FluentMigrator.Conventions
 {
     /// <summary>
-    /// A convention that returns the default schema name depending on the original schema name
+    /// A convention working on <see cref="ISequenceExpression"/> implementations
     /// </summary>
-    public interface IDefaultSchemaNameConvention
+    public interface ISequenceConvention
     {
         /// <summary>
-        /// Returns the default schema name depending on the original schema name
+        /// Applies a convention to a <see cref="ISequenceExpression"/>
         /// </summary>
-        /// <param name="originalSchemaName">The original schema name</param>
-        /// <returns>Returns the <paramref name="originalSchemaName"/> when the
-        /// default schema name is null or empty and returns the new default
-        /// schema name when the <paramref name="originalSchemaName"/> is null
-        /// or empty</returns>
-        string GetSchemaName(string originalSchemaName);
+        /// <param name="expression">The expression this convention should be applied to</param>
+        /// <returns>The same or a new expression. The underlying type must stay the same.</returns>
+        ISequenceExpression Apply(ISequenceExpression expression);
     }
 }

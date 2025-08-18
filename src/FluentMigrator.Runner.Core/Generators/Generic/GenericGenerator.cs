@@ -37,7 +37,7 @@ namespace FluentMigrator.Runner.Generators.Generic
         public virtual string AlterColumn { get { return "ALTER TABLE {0} ALTER COLUMN {1}"; } }
         public virtual string RenameColumn { get { return "ALTER TABLE {0} RENAME COLUMN {1} TO {2}"; } }
 
-        public virtual string RenameTable { get { return "RENAME TABLE {0} TO {1}"; } }
+        public virtual string RenameTable => "RENAME TABLE {0} TO {1}";
 
         public virtual string CreateSchema { get { return "CREATE SCHEMA {0}"; } }
         public virtual string AlterSchema { get { return "ALTER SCHEMA {0} TRANSFER {1}"; } }

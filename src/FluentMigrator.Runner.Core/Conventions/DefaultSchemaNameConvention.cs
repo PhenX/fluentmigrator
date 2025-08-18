@@ -14,6 +14,8 @@
 // limitations under the License.
 #endregion
 
+using FluentMigrator.Conventions;
+
 namespace FluentMigrator.Runner.Conventions
 {
     /// <summary>

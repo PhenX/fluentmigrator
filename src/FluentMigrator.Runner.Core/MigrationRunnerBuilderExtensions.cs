@@ -18,6 +18,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Infrastructure;
 using FluentMigrator.Runner.Conventions;
 using FluentMigrator.Runner.Initialization;

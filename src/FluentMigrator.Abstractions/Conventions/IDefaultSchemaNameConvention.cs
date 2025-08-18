@@ -14,20 +14,21 @@
 // limitations under the License.
 #endregion
 
-using FluentMigrator.Expressions;
-
-namespace FluentMigrator.Runner.Conventions
+namespace FluentMigrator.Conventions
 {
     /// <summary>
-    /// A convention working on <see cref="IIndexExpression"/> implementations
+    /// A convention that returns the default schema name depending on the original schema name
     /// </summary>
-    public interface IIndexConvention
+    public interface IDefaultSchemaNameConvention
     {
         /// <summary>
-        /// Applies a convention to a <see cref="IIndexExpression"/>
+        /// Returns the default schema name depending on the original schema name
         /// </summary>
-        /// <param name="expression">The expression this convention should be applied to</param>
-        /// <returns>The same or a new expression. The underlying type must stay the same.</returns>
-        IIndexExpression Apply(IIndexExpression expression);
+        /// <param name="originalSchemaName">The original schema name</param>
+        /// <returns>Returns the <paramref name="originalSchemaName"/> when the
+        /// default schema name is null or empty and returns the new default
+        /// schema name when the <paramref name="originalSchemaName"/> is null
+        /// or empty</returns>
+        string GetSchemaName(string originalSchemaName);
     }
 }

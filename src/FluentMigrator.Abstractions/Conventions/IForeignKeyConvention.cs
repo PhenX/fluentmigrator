@@ -16,7 +16,7 @@
 
 using FluentMigrator.Expressions;
 
-namespace FluentMigrator.Runner.Conventions
+namespace FluentMigrator.Conventions
 {
     /// <summary>
     /// A convention working on <see cref="IForeignKeyExpression"/> implementations

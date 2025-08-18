@@ -1,3 +1,4 @@
+using FluentMigrator.Conventions;
 using FluentMigrator.Runner;
 using FluentMigrator.Runner.Conventions;
 using FluentMigrator.Runner.Initialization;

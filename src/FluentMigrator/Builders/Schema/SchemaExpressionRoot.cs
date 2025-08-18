@@ -19,6 +19,7 @@
 using FluentMigrator.Builders.Schema.Schema;
 using FluentMigrator.Builders.Schema.Sequence;
 using FluentMigrator.Builders.Schema.Table;
+using FluentMigrator.Expressions;
 using FluentMigrator.Infrastructure;
 
 namespace FluentMigrator.Builders.Schema
@@ -26,9 +27,12 @@ namespace FluentMigrator.Builders.Schema
     /// <summary>
     /// The implementation of the <see cref="ISchemaExpressionRoot"/> interface.
     /// </summary>
-    public class SchemaExpressionRoot : ISchemaExpressionRoot
+    public class SchemaExpressionRoot : ISchemaExpressionRoot, ISchemaExpression
     {
         private readonly IMigrationContext _context;
+
+        /// <inheritdoc />
+        public string SchemaName { get; set; }
 
         /// <summary>
         /// ctorc
@@ -42,7 +46,7 @@ namespace FluentMigrator.Builders.Schema
         /// <inheritdoc />
         public ISchemaTableSyntax Table(string tableName)
         {
-            return new SchemaTableQuery(_context, null, tableName);
+            return new SchemaTableQuery(_context, SchemaName, tableName);
         }
 
         /// <inheritdoc />
@@ -54,7 +58,7 @@ namespace FluentMigrator.Builders.Schema
         /// <inheritdoc />
         public ISchemaSequenceSyntax Sequence(string sequenceName)
         {
-            return new SchemaSequenceQuery(_context, null, sequenceName);
+            return new SchemaSequenceQuery(_context, SchemaName, sequenceName);
         }
     }
 }

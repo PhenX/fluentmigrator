@@ -1,5 +1,5 @@
 #region License
-// Copyright (c) 2019, Fluent Migrator Project
+// Copyright (c) 2025, Fluent Migrator Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,23 +14,11 @@
 // limitations under the License.
 #endregion
 
-using FluentMigrator.Conventions;
-using FluentMigrator.Runner.Conventions;
+using FluentMigrator.Expressions;
 
-using JetBrains.Annotations;
+namespace FluentMigrator.Conventions;
 
-namespace FluentMigrator.Runner.Initialization
+public interface ISchemaConvention : IForeignKeyConvention, IConstraintConvention, IIndexConvention, ISequenceConvention
 {
-    /// <summary>
-    /// Accessor for an <see cref="IConventionSet"/>
-    /// </summary>
-    public interface IConventionSetAccessor
-    {
-        /// <summary>
-        /// Get the convention set to use.
-        /// </summary>
-        /// <returns>The convention set.</returns>
-        [CanBeNull]
-        IConventionSet GetConventionSet();
-    }
+    public ISchemaExpression Apply(ISchemaExpression expression);
 }

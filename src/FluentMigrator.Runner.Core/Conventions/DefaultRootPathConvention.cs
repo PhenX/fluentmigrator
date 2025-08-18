@@ -16,6 +16,7 @@
 
 using System;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Expressions;
 
 namespace FluentMigrator.Runner.Conventions

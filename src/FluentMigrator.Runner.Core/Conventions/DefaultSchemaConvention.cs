@@ -14,6 +14,7 @@
 // limitations under the License.
 #endregion
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Expressions;
 
 namespace FluentMigrator.Runner.Conventions
@@ -26,7 +27,7 @@ namespace FluentMigrator.Runner.Conventions
     /// implements other conventions that give access to schema names (e.g.
     /// <see cref="IForeignKeyConvention"/>).
     /// </remarks>
-    public sealed class DefaultSchemaConvention : IForeignKeyConvention, IConstraintConvention, IIndexConvention, ISequenceConvention
+    public sealed class DefaultSchemaConvention : ISchemaConvention
     {
         private readonly IDefaultSchemaNameConvention _defaultSchemaNameConvention;
 

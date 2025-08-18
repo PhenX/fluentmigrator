@@ -25,6 +25,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Expressions;
 using FluentMigrator.Runner;
 using FluentMigrator.Runner.Exceptions;
@@ -42,6 +43,7 @@ using FluentMigrator.Tests.Integration.Migrations.Issues;
 using FluentMigrator.Tests.Integration.Migrations.Tagged;
 using FluentMigrator.Tests.Integration.TestCases;
 using FluentMigrator.Tests.Unit;
+using FluentMigrator.Tests.Unit.Initialization;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -117,15 +119,19 @@ namespace FluentMigrator.Tests.Integration
         {
             ExecuteWithProcessor(
                 processorType,
-                services => services.WithMigrationsIn(RootNamespace),
+                services => services.WithMigrationsIn(RootNamespace).AddScoped<IConventionSet>(provider =>
+                    new DefaultConventionSet(
+                        defaultSchemaName: "TestSchema",
+                        workingDirectory: null
+                    )),
                 (serviceProvider, processor) =>
                 {
                     var runner = serviceProvider.GetRequiredService<IMigrationRunner>();
 
-                    runner.Up(new TestForeignKeyNamingConvention());
+                    runner.Up(new TestForeignKeyNamingConventionWithSchema());
                     processor.ConstraintExists(null, "Users", "FK_Users_GroupId_Groups_GroupId").ShouldBeTrue();
 
-                    runner.Down(new TestForeignKeyNamingConvention());
+                    runner.Down(new TestForeignKeyNamingConventionWithSchema());
                     processor.ConstraintExists(null, "Users", "FK_Users_GroupId_Groups_GroupId").ShouldBeFalse();
                 },
                 serverOptions,

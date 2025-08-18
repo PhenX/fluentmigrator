@@ -16,6 +16,7 @@
 
 using System.Collections.Generic;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Runner.Conventions;
 
 using JetBrains.Annotations;
@@ -77,7 +78,7 @@ namespace FluentMigrator.Runner
         public IRootPathConvention RootPathConvention { get; }
 
         /// <inheritdoc />
-        public DefaultSchemaConvention SchemaConvention { get; }
+        public ISchemaConvention SchemaConvention { get; }
 
         /// <inheritdoc />
         public IList<IColumnsConvention> ColumnsConventions { get; }

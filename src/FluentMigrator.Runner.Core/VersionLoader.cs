@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
 
+using FluentMigrator.Conventions;
 using FluentMigrator.Expressions;
 using FluentMigrator.Model;
 using FluentMigrator.Runner.Versioning;

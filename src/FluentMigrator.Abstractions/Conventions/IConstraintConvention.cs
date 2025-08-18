@@ -16,18 +16,18 @@
 
 using FluentMigrator.Expressions;
 
-namespace FluentMigrator.Runner.Conventions
+namespace FluentMigrator.Conventions
 {
     /// <summary>
-    /// A convention working on <see cref="ISequenceExpression"/> implementations
+    /// A convention working on <see cref="IConstraintExpression"/> implementations
     /// </summary>
-    public interface ISequenceConvention
+    public interface IConstraintConvention
     {
         /// <summary>
-        /// Applies a convention to a <see cref="ISequenceExpression"/>
+        /// Applies a convention to a <see cref="IConstraintExpression"/>
         /// </summary>
         /// <param name="expression">The expression this convention should be applied to</param>
         /// <returns>The same or a new expression. The underlying type must stay the same.</returns>
-        ISequenceExpression Apply(ISequenceExpression expression);
+        IConstraintExpression Apply(IConstraintExpression expression);
     }
 }
