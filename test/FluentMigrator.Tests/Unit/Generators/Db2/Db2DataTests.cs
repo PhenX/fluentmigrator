@@ -29,7 +29,7 @@ using Shouldly;
 namespace FluentMigrator.Tests.Unit.Generators.Db2
 {
     [TestFixture]
-    [Category("Db2")]
+    [Category("DB2")]
     public class Db2DataTests : BaseDataTests
     {
         protected Db2Generator Generator;

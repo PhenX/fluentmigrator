@@ -33,7 +33,7 @@ namespace FluentMigrator.Tests.Integration.Processors.Db2
 {
     [TestFixture]
     [Category("Integration")]
-    [Category("Db2")]
+    [Category("DB2")]
     public class Db2IndexTests : BaseIndexTests
     {
         static Db2IndexTests()

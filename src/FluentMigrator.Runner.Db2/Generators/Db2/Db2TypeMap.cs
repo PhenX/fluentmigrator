@@ -63,10 +63,10 @@ namespace FluentMigrator.Runner.Generators.DB2
             SetTypeMap(DbType.Int64, "BIGINT");
             SetTypeMap(DbType.Single, "REAL");
             SetTypeMap(DbType.Single, "DECFLOAT", 34);
-            SetTypeMap(DbType.StringFixedLength, "GRAPHIC(128)");
-            SetTypeMap(DbType.StringFixedLength, "GRAPHIC($size)", 128);
-            SetTypeMap(DbType.String, "VARGRAPHIC(8000)");
-            SetTypeMap(DbType.String, "VARGRAPHIC($size)", 16352);
+            SetTypeMap(DbType.StringFixedLength, "VARCHAR(128)");
+            SetTypeMap(DbType.StringFixedLength, "VARCHAR($size)", 128);
+            SetTypeMap(DbType.String, "NVARCHAR(8000)");
+            SetTypeMap(DbType.String, "NVARCHAR($size)", 16352);
             SetTypeMap(DbType.String, "DBCLOB(1048576)");
             SetTypeMap(DbType.String, "DBCLOB($size)", 1073741824);
             SetTypeMap(DbType.Xml, "XML");

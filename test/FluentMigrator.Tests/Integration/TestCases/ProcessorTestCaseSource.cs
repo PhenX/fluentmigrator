@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using FluentMigrator.Runner.Processors;
+using FluentMigrator.Runner.Processors.DB2;
 using FluentMigrator.Runner.Processors.Firebird;
 using FluentMigrator.Runner.Processors.MySql;
 using FluentMigrator.Runner.Processors.Oracle;
@@ -51,6 +52,7 @@ public class ProcessorTestCaseSource : IEnumerable
         new ProcessorTestCase<MySql4Processor>(() => IntegrationTestOptions.MySql, "MySql"),
         new ProcessorTestCase<SnowflakeProcessor>(() => IntegrationTestOptions.Snowflake, "Snowflake"),
         new ProcessorTestCase<Oracle12CManagedProcessor>(() => IntegrationTestOptions.Oracle, "Oracle", "OracleManaged"),
+        new ProcessorTestCase<Db2Processor>(() => IntegrationTestOptions.Db2, "DB2"),
     ];
 
     private Type[] ProcessorTypes { get; } = [];

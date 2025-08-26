@@ -78,6 +78,7 @@ namespace FluentMigrator.Tests.Integration
             var services = ServiceCollectionExtensions.CreateServices()
                 .ConfigureRunner(
                     r => r
+                        .AddDb2()
                         .AddFirebird()
                         .AddMySql4()
                         .AddOracle12CManaged()

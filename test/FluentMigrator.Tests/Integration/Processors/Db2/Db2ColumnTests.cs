@@ -33,7 +33,7 @@ using Shouldly;
 namespace FluentMigrator.Tests.Integration.Processors.Db2
 {
     [TestFixture]
-    [Category("Db2")]
+    [Category("DB2")]
     public class Db2ColumnTests : BaseColumnTests
     {
         static Db2ColumnTests()

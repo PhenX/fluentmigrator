@@ -29,5 +29,5 @@ public class Db2Container : ContainerBase
     protected override int Port => 50000;
 
     /// <inheritdoc />
-    protected override DockerContainer Build() => new Db2Builder().WithAcceptLicenseAgreement(true).WithReuse(true).Build();
+    protected override DockerContainer Build() => new Db2Builder().WithImage("icr.io/db2_community/db2:latest").WithAcceptLicenseAgreement(true).WithReuse(true).Build();
 }

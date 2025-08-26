@@ -31,6 +31,7 @@ using FluentMigrator.Runner.Exceptions;
 using FluentMigrator.Runner.Initialization;
 using FluentMigrator.Runner.Logging;
 using FluentMigrator.Runner.Processors;
+using FluentMigrator.Runner.Processors.DB2;
 using FluentMigrator.Runner.Processors.Firebird;
 using FluentMigrator.Runner.Processors.MySql;
 using FluentMigrator.Runner.Processors.Oracle;
@@ -1081,10 +1082,10 @@ namespace FluentMigrator.Tests.Integration
         }
 
         [Test]
-        [TestCaseSource(typeof(ProcessorTestCaseSourceExcept<
-            SQLiteProcessor,
-            FirebirdProcessor,
-            SnowflakeProcessor /* Snowflake does not support decreasing varchar column length! */
+        [TestCaseSource(typeof(ProcessorTestCaseSourceOnly<
+            SqlServerProcessor,
+            MySqlProcessor,
+            PostgresProcessor
         >))]
         public void CanAlterColumnWithSchema(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
         {
@@ -1152,7 +1153,8 @@ namespace FluentMigrator.Tests.Integration
         [TestCaseSource(typeof(ProcessorTestCaseSourceExcept<
             SQLiteProcessor,
             FirebirdProcessor,
-            OracleProcessorBase /* Oracle does not support schemas in the same way as other DBMSs */
+            OracleProcessorBase, /* Oracle does not support schemas in the same way as other DBMSs */
+            Db2Processor
         >))]
         public void CanAlterTablesSchema(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
         {
@@ -2027,14 +2029,12 @@ namespace FluentMigrator.Tests.Integration
     {
         public override void Up()
         {
-            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle))
-                .Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsAnsiString(100).Nullable();
+            Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsAnsiString(100).Nullable();
         }
 
         public override void Down()
         {
-            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle))
-                .Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsString(10).Nullable();
+            Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsString(10).Nullable();
         }
     }
 

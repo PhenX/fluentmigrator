@@ -16,31 +16,28 @@
 //
 #endregion
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
 using FluentMigrator.Infrastructure.Extensions;
 using FluentMigrator.Model;
 using FluentMigrator.Runner.Generators.Base;
 
 namespace FluentMigrator.Runner.Generators.DB2
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Data;
-    using System.Linq;
-    using System.Text;
 
     internal class Db2Column : ColumnBase<Db2TypeMap>
     {
         public Db2Column(IQuoter quoter)
             : base(new Db2TypeMap(), quoter)
         {
-            ClauseOrder = new List<Func<ColumnDefinition, string>> { FormatString, FormatType, FormatCCSID, FormatNullable, FormatDefaultValue, FormatIdentity };
-            AlterClauseOrder = new List<Func<ColumnDefinition, string>> { FormatType, FormatCCSID, FormatNullable, FormatDefaultValue, FormatIdentity };
+            ClauseOrder = new List<Func<ColumnDefinition, string>> { FormatString, FormatType, FormatNullable, FormatDefaultValue, FormatIdentity };
+            AlterClauseOrder = new List<Func<ColumnDefinition, string>> { FormatType, FormatNullable, FormatDefaultValue, FormatIdentity };
         }
 
-        public List<Func<ColumnDefinition, string>> AlterClauseOrder
-        {
-            get; set;
-        }
+        public List<Func<ColumnDefinition, string>> AlterClauseOrder { get; set; }
 
         public string FormatAlterDefaultValue(string column, object defaultValue)
         {
@@ -75,24 +72,6 @@ namespace FluentMigrator.Runner.Generators.DB2
                 alterClauses);
         }
 
-        protected virtual string FormatCCSID(ColumnDefinition column)
-        {
-            if (column.Type == null)
-            {
-                return string.Empty;
-            }
-
-            var dbType = (DbType)column.Type;
-
-            if (DbType.String.Equals(dbType) || DbType.StringFixedLength.Equals(dbType))
-            {
-                // Force UTF-16 on double-byte character types.
-                return "CCSID 1200";
-            }
-
-            return string.Empty;
-        }
-
         protected override string FormatDefaultValue(ColumnDefinition column)
         {
             var isCreate = column.GetAdditionalFeature("IsCreateColumn", false);
@@ -118,7 +97,7 @@ namespace FluentMigrator.Runner.Generators.DB2
 
         protected override string FormatIdentity(ColumnDefinition column)
         {
-            return column.IsIdentity ? "AS IDENTITY" : string.Empty;
+            return column.IsIdentity ? "GENERATED ALWAYS AS IDENTITY" : string.Empty;
         }
 
         protected override string FormatNullable(ColumnDefinition column)
