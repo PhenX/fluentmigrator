@@ -74,15 +74,21 @@ namespace FluentMigrator.Tests.Helpers
         {
             var sb = new StringBuilder();
 
-            if (!string.IsNullOrEmpty(_schema))
+            try
             {
-                sb.AppendFormat("CREATE SCHEMA {0};", _quoter.QuoteSchemaName(_schema));
+                if (!string.IsNullOrEmpty(_schema))
+                {
+                    sb.AppendFormat("CREATE SCHEMA {0};", _quoter.QuoteSchemaName(_schema));
+                }
+
+                var columns = string.Join(", ", columnDefinitions);
+                sb.AppendFormat("CREATE TABLE {0} ({1});", NameWithSchema, columns);
+
+                Processor.Execute(sb.ToString());
             }
-
-            var columns = string.Join(", ", columnDefinitions);
-            sb.AppendFormat("CREATE TABLE {0} ({1})", NameWithSchema, columns);
-
-            Processor.Execute(sb.ToString());
+            catch (Exception e)
+            {
+            }
         }
 
         public void Dispose()
@@ -92,19 +98,29 @@ namespace FluentMigrator.Tests.Helpers
 
         public void Drop()
         {
-            var tableCommand = string.Format("DROP TABLE {0}", NameWithSchema);
-            Processor.Execute(tableCommand);
+            var tables = new [] {"TESTTABLE", "TESTTABLE2", "BAR", "GROUPS", "USERS", "VERSIONEDMIGRATION", "VERSIONINFO"};
+            foreach (var table in tables)
+            {
+                try
+                {
+                    var tableCommand = string.Format("DROP TABLE {0};", _quoter.QuoteTableName(table, _schema));
+                    Processor.Execute(tableCommand);
+                }
+                catch (Exception)
+                {
+                }
+            }
 
             if (!string.IsNullOrEmpty(_schema))
             {
-                var schemaCommand = string.Format("DROP SCHEMA {0} RESTRICT", _quoter.QuoteSchemaName(_schema));
+                var schemaCommand = string.Format("DROP SCHEMA {0} RESTRICT;", _quoter.QuoteSchemaName(_schema));
                 Processor.Execute(schemaCommand);
             }
         }
 
         public void WithIndexOn(string column, string name)
         {
-            var query = string.Format("CREATE UNIQUE INDEX {0} ON {1} ({2})",
+            var query = string.Format("CREATE UNIQUE INDEX {0} ON {1} ({2});",
                 _quoter.QuoteIndexName(name, _schema),
                 NameWithSchema,
                 _quoter.QuoteColumnName(column)
@@ -117,7 +133,7 @@ namespace FluentMigrator.Tests.Helpers
         {
             var constraintName = _quoter.QuoteConstraintName(name, _schema);
 
-            var query = string.Format("ALTER TABLE {0} ADD CONSTRAINT {1} UNIQUE ({2})",
+            var query = string.Format("ALTER TABLE {0} ADD CONSTRAINT {1} UNIQUE ({2});",
                 NameWithSchema,
                 constraintName,
                 _quoter.QuoteColumnName(column)

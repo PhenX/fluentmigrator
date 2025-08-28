@@ -30,7 +30,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 json NOT NULL, PRIMARY KEY (TestColumn1));");
+            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 json NOT NULL, PRIMARY KEY (TestColumn1));");
         }
 
         [Test]
@@ -42,7 +42,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.Columns[1].CustomType = "json";
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 json NOT NULL, PRIMARY KEY (TestColumn1));");
+            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 json NOT NULL, PRIMARY KEY (TestColumn1));");
         }
 
         [Test]
@@ -52,7 +52,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 INTEGER NOT NULL);");
+            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 INTEGER NOT NULL);");
         }
 
         [Test]
@@ -61,7 +61,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             var expression = GeneratorTestHelper.GetCreateTableExpression();
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 INTEGER NOT NULL);");
+            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 INTEGER NOT NULL);");
         }
 
         [Test]
@@ -73,7 +73,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL DEFAULT NULL, TestColumn2 INTEGER NOT NULL DEFAULT 0);");
+            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL DEFAULT NULL, TestColumn2 INTEGER NOT NULL DEFAULT 0);");
         }
 
         [Test]
@@ -84,7 +84,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.Columns[0].TableName = expression.TableName;
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL DEFAULT NULL, TestColumn2 INTEGER NOT NULL DEFAULT 0);");
+            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL DEFAULT NULL, TestColumn2 INTEGER NOT NULL DEFAULT 0);");
         }
 
         [Test]
@@ -94,7 +94,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL DEFAULT 'Default', TestColumn2 INTEGER NOT NULL DEFAULT 0);");
+            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL DEFAULT 'Default', TestColumn2 INTEGER NOT NULL DEFAULT 0);");
         }
 
         [Test]
@@ -104,7 +104,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 INTEGER NOT NULL AS IDENTITY, TestColumn2 INTEGER NOT NULL);");
+            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY, TestColumn2 INTEGER NOT NULL);");
         }
 
         [Test]
@@ -113,7 +113,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             var expression = GeneratorTestHelper.GetCreateTableWithAutoIncrementExpression();
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 INTEGER NOT NULL AS IDENTITY, TestColumn2 INTEGER NOT NULL);");
+            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY, TestColumn2 INTEGER NOT NULL);");
         }
 
         [Test]
@@ -122,7 +122,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             var expression = GeneratorTestHelper.GetCreateTableWithDefaultValue();
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL DEFAULT 'Default', TestColumn2 INTEGER NOT NULL DEFAULT 0);");
+            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL DEFAULT 'Default', TestColumn2 INTEGER NOT NULL DEFAULT 0);");
         }
 
         [Test]
@@ -132,7 +132,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 INTEGER NOT NULL, PRIMARY KEY (TestColumn1, TestColumn2));");
+            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 INTEGER NOT NULL, PRIMARY KEY (TestColumn1, TestColumn2));");
         }
 
         [Test]
@@ -142,7 +142,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
 
             Generator.CompatibilityMode = compatibilityMode;
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 INTEGER NOT NULL, PRIMARY KEY (TestColumn1, TestColumn2));");
+            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 INTEGER NOT NULL, PRIMARY KEY (TestColumn1, TestColumn2));");
         }
 
         [Test]
@@ -152,7 +152,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 INTEGER NOT NULL, CONSTRAINT TestKey PRIMARY KEY (TestColumn1, TestColumn2));");
+            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 INTEGER NOT NULL, CONSTRAINT TestKey PRIMARY KEY (TestColumn1, TestColumn2));");
         }
 
         [Test]
@@ -161,7 +161,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             var expression = GeneratorTestHelper.GetCreateTableWithNamedMultiColumnPrimaryKeyExpression();
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 INTEGER NOT NULL, CONSTRAINT TestKey PRIMARY KEY (TestColumn1, TestColumn2));");
+            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 INTEGER NOT NULL, CONSTRAINT TestKey PRIMARY KEY (TestColumn1, TestColumn2));");
         }
 
         [Test]
@@ -171,7 +171,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 INTEGER NOT NULL, CONSTRAINT TestKey PRIMARY KEY (TestColumn1));");
+            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 INTEGER NOT NULL, CONSTRAINT TestKey PRIMARY KEY (TestColumn1));");
         }
 
         [Test]
@@ -180,7 +180,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             var expression = GeneratorTestHelper.GetCreateTableWithNamedPrimaryKeyExpression();
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 INTEGER NOT NULL, CONSTRAINT TestKey PRIMARY KEY (TestColumn1));");
+            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 INTEGER NOT NULL, CONSTRAINT TestKey PRIMARY KEY (TestColumn1));");
         }
 
         [Test]
@@ -190,7 +190,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200, TestColumn2 INTEGER NOT NULL);");
+            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576), TestColumn2 INTEGER NOT NULL);");
         }
 
         [Test]
@@ -199,7 +199,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             var expression = GeneratorTestHelper.GetCreateTableWithNullableColumn();
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200, TestColumn2 INTEGER NOT NULL);");
+            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576), TestColumn2 INTEGER NOT NULL);");
         }
 
         [Test]
@@ -209,7 +209,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 INTEGER NOT NULL, PRIMARY KEY (TestColumn1));");
+            result.ShouldBe("CREATE TABLE TestSchema.TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 INTEGER NOT NULL, PRIMARY KEY (TestColumn1));");
         }
 
         [Test]
@@ -218,7 +218,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             var expression = GeneratorTestHelper.GetCreateTableWithPrimaryKeyExpression();
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 INTEGER NOT NULL, PRIMARY KEY (TestColumn1));");
+            result.ShouldBe("CREATE TABLE TestTable1 (TestColumn1 DBCLOB(1048576) NOT NULL, TestColumn2 INTEGER NOT NULL, PRIMARY KEY (TestColumn1));");
         }
 
         [Test]

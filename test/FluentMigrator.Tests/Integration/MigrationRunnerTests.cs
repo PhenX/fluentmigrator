@@ -296,7 +296,8 @@ namespace FluentMigrator.Tests.Integration
 
         [Test]
         [TestCaseSource(typeof(ProcessorTestCaseSourceExcept<
-            SnowflakeProcessor /* This test does not work with snowflake, see test CanRenameTableWithSchema in class SnowflakeMigrationRunnerTests. */
+            SnowflakeProcessor, /* This test does not work with snowflake, see test CanRenameTableWithSchema in class SnowflakeMigrationRunnerTests. */
+            Db2Processor
         >))]
         public void CanRenameTable(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
         {
@@ -329,7 +330,8 @@ namespace FluentMigrator.Tests.Integration
 
         [Test]
         [TestCaseSource(typeof(ProcessorTestCaseSourceExcept<
-            SnowflakeProcessor /* This test does not work with snowflake, see test CanRenameTableWithSchema in class SnowflakeMigrationRunnerTests. */
+            SnowflakeProcessor, /* This test does not work with snowflake, see test CanRenameTableWithSchema in class SnowflakeMigrationRunnerTests. */
+            Db2Processor
         >))]
         public void CanRenameTableWithSchema(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
         {
@@ -367,7 +369,8 @@ namespace FluentMigrator.Tests.Integration
         [Test]
         [TestCaseSource(typeof(ProcessorTestCaseSourceExcept<
             SQLiteProcessor,
-            SnowflakeProcessor /* This test does not work with snowflake, see test CanRenameColumnWithSchema in class SnowflakeMigrationRunnerTests. */
+            SnowflakeProcessor, /* This test does not work with snowflake, see test CanRenameColumnWithSchema in class SnowflakeMigrationRunnerTests. */
+            Db2Processor
         >))]
         public void CanRenameColumn(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
         {
@@ -400,7 +403,8 @@ namespace FluentMigrator.Tests.Integration
         [TestCaseSource(typeof(ProcessorTestCaseSourceExcept<
             SQLiteProcessor,
             FirebirdProcessor,
-            SnowflakeProcessor /* This test does not work with snowflake, see test CanRenameColumnWithSchema in class SnowflakeMigrationRunnerTests. */
+            SnowflakeProcessor, /* This test does not work with snowflake, see test CanRenameColumnWithSchema in class SnowflakeMigrationRunnerTests. */
+            Db2Processor
         >))]
         public void CanRenameColumnWithSchema(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
         {
@@ -1799,7 +1803,7 @@ namespace FluentMigrator.Tests.Integration
 
             var testTable2 = Create.Table("TestTable2")
                 .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("Name").AsString(255).Nullable()
+                .WithColumn("Name").AsString(255).NotNullable() // Not nullable because some DBMS don't allow nullable columns in unique indexes (like DB2)
                 .WithColumn("TestTableId").AsInt32().NotNullable();
 
             IfDatabase(ProcessorIdConstants.SQLite)
@@ -1931,7 +1935,7 @@ namespace FluentMigrator.Tests.Integration
             Create.Table("TestTable2")
                 .InSchema("TestSchema")
                 .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("Name").AsString(255).Nullable()
+                .WithColumn("Name").AsString(255).NotNullable() // Not nullable because some DBMS don't allow nullable columns in unique indexes (like DB2))
                 .WithColumn("TestTableId").AsInt32().NotNullable().ForeignKey("fk_TestTable2_TestTableId_TestTable_Id", "TestSchema", "TestTable", "Id");
 
             Create.Index("ix_Name").OnTable("TestTable2").InSchema("TestSchema").OnColumn("Name").Ascending()
@@ -2266,20 +2270,26 @@ namespace FluentMigrator.Tests.Integration
     {
         public override void Up()
         {
-            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle))
+            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle) && !processorId.Contains(ProcessorIdConstants.DB2))
                 .Execute.Sql("select 1");
 
             IfDatabase(processorId => processorId.Contains(ProcessorIdConstants.Oracle))
                 .Execute.Sql("select 1 from dual");
+
+            IfDatabase(processorId => processorId.Contains(ProcessorIdConstants.DB2))
+                .Execute.Sql("select * from sysibm.sysdummy1");
         }
 
         public override void Down()
         {
-            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle))
+            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle) && !processorId.Contains(ProcessorIdConstants.DB2))
                 .Execute.Sql("select 1");
 
             IfDatabase(processorId => processorId.Contains(ProcessorIdConstants.Oracle))
                 .Execute.Sql("select 1 from dual");
+
+            IfDatabase(processorId => processorId.Contains(ProcessorIdConstants.DB2))
+                .Execute.Sql("select * from sysibm.sysdummy1");
         }
     }
 }

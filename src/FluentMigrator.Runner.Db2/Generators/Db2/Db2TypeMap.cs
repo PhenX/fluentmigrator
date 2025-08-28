@@ -68,7 +68,7 @@ namespace FluentMigrator.Runner.Generators.DB2
             SetTypeMap(DbType.String, "NVARCHAR(8000)");
             SetTypeMap(DbType.String, "NVARCHAR($size)", 16352);
             SetTypeMap(DbType.String, "DBCLOB(1048576)");
-            SetTypeMap(DbType.String, "DBCLOB($size)", 1073741824);
+            SetTypeMap(DbType.String, "CLOB($size)", int.MaxValue);
             SetTypeMap(DbType.Xml, "XML");
         }
     }

@@ -76,9 +76,13 @@ namespace FluentMigrator.Tests.Integration.Processors.Db2
         [Test]
         public override void CallingConstraintExistsReturnsFalseIfConstraintDoesNotExistWithSchema()
         {
-            using (var table = new Db2TestTable(Processor, "TstSchma", "ID INT"))
+            using (var table = new Db2TestTable(Processor, "DB2INST1", "ID INT"))
             {
-                Processor.ConstraintExists("TstSchma", table.Name, "DoesNotExist").ShouldBeFalse();
+                Processor.ConstraintExists("DB2INST1", table.Name, "DoesNotExist").ShouldBeFalse();
+            }
+            using (var table = new Db2TestTable(Processor, "TESTSCHEMA", "ID INT"))
+            {
+                Processor.ConstraintExists("TESTSCHEMA", table.Name, "DoesNotExist").ShouldBeFalse();
             }
         }
 
