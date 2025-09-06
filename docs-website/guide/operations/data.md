@@ -143,31 +143,24 @@ public class DataTypeConversions : Migration
             .AddColumn("PriceDecimal").AsDecimal(10, 2).Nullable();
             
         // Convert string price to decimal, handling invalid values
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql(@"
-                UPDATE Products 
-                SET PriceDecimal = TRY_CONVERT(DECIMAL(10,2), PriceString)
-                WHERE ISNUMERIC(PriceString) = 1");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            Execute.Sql(@"
-                UPDATE Products 
-                SET PriceDecimal = CASE 
-                    WHEN PriceString ~ '^[0-9]+\.?[0-9]*$' THEN PriceString::DECIMAL(10,2)
-                    ELSE NULL 
-                END");
-        }
-        else if (IfDatabase("MySQL"))
-        {
-            Execute.Sql(@"
-                UPDATE Products 
-                SET PriceDecimal = CASE 
-                    WHEN PriceString REGEXP '^[0-9]+\.?[0-9]*$' THEN CAST(PriceString AS DECIMAL(10,2))
-                    ELSE NULL 
-                END");
-        }
+        IfDatabase("SqlServer").Execute.Sql(@"
+            UPDATE Products 
+            SET PriceDecimal = TRY_CONVERT(DECIMAL(10,2), PriceString)
+            WHERE ISNUMERIC(PriceString) = 1");
+
+        IfDatabase("Postgres").Execute.Sql(@"
+            UPDATE Products 
+            SET PriceDecimal = CASE 
+                WHEN PriceString ~ '^[0-9]+\.?[0-9]*$' THEN PriceString::DECIMAL(10,2)
+                ELSE NULL 
+            END");
+
+        IfDatabase("MySQL").Execute.Sql(@"
+            UPDATE Products 
+            SET PriceDecimal = CASE 
+                WHEN PriceString REGEXP '^[0-9]+\.?[0-9]*$' THEN CAST(PriceString AS DECIMAL(10,2))
+                ELSE NULL 
+            END");
         
         // Make new column not nullable after successful conversion
         Alter.Column("PriceDecimal").OnTable("Products")
@@ -229,50 +222,50 @@ public class JsonDataOperations : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("SqlServer2016") || IfDatabase("Postgres") || IfDatabase("MySQL"))
-        {
-            Create.Table("UserProfiles")
-                .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("UserId").AsInt32().NotNullable()
-                .WithColumn("ProfileData").AsCustom(
-                    IfDatabase("SqlServer") ? "NVARCHAR(MAX)" :
-                    IfDatabase("Postgres") ? "JSONB" : 
-                    "JSON").Nullable();
+        // Create table with database-specific JSON column types
+        IfDatabase("SqlServer").Create.Table("UserProfiles")
+            .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+            .WithColumn("UserId").AsInt32().NotNullable()
+            .WithColumn("ProfileData").AsCustom("NVARCHAR(MAX)").Nullable();
+            
+        IfDatabase("Postgres").Create.Table("UserProfiles")
+            .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+            .WithColumn("UserId").AsInt32().NotNullable()
+            .WithColumn("ProfileData").AsCustom("JSONB").Nullable();
+            
+        IfDatabase("MySQL").Create.Table("UserProfiles")
+            .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+            .WithColumn("UserId").AsInt32().NotNullable()
+            .WithColumn("ProfileData").AsCustom("JSON").Nullable();
                 
-            // Insert JSON data
-            Insert.IntoTable("UserProfiles")
-                .Row(new
-                {
-                    UserId = 1,
-                    ProfileData = @"{
-                        ""preferences"": {
-                            ""theme"": ""dark"",
-                            ""language"": ""en"",
-                            ""notifications"": true
-                        },
-                        ""profile"": {
-                            ""avatar"": ""avatar1.jpg"",
-                            ""bio"": ""Software developer""
-                        }
-                    }"
-                });
-                
-            // Update JSON properties
-            if (IfDatabase("SqlServer"))
+        // Insert JSON data (same for all databases)
+        Insert.IntoTable("UserProfiles")
+            .Row(new
             {
-                Execute.Sql(@"
-                    UPDATE UserProfiles 
-                    SET ProfileData = JSON_MODIFY(ProfileData, '$.preferences.theme', 'light')
-                    WHERE UserId = 1");
-            }
-            else if (IfDatabase("Postgres"))
-            {
-                Execute.Sql(@"
-                    UPDATE UserProfiles 
-                    SET ProfileData = ProfileData || '{""preferences"": {""theme"": ""light""}}'
-                    WHERE UserId = 1");
-            }
-        }
+                UserId = 1,
+                ProfileData = @"{
+                    ""preferences"": {
+                        ""theme"": ""dark"",
+                        ""language"": ""en"",
+                        ""notifications"": true
+                    },
+                    ""profile"": {
+                        ""avatar"": ""avatar1.jpg"",
+                        ""bio"": ""Software developer""
+                    }
+                }"
+            });
+            
+        // Update JSON properties with database-specific syntax
+        IfDatabase("SqlServer").Execute.Sql(@"
+            UPDATE UserProfiles 
+            SET ProfileData = JSON_MODIFY(ProfileData, '$.preferences.theme', 'light')
+            WHERE UserId = 1");
+
+        IfDatabase("Postgres").Execute.Sql(@"
+            UPDATE UserProfiles 
+            SET ProfileData = ProfileData || '{""preferences"": {""theme"": ""light""}}'
+            WHERE UserId = 1");
     }
 
     public override void Down()
@@ -308,42 +301,20 @@ public class LargeTextDataOperations : Migration
             WHERE Content IS NOT NULL");
             
         // Full-text indexing for search
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql("CREATE FULLTEXT CATALOG DocumentsCatalog AS DEFAULT");
-            Execute.Sql(@"
-                CREATE FULLTEXT INDEX ON Documents
-                (Title, Content)
-                KEY INDEX PK_Documents ON DocumentsCatalog");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql("CREATE FULLTEXT CATALOG DocumentsCatalog AS DEFAULT");
+    IfDatabase("Postgres").Execute.Sql(@"
                 ALTER TABLE Documents 
                 ADD COLUMN SearchVector tsvector");
-                
-            Execute.Sql(@"
-                UPDATE Documents 
-                SET SearchVector = to_tsvector('english', Title || ' ' || COALESCE(Content, ''))");
-                
-            Execute.Sql(@"
-                CREATE INDEX IX_Documents_SearchVector 
-                ON Documents USING GIN (SearchVector)");
-        }
     }
 
     public override void Down()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql("DROP FULLTEXT INDEX ON Documents");
-            Execute.Sql("DROP FULLTEXT CATALOG DocumentsCatalog");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            Delete.Index("IX_Documents_SearchVector").OnTable("Documents");
+            IfDatabase("SqlServer").Execute.Sql("DROP FULLTEXT INDEX ON Documents");
+    IfDatabase("Postgres").Delegate(() =>
+    {
+Delete.Index("IX_Documents_SearchVector").OnTable("Documents");
             Delete.Column("SearchVector").FromTable("Documents");
-        }
+    });
         
         Delete.Table("Documents");
     }
@@ -387,18 +358,12 @@ public class DataQualityChecks : Migration
             WHERE Email != LOWER(TRIM(Email))");
             
         // Remove records with invalid email formats
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 DELETE FROM Users 
                 WHERE Email NOT LIKE '%_@_%._%'");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            Execute.Sql(@"
+    IfDatabase("Postgres").Execute.Sql(@"
                 DELETE FROM Users 
                 WHERE Email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'");
-        }
     }
 
     public override void Down()
@@ -483,10 +448,7 @@ public class SqlServerDataOperations : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            // Use MERGE statement for upsert operations
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 MERGE Users AS target
                 USING (VALUES 
                     ('john@example.com', 'John Doe', 1),
@@ -497,32 +459,14 @@ public class SqlServerDataOperations : Migration
                     UPDATE SET Name = source.Name, IsActive = source.IsActive
                 WHEN NOT MATCHED THEN
                     INSERT (Email, Name, IsActive) VALUES (source.Email, source.Name, source.IsActive);");
-                    
-            // Use OUTPUT clause to capture inserted IDs
-            Execute.Sql(@"
-                INSERT INTO AuditLog (TableName, Action, RecordId, Timestamp)
-                SELECT 'Users', 'INSERT', inserted.Id, GETDATE()
-                FROM Users
-                INNER JOIN inserted ON Users.Id = inserted.Id");
-                
-            // Use window functions for data analysis
-            Execute.Sql(@"
-                UPDATE Users 
-                SET Ranking = subq.RowNum
-                FROM (
-                    SELECT Id, ROW_NUMBER() OVER (ORDER BY CreatedAt) as RowNum
-                    FROM Users
-                ) subq
-                WHERE Users.Id = subq.Id");
-        }
     }
 
     public override void Down()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            Update.Table("Users").Set(new { Ranking = (int?)null }).AllRows();
-        }
+            IfDatabase("SqlServer").Delegate(() =>
+    {
+Update.Table("Users").Set(new { Ranking = (int?)null }).AllRows();
+    });
     }
 }
 ```
@@ -534,10 +478,7 @@ public class PostgreSqlDataOperations : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("Postgres"))
-        {
-            // Use UPSERT with ON CONFLICT
-            Execute.Sql(@"
+            IfDatabase("Postgres").Execute.Sql(@"
                 INSERT INTO Users (Email, Name, IsActive)
                 VALUES 
                     ('john@example.com', 'John Doe', true),
@@ -546,38 +487,11 @@ public class PostgreSqlDataOperations : Migration
                     Name = EXCLUDED.Name,
                     IsActive = EXCLUDED.IsActive,
                     UpdatedAt = NOW()");
-                    
-            // Work with arrays
-            Execute.Sql(@"
-                UPDATE Users 
-                SET Tags = ARRAY['vip', 'customer']
-                WHERE Id = 1");
-                
-            // Use JSONB operations
-            Execute.Sql(@"
-                UPDATE UserProfiles 
-                SET ProfileData = ProfileData || '{""lastLogin"": ""' || NOW()::TEXT || ''""}'
-                WHERE UserId = 1");
-                
-            // Use Common Table Expressions (CTE) for complex operations
-            Execute.Sql(@"
-                WITH RankedUsers AS (
-                    SELECT Id, ROW_NUMBER() OVER (ORDER BY CreatedAt) as Rank
-                    FROM Users
-                )
-                UPDATE Users 
-                SET Ranking = RankedUsers.Rank
-                FROM RankedUsers 
-                WHERE Users.Id = RankedUsers.Id");
-        }
     }
 
     public override void Down()
     {
-        if (IfDatabase("Postgres"))
-        {
-            Execute.Sql("UPDATE Users SET Tags = NULL, Ranking = NULL");
-        }
+            IfDatabase("Postgres").Execute.Sql("UPDATE Users SET Tags = NULL, Ranking = NULL");
     }
 }
 ```
@@ -589,10 +503,7 @@ public class MySqlDataOperations : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("MySQL"))
-        {
-            // Use INSERT ... ON DUPLICATE KEY UPDATE
-            Execute.Sql(@"
+            IfDatabase("MySQL").Execute.Sql(@"
                 INSERT INTO Users (Email, Name, IsActive)
                 VALUES 
                     ('john@example.com', 'John Doe', true),
@@ -601,27 +512,11 @@ public class MySqlDataOperations : Migration
                     Name = VALUES(Name),
                     IsActive = VALUES(IsActive),
                     UpdatedAt = NOW()");
-                    
-            // Use MySQL-specific functions
-            Execute.Sql(@"
-                UPDATE Users 
-                SET FullName = CONCAT_WS(' ', FirstName, MiddleName, LastName)
-                WHERE FullName IS NULL");
-                
-            // Work with JSON data (MySQL 5.7+)
-            Execute.Sql(@"
-                UPDATE UserProfiles 
-                SET ProfileData = JSON_SET(ProfileData, '$.lastLogin', NOW())
-                WHERE UserId = 1");
-        }
     }
 
     public override void Down()
     {
-        if (IfDatabase("MySQL"))
-        {
-            Execute.Sql("UPDATE Users SET FullName = NULL");
-        }
+            IfDatabase("MySQL").Execute.Sql("UPDATE Users SET FullName = NULL");
     }
 }
 ```
@@ -636,9 +531,7 @@ public class BatchProcessing : Migration
     public override void Up()
     {
         // Process data in batches to avoid lock escalation
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 DECLARE @BatchSize INT = 10000;
                 DECLARE @RowsUpdated INT = @BatchSize;
                 
@@ -650,10 +543,7 @@ public class BatchProcessing : Migration
                     
                     SET @RowsUpdated = @@ROWCOUNT;
                 END");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            Execute.Sql(@"
+    IfDatabase("Postgres").Execute.Sql(@"
                 DO $$
                 DECLARE
                     batch_size INTEGER := 10000;
@@ -672,7 +562,6 @@ public class BatchProcessing : Migration
                         EXIT WHEN rows_updated = 0;
                     END LOOP;
                 END $$");
-        }
     }
 
     public override void Down()
@@ -690,38 +579,13 @@ public class TemporaryTableOperations : Migration
     public override void Up()
     {
         // Create temporary table for staging data
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 CREATE TABLE #TempUserStats (
                     UserId INT,
                     OrderCount INT,
                     TotalAmount DECIMAL(10,2),
                     LastOrderDate DATETIME
                 )");
-                
-            Execute.Sql(@"
-                INSERT INTO #TempUserStats
-                SELECT 
-                    u.Id,
-                    COUNT(o.Id),
-                    SUM(o.TotalAmount),
-                    MAX(o.OrderDate)
-                FROM Users u
-                LEFT JOIN Orders o ON u.Id = o.CustomerId
-                GROUP BY u.Id");
-                
-            Execute.Sql(@"
-                UPDATE u
-                SET 
-                    OrderCount = t.OrderCount,
-                    TotalSpent = t.TotalAmount,
-                    LastOrderDate = t.LastOrderDate
-                FROM Users u
-                INNER JOIN #TempUserStats t ON u.Id = t.UserId");
-                
-            Execute.Sql("DROP TABLE #TempUserStats");
-        }
         else
         {
             // For other databases, use regular temporary operations
@@ -818,9 +682,7 @@ public class EfficientDataHandling : Migration
         if (userCount > 100000)
         {
             // Use batch processing for large datasets
-            if (IfDatabase("SqlServer"))
-            {
-                Execute.Sql(@"
+                IfDatabase("SqlServer").Execute.Sql(@"
                     DECLARE @BatchSize INT = 5000;
                     WHILE EXISTS (SELECT 1 FROM Users WHERE UpdatedAt IS NULL)
                     BEGIN
@@ -830,7 +692,6 @@ public class EfficientDataHandling : Migration
                         
                         WAITFOR DELAY '00:00:01'; -- Brief pause between batches
                     END");
-            }
         }
         else
         {

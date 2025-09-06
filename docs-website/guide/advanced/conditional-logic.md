@@ -18,60 +18,16 @@ public class DatabaseProviderConditionals : Migration
             .WithColumn("CreatedAt").AsDateTime().NotNullable();
             
         // SQL Server specific features
-        if (IfDatabase("SqlServer"))
-        {
-            // Add SQL Server specific columns
-            Alter.Table("CrossPlatformTable")
-                .AddColumn("RowVersion").AsCustom("ROWVERSION").NotNullable()
-                .AddColumn("XmlData").AsCustom("XML").Nullable();
-                
-            // Create filtered index
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 CREATE INDEX IX_CrossPlatformTable_Name_Active 
                 ON CrossPlatformTable (Name) 
                 WHERE Name IS NOT NULL");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            // PostgreSQL specific features
-            Alter.Table("CrossPlatformTable")
-                .AddColumn("JsonData").AsCustom("JSONB").Nullable()
-                .AddColumn("ArrayData").AsCustom("TEXT[]").Nullable();
-                
-            // Create GIN index for JSONB
-            Execute.Sql(@"
+    IfDatabase("Postgres").Execute.Sql(@"
                 CREATE INDEX IX_CrossPlatformTable_JsonData 
                 ON CrossPlatformTable USING GIN (JsonData)");
-        }
-        else if (IfDatabase("MySQL"))
-        {
-            // MySQL specific features
-            Alter.Table("CrossPlatformTable")
-                .AddColumn("JsonData").AsCustom("JSON").Nullable()
-                .AddColumn("Status").AsCustom("ENUM('Active','Inactive','Pending')").NotNullable().WithDefaultValue(RawSql.Insert("'Active'"));
-                
-            // Set storage engine
-            Execute.Sql("ALTER TABLE CrossPlatformTable ENGINE=InnoDB");
-        }
-        else if (IfDatabase("SQLite"))
-        {
-            // SQLite specific handling
-            Alter.Table("CrossPlatformTable")
-                .AddColumn("JsonData").AsString(4000).Nullable(); // JSON as TEXT
-                
-            // SQLite doesn't support filtered WHERE clauses in older versions
-            Execute.Sql("CREATE INDEX IX_CrossPlatformTable_Name ON CrossPlatformTable (Name)");
-        }
-        else if (IfDatabase("Oracle"))
-        {
-            // Oracle specific features
-            Alter.Table("CrossPlatformTable")
-                .AddColumn("XmlData").AsCustom("XMLType").Nullable()
-                .AddColumn("LobData").AsCustom("CLOB").Nullable();
-                
-            // Create Oracle-style index
-            Execute.Sql("CREATE INDEX IX_CrossPlatformTable_Name ON CrossPlatformTable (UPPER(Name))");
-        }
+    IfDatabase("MySQL").Execute.Sql("ALTER TABLE CrossPlatformTable ENGINE=InnoDB");
+    IfDatabase("SQLite").Execute.Sql("CREATE INDEX IX_CrossPlatformTable_Name ON CrossPlatformTable (Name)");
+    IfDatabase("Oracle").Execute.Sql("CREATE INDEX IX_CrossPlatformTable_Name ON CrossPlatformTable (UPPER(Name))");
     }
 
     public override void Down()
@@ -95,40 +51,13 @@ public class AdvancedProviderLogic : Migration
             .WithColumn("Amount").AsDecimal(15, 2).NotNullable();
             
         // Database provider with version checking
-        if (IfDatabase("SqlServer"))
-        {
-            var version = GetSqlServerVersion();
-            if (version.Major >= 13) // SQL Server 2016+
-            {
-                // Use JSON support in SQL Server 2016+
-                Alter.Table("AdvancedFeatures")
-                    .AddColumn("JsonData").AsCustom("NVARCHAR(MAX)").Nullable();
-                    
-                Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                     ALTER TABLE AdvancedFeatures 
                     ADD CONSTRAINT CK_AdvancedFeatures_JsonData 
                     CHECK (JsonData IS NULL OR ISJSON(JsonData) = 1)");
-            }
-            else
-            {
-                // Fallback for older SQL Server versions
-                Alter.Table("AdvancedFeatures")
-                    .AddColumn("JsonData").AsString(4000).Nullable();
-            }
-            
-            if (version.Major >= 14) // SQL Server 2017+
-            {
-                // Use graph database features
-                Execute.Sql(@"
-                    CREATE TABLE GraphNodes (
-                        Id INT IDENTITY PRIMARY KEY,
-                        Name NVARCHAR(100)
-                    ) AS NODE");
-            }
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            var version = GetPostgreSqlVersion();
+    IfDatabase("Postgres").Delegate(() =>
+    {
+var version = GetPostgreSqlVersion();
             if (version >= new Version("9.4"))
             {
                 // JSONB available in PostgreSQL 9.4+
@@ -147,7 +76,7 @@ public class AdvancedProviderLogic : Migration
                 Alter.Table("AdvancedFeatures")
                     .AddColumn("JsonData").AsCustom("TEXT").Nullable();
             }
-        }
+    });
     }
     
     private Version GetSqlServerVersion()
@@ -185,10 +114,7 @@ public class AdvancedProviderLogic : Migration
 
     public override void Down()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql("DROP TABLE IF EXISTS GraphNodes");
-        }
+            IfDatabase("SqlServer").Execute.Sql("DROP TABLE IF EXISTS GraphNodes");
         Delete.Table("AdvancedFeatures");
     }
 }
@@ -475,21 +401,13 @@ public class ConfigurationBasedConditionals : Migration
             .OnTable("ConfigurableFeatures")
             .OnColumn("Name");
             
-        if (IfDatabase("SqlServer"))
-        {
-            // SQL Server specific optimizations
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 CREATE INDEX IX_ConfigurableFeatures_CreatedAt_Covering 
                 ON ConfigurableFeatures (CreatedAt) 
                 INCLUDE (Name, CreatedBy)");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            // PostgreSQL specific optimizations
-            Execute.Sql(@"
+    IfDatabase("Postgres").Execute.Sql(@"
                 CREATE INDEX CONCURRENTLY IX_ConfigurableFeatures_CreatedAt 
                 ON ConfigurableFeatures (CreatedAt)");
-        }
     }
     
     private void AddComplianceFeatures()
@@ -554,18 +472,10 @@ public class ConfigurationBasedConditionals : Migration
     
     private void ApplyEnterpriseOptimizations()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            // SQL Server enterprise features
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 CREATE NONCLUSTERED COLUMNSTORE INDEX IX_ConfigurableFeatures_Columnstore
                 ON ConfigurableFeatures (Name, CreatedAt, CreatedBy)");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            // PostgreSQL enterprise features
-            Execute.Sql("CREATE STATISTICS s_ConfigurableFeatures ON Name, CreatedAt FROM ConfigurableFeatures");
-        }
+    IfDatabase("Postgres").Execute.Sql("CREATE STATISTICS s_ConfigurableFeatures ON Name, CreatedAt FROM ConfigurableFeatures");
     }
 
     public override void Down()
@@ -970,9 +880,9 @@ public class ComplexSchemaValidation : Migration
     {
         try
         {
-            if (IfDatabase("SqlServer"))
-            {
-                var indexCount = Execute.Sql($@"
+                IfDatabase("SqlServer").Delegate(() =>
+    {
+var indexCount = Execute.Sql($@"
                     SELECT COUNT(*)
                     FROM sys.indexes i
                     INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
@@ -983,7 +893,7 @@ public class ComplexSchemaValidation : Migration
                     .Returns<int>().FirstOrDefault();
                     
                 return indexCount > 0;
-            }
+    });
         }
         catch
         {
@@ -1042,9 +952,7 @@ public class ComplexSchemaValidation : Migration
     private void CreateDataCleanupProcedures()
     {
         // Create stored procedure or function to clean up orphaned records
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 CREATE PROCEDURE CleanupOrphanedOrders
                 AS
                 BEGIN
@@ -1053,15 +961,11 @@ public class ComplexSchemaValidation : Migration
                     
                     SELECT @@ROWCOUNT as DeletedCount;
                 END");
-        }
     }
 
     public override void Down()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql("DROP PROCEDURE IF EXISTS CleanupOrphanedOrders");
-        }
+            IfDatabase("SqlServer").Execute.Sql("DROP PROCEDURE IF EXISTS CleanupOrphanedOrders");
         
         Delete.Table("ValidatedFeatures");
     }
@@ -1138,20 +1042,8 @@ public class FeatureFlagConditionals : Migration
             .AddColumn("SearchRanking").AsInt32().NotNullable().WithDefaultValue(0);
             
         // Create full-text search support
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql("CREATE FULLTEXT CATALOG SearchCatalog AS DEFAULT");
-            Execute.Sql(@"
-                CREATE FULLTEXT INDEX ON FeatureBasedTable (SearchKeywords)
-                KEY INDEX PK_FeatureBasedTable ON SearchCatalog");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            Execute.Sql("ALTER TABLE FeatureBasedTable ADD COLUMN SearchVector tsvector");
-            Execute.Sql(@"
-                CREATE INDEX IX_FeatureBasedTable_SearchVector 
-                ON FeatureBasedTable USING GIN (SearchVector)");
-        }
+            IfDatabase("SqlServer").Execute.Sql("CREATE FULLTEXT CATALOG SearchCatalog AS DEFAULT");
+    IfDatabase("Postgres").Execute.Sql("ALTER TABLE FeatureBasedTable ADD COLUMN SearchVector tsvector");
     }
     
     private void EnableAdvancedAnalytics()
@@ -1282,11 +1174,7 @@ public class FeatureFlagConditionals : Migration
         Execute.Sql("DROP TABLE IF EXISTS AnalyticsSummary");
         Execute.Sql("DROP TABLE IF EXISTS AnalyticsEvents");
         
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql("DROP FULLTEXT INDEX ON FeatureBasedTable");
-            Execute.Sql("DROP FULLTEXT CATALOG SearchCatalog");
-        }
+            IfDatabase("SqlServer").Execute.Sql("DROP FULLTEXT INDEX ON FeatureBasedTable");
         
         Delete.Table("FeatureBasedTable");
     }

@@ -413,16 +413,38 @@ public class MigrationPropertiesExample : Migration
         Console.WriteLine($"Total migrations in assembly: {migrationCount}");
     }
     
-    private string GetDatabaseProvider()
+    private void HandleDatabaseSpecificLogic()
     {
-        // This would typically come from the migration context
-        // Implementation depends on your specific setup
-        if (IfDatabase("SqlServer")) return "SQL Server";
-        if (IfDatabase("Postgres")) return "PostgreSQL";
-        if (IfDatabase("MySQL")) return "MySQL";
-        if (IfDatabase("SQLite")) return "SQLite";
-        if (IfDatabase("Oracle")) return "Oracle";
-        return "Unknown";
+        // Use IfDatabase with Delegate for conditional logic
+        IfDatabase("SqlServer").Delegate(() => 
+        {
+            // SQL Server specific operations
+            Execute.Sql("-- SQL Server specific logic");
+        });
+        
+        IfDatabase("Postgres").Delegate(() => 
+        {
+            // PostgreSQL specific operations  
+            Execute.Sql("-- PostgreSQL specific logic");
+        });
+        
+        IfDatabase("MySQL").Delegate(() => 
+        {
+            // MySQL specific operations
+            Execute.Sql("-- MySQL specific logic");
+        });
+        
+        IfDatabase("SQLite").Delegate(() => 
+        {
+            // SQLite specific operations
+            Execute.Sql("-- SQLite specific logic");
+        });
+        
+        IfDatabase("Oracle").Delegate(() => 
+        {
+            // Oracle specific operations
+            Execute.Sql("-- Oracle specific logic");
+        });
     }
 
     public override void Down()
@@ -617,9 +639,9 @@ public class MigrationHelperMethods : Migration
     
     private void CreateUpdateTrigger(string tableName)
     {
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql($@"
+            IfDatabase("SqlServer").Delegate(() =>
+    {
+Execute.Sql($@"
                 CREATE TRIGGER TR_{tableName}_UpdatedAt
                 ON {tableName}
                 AFTER UPDATE
@@ -630,10 +652,10 @@ public class MigrationHelperMethods : Migration
                     FROM {tableName} t
                     INNER JOIN inserted i ON t.Id = i.Id
                 END");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            Execute.Sql($@"
+    });
+    IfDatabase("Postgres").Delegate(() =>
+    {
+Execute.Sql($@"
                 CREATE OR REPLACE FUNCTION update_{tableName.ToLower()}_updated_at()
                 RETURNS TRIGGER AS $$
                 BEGIN
@@ -646,15 +668,15 @@ public class MigrationHelperMethods : Migration
                     BEFORE UPDATE ON {tableName}
                     FOR EACH ROW
                     EXECUTE FUNCTION update_{tableName.ToLower()}_updated_at();");
-        }
-        else if (IfDatabase("MySQL"))
-        {
-            Execute.Sql($@"
+    });
+    IfDatabase("MySQL").Delegate(() =>
+    {
+Execute.Sql($@"
                 CREATE TRIGGER TR_{tableName}_UpdatedAt
                 BEFORE UPDATE ON {tableName}
                 FOR EACH ROW
                 SET NEW.UpdatedAt = NOW()");
-        }
+    });
     }
 
     public override void Down()
@@ -848,17 +870,11 @@ public class ErrorHandlingMigration : Migration
         // For example, checking available space on SQL Server
         try
         {
-            if (IfDatabase("SqlServer"))
-            {
-                var freeSpaceMB = Execute.Sql(@"
+                IfDatabase("SqlServer").Execute.Sql(@"
                     SELECT 
                         SUM(size - FILEPROPERTY(name, 'SpaceUsed')) * 8 / 1024 AS FreeSpaceMB
                     FROM sys.database_files 
-                    WHERE type = 0")
-                    .Returns<int?>().FirstOrDefault() ?? 0;
-                    
-                return freeSpaceMB > 100; // Require at least 100MB free
-            }
+                    WHERE type = 0");
         }
         catch
         {
@@ -872,9 +888,9 @@ public class ErrorHandlingMigration : Migration
     {
         try
         {
-            if (IfDatabase("SqlServer"))
-            {
-                var exists = Execute.Sql($@"
+                IfDatabase("SqlServer").Delegate(() =>
+    {
+var exists = Execute.Sql($@"
                     SELECT COUNT(*)
                     FROM sys.indexes i
                     INNER JOIN sys.objects o ON i.object_id = o.object_id
@@ -882,7 +898,7 @@ public class ErrorHandlingMigration : Migration
                     .Returns<int>().FirstOrDefault();
                     
                 return exists > 0;
-            }
+    });
         }
         catch
         {

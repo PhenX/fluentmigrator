@@ -286,79 +286,12 @@ public class SqlServerSchemaFeatures : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            // Create application-specific schemas with ownership
-            Create.Schema("Application");
-            Create.Schema("Security");
-            Create.Schema("Audit");
-            
-            // Basic schema creation with Execute.Sql - for advanced examples see Raw SQL guide
-            Execute.Sql("CREATE SCHEMA [Sales_ReadOnly]");
-            Execute.Sql("CREATE SCHEMA [Sales_ReadWrite]");
-            
-            // Create tables in security-focused schemas
-            Create.Table("Users")
-                .InSchema("Security")
-                .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("Username").AsString(50).NotNullable()
-                .WithColumn("PasswordHash").AsString(255).NotNullable()
-                .WithColumn("Salt").AsString(50).NotNullable()
-                .WithColumn("CreatedAt").AsDateTime().NotNullable();
-                
-            Create.Table("UserRoles")
-                .InSchema("Security")
-                .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("UserId").AsInt32().NotNullable()
-                .WithColumn("RoleName").AsString(50).NotNullable()
-                .WithColumn("GrantedAt").AsDateTime().NotNullable()
-                .WithColumn("GrantedBy").AsInt32().NotNullable();
-                
-            Create.Table("AuditLog")
-                .InSchema("Audit")
-                .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("TableName").AsString(100).NotNullable()
-                .WithColumn("Operation").AsString(20).NotNullable()
-                .WithColumn("OldValues").AsCustom("NVARCHAR(MAX)").Nullable()
-                .WithColumn("NewValues").AsCustom("NVARCHAR(MAX)").Nullable()
-                .WithColumn("ChangedBy").AsInt32().NotNullable()
-                .WithColumn("ChangedAt").AsDateTime().NotNullable();
-                
-            // Create database roles and assign schema permissions
-            Execute.Sql("CREATE ROLE [SalesUser]");
-            Execute.Sql("CREATE ROLE [SalesManager]");
-            Execute.Sql("CREATE ROLE [SystemAdmin]");
-            
-            // Grant permissions
-            Execute.Sql("GRANT SELECT, INSERT, UPDATE ON SCHEMA::[Sales_ReadWrite] TO [SalesManager]");
-            Execute.Sql("GRANT SELECT ON SCHEMA::[Sales_ReadOnly] TO [SalesUser]");
-            Execute.Sql("GRANT ALL ON SCHEMA::[Admin_Only] TO [SystemAdmin]");
-        }
+            IfDatabase("SqlServer").Execute.Sql("CREATE SCHEMA [Sales_ReadOnly]");
     }
 
     public override void Down()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            // Remove permissions and roles
-            Execute.Sql("DROP ROLE IF EXISTS [SystemAdmin]");
-            Execute.Sql("DROP ROLE IF EXISTS [SalesManager]");
-            Execute.Sql("DROP ROLE IF EXISTS [SalesUser]");
-            
-            // Remove tables
-            Delete.Table("AuditLog").InSchema("Audit");
-            Delete.Table("UserRoles").InSchema("Security");
-            Delete.Table("Users").InSchema("Security");
-            
-            // Remove schemas
-            Execute.Sql("DROP SCHEMA IF EXISTS [Admin_Only]");
-            Execute.Sql("DROP SCHEMA IF EXISTS [Sales_ReadWrite]");
-            Execute.Sql("DROP SCHEMA IF EXISTS [Sales_ReadOnly]");
-            
-            Delete.Schema("Audit");
-            Delete.Schema("Security");
-            Delete.Schema("Application");
-        }
+            IfDatabase("SqlServer").Execute.Sql("DROP ROLE IF EXISTS [SystemAdmin]");
     }
 }
 ```
@@ -370,89 +303,14 @@ public class PostgreSqlSchemaFeatures : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("Postgres"))
-        {
-            // Create schemas with specific ownership and search path considerations
-            Create.Schema("public_data");
-            Create.Schema("private_data");
-            Create.Schema("analytics");
-            Create.Schema("staging");
-            
-            // Create tables with PostgreSQL-specific features
-            Create.Table("user_profiles")
-                .InSchema("private_data")
-                .WithColumn("id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("user_id").AsInt32().NotNullable()
-                .WithColumn("profile_data").AsCustom("JSONB").Nullable()
-                .WithColumn("preferences").AsCustom("JSONB").Nullable()
-                .WithColumn("tags").AsCustom("TEXT[]").Nullable()
-                .WithColumn("created_at").AsCustom("TIMESTAMP WITH TIME ZONE").NotNullable();
-                
-            Create.Table("analytics_events")
-                .InSchema("analytics")
-                .WithColumn("id").AsCustom("BIGSERIAL").NotNullable().PrimaryKey()
-                .WithColumn("event_type").AsString(50).NotNullable()
-                .WithColumn("event_data").AsCustom("JSONB").NotNullable()
-                .WithColumn("user_id").AsInt32().Nullable()
-                .WithColumn("session_id").AsCustom("UUID").Nullable()
-                .WithColumn("ip_address").AsCustom("INET").Nullable()
-                .WithColumn("occurred_at").AsCustom("TIMESTAMP WITH TIME ZONE").NotNullable();
-                
-            // Create indexes optimized for JSONB and array operations
-            Execute.Sql(@"
+            IfDatabase("Postgres").Execute.Sql(@"
                 CREATE INDEX ix_user_profiles_profile_data 
                 ON private_data.user_profiles USING GIN (profile_data)");
-                
-            Execute.Sql(@"
-                CREATE INDEX ix_user_profiles_tags 
-                ON private_data.user_profiles USING GIN (tags)");
-                
-            Execute.Sql(@"
-                CREATE INDEX ix_analytics_events_event_data 
-                ON analytics.analytics_events USING GIN (event_data)");
-                
-            // Set up Row Level Security (RLS)
-            Execute.Sql("ALTER TABLE private_data.user_profiles ENABLE ROW LEVEL SECURITY");
-            
-            Execute.Sql(@"
-                CREATE POLICY user_profiles_policy ON private_data.user_profiles
-                FOR ALL TO public
-                USING (user_id = current_setting('app.current_user_id')::INT)");
-                
-            // Create database roles with schema-specific permissions
-            Execute.Sql("CREATE ROLE analytics_reader");
-            Execute.Sql("CREATE ROLE data_manager");
-            Execute.Sql("CREATE ROLE staging_user");
-            
-            Execute.Sql("GRANT USAGE ON SCHEMA analytics TO analytics_reader");
-            Execute.Sql("GRANT SELECT ON ALL TABLES IN SCHEMA analytics TO analytics_reader");
-            
-            Execute.Sql("GRANT USAGE ON SCHEMA private_data TO data_manager");
-            Execute.Sql("GRANT ALL ON ALL TABLES IN SCHEMA private_data TO data_manager");
-            
-            Execute.Sql("GRANT ALL ON SCHEMA staging TO staging_user");
-        }
     }
 
     public override void Down()
     {
-        if (IfDatabase("Postgres"))
-        {
-            // Clean up roles and permissions
-            Execute.Sql("DROP ROLE IF EXISTS staging_user");
-            Execute.Sql("DROP ROLE IF EXISTS data_manager");
-            Execute.Sql("DROP ROLE IF EXISTS analytics_reader");
-            
-            // Remove tables and indexes
-            Delete.Table("analytics_events").InSchema("analytics");
-            Delete.Table("user_profiles").InSchema("private_data");
-            
-            // Remove schemas
-            Delete.Schema("staging");
-            Delete.Schema("analytics");
-            Delete.Schema("private_data");
-            Delete.Schema("public_data");
-        }
+            IfDatabase("Postgres").Execute.Sql("DROP ROLE IF EXISTS staging_user");
     }
 }
 ```
@@ -464,68 +322,12 @@ public class OracleSchemaFeatures : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("Oracle"))
-        {
-            // Oracle uses users as schema owners, so we create logical separation with table prefixes
-            // or use different tablespaces
-            
-            // Create tablespaces for logical schema separation
-            Execute.Sql("CREATE TABLESPACE SALES_DATA DATAFILE 'sales_data.dbf' SIZE 100M AUTOEXTEND ON");
-            Execute.Sql("CREATE TABLESPACE HR_DATA DATAFILE 'hr_data.dbf' SIZE 50M AUTOEXTEND ON");
-            Execute.Sql("CREATE TABLESPACE INVENTORY_DATA DATAFILE 'inventory_data.dbf' SIZE 75M AUTOEXTEND ON");
-            
-            // Create tables with schema-like prefixes and specific tablespaces
-            Create.Table("SALES_CUSTOMERS")
-                .WithColumn("ID").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("COMPANY_NAME").AsString(200).NotNullable()
-                .WithColumn("CONTACT_NAME").AsString(100).NotNullable()
-                .WithColumn("EMAIL").AsString(255).NotNullable()
-                .WithColumn("CREATED_DATE").AsDateTime().NotNullable();
-                
-            Execute.Sql("ALTER TABLE SALES_CUSTOMERS MOVE TABLESPACE SALES_DATA");
-            
-            Create.Table("HR_EMPLOYEES")
-                .WithColumn("ID").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("FIRST_NAME").AsString(50).NotNullable()
-                .WithColumn("LAST_NAME").AsString(50).NotNullable()
-                .WithColumn("DEPARTMENT").AsString(50).NotNullable()
-                .WithColumn("HIRE_DATE").AsDateTime().NotNullable()
-                .WithColumn("SALARY").AsDecimal(10, 2).Nullable();
-                
-            Execute.Sql("ALTER TABLE HR_EMPLOYEES MOVE TABLESPACE HR_DATA");
-            
-            Create.Table("INVENTORY_PRODUCTS")
-                .WithColumn("ID").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("NAME").AsString(100).NotNullable()
-                .WithColumn("SKU").AsString(50).NotNullable()
-                .WithColumn("PRICE").AsDecimal(10, 2).NotNullable()
-                .WithColumn("QUANTITY").AsInt32().NotNullable();
-                
-            Execute.Sql("ALTER TABLE INVENTORY_PRODUCTS MOVE TABLESPACE INVENTORY_DATA");
-            
-            // Create synonyms for easier access
-            Execute.Sql("CREATE PUBLIC SYNONYM CUSTOMERS FOR SALES_CUSTOMERS");
-            Execute.Sql("CREATE PUBLIC SYNONYM EMPLOYEES FOR HR_EMPLOYEES");
-            Execute.Sql("CREATE PUBLIC SYNONYM PRODUCTS FOR INVENTORY_PRODUCTS");
-        }
+            IfDatabase("Oracle").Execute.Sql("CREATE TABLESPACE SALES_DATA DATAFILE 'sales_data.dbf' SIZE 100M AUTOEXTEND ON");
     }
 
     public override void Down()
     {
-        if (IfDatabase("Oracle"))
-        {
-            Execute.Sql("DROP PUBLIC SYNONYM PRODUCTS");
-            Execute.Sql("DROP PUBLIC SYNONYM EMPLOYEES");
-            Execute.Sql("DROP PUBLIC SYNONYM CUSTOMERS");
-            
-            Delete.Table("INVENTORY_PRODUCTS");
-            Delete.Table("HR_EMPLOYEES");
-            Delete.Table("SALES_CUSTOMERS");
-            
-            Execute.Sql("DROP TABLESPACE INVENTORY_DATA INCLUDING CONTENTS AND DATAFILES");
-            Execute.Sql("DROP TABLESPACE HR_DATA INCLUDING CONTENTS AND DATAFILES");
-            Execute.Sql("DROP TABLESPACE SALES_DATA INCLUDING CONTENTS AND DATAFILES");
-        }
+            IfDatabase("Oracle").Execute.Sql("DROP PUBLIC SYNONYM PRODUCTS");
     }
 }
 ```

@@ -420,40 +420,22 @@ public class SqlServerForeignKeys : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            Create.Table("MasterTable")
-                .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("Name").AsString(100).NotNullable();
-                
-            Create.Table("DetailTable")
-                .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("MasterId").AsInt32().NotNullable()
-                .WithColumn("Description").AsString(500).NotNullable();
-                
-            // Foreign key with explicit options
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 ALTER TABLE DetailTable 
                 ADD CONSTRAINT FK_DetailTable_MasterTable 
                 FOREIGN KEY (MasterId) REFERENCES MasterTable(Id)
                 ON DELETE CASCADE
                 ON UPDATE CASCADE");
-                
-            // Check if foreign key constraint is trusted
-            Execute.Sql(@"
-                ALTER TABLE DetailTable
-                WITH CHECK CHECK CONSTRAINT FK_DetailTable_MasterTable");
-        }
     }
 
     public override void Down()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            Delete.ForeignKey("FK_DetailTable_MasterTable").OnTable("DetailTable");
+            IfDatabase("SqlServer").Delegate(() =>
+    {
+Delete.ForeignKey("FK_DetailTable_MasterTable").OnTable("DetailTable");
             Delete.Table("DetailTable");
             Delete.Table("MasterTable");
-        }
+    });
     }
 }
 ```
@@ -465,34 +447,21 @@ public class PostgreSqlForeignKeys : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("Postgres"))
-        {
-            Create.Table("Authors")
-                .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("Name").AsString(100).NotNullable();
-                
-            Create.Table("Books")
-                .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("Title").AsString(200).NotNullable()
-                .WithColumn("AuthorId").AsInt32().NotNullable();
-                
-            // PostgreSQL supports deferrable constraints
-            Execute.Sql(@"
+            IfDatabase("Postgres").Execute.Sql(@"
                 ALTER TABLE Books 
                 ADD CONSTRAINT FK_Books_Authors 
                 FOREIGN KEY (AuthorId) REFERENCES Authors(Id)
                 DEFERRABLE INITIALLY DEFERRED");
-        }
     }
 
     public override void Down()
     {
-        if (IfDatabase("Postgres"))
-        {
-            Delete.ForeignKey("FK_Books_Authors").OnTable("Books");
+            IfDatabase("Postgres").Delegate(() =>
+    {
+Delete.ForeignKey("FK_Books_Authors").OnTable("Books");
             Delete.Table("Books");
             Delete.Table("Authors");
-        }
+    });
     }
 }
 ```

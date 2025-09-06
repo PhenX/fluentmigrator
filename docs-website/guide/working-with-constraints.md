@@ -185,33 +185,15 @@ public class SqlServerConstraints : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            Create.Table("Products")
-                .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-                .WithColumn("Price").AsDecimal(10, 2).NotNullable()
-                .WithColumn("Quantity").AsInt32().NotNullable();
-
-            // Check constraint with SQL Server functions
-            Create.CheckConstraint("CK_Products_Price")
-                .OnTable("Products")
-                .WithSql("Price > 0");
-                
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 ALTER TABLE Products 
                 ADD CONSTRAINT CK_Products_PriceQuantity 
                 CHECK (Price * Quantity >= 0)");
-        }
     }
 
     public override void Down()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            Delete.CheckConstraint("CK_Products_Price").FromTable("Products");
-            Execute.Sql("ALTER TABLE Products DROP CONSTRAINT CK_Products_PriceQuantity");
-            Delete.Table("Products");
-        }
+            IfDatabase("SqlServer").Execute.Sql("ALTER TABLE Products DROP CONSTRAINT CK_Products_PriceQuantity");
     }
 }
 ```
@@ -223,9 +205,9 @@ public class PostgreSqlConstraints : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("Postgres"))
-        {
-            Create.Table("Users")
+            IfDatabase("Postgres").Delegate(() =>
+    {
+Create.Table("Users")
                 .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
                 .WithColumn("Email").AsString(255).NotNullable()
                 .WithColumn("Age").AsInt32().NotNullable();
@@ -234,16 +216,16 @@ public class PostgreSqlConstraints : Migration
             Create.CheckConstraint("CK_Users_Email_Format")
                 .OnTable("Users")
                 .WithSql("Email ~ '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$'");
-        }
+    });
     }
 
     public override void Down()
     {
-        if (IfDatabase("Postgres"))
-        {
-            Delete.CheckConstraint("CK_Users_Email_Format").FromTable("Users");
+            IfDatabase("Postgres").Delegate(() =>
+    {
+Delete.CheckConstraint("CK_Users_Email_Format").FromTable("Users");
             Delete.Table("Users");
-        }
+    });
     }
 }
 ```

@@ -188,9 +188,9 @@ public class SqlServerAlterations : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            // Add computed column
+            IfDatabase("SqlServer").Delegate(() =>
+    {
+// Add computed column
             Alter.Table("Orders")
                 .AddColumn("TotalWithTax")
                 .AsDecimal(10, 2)
@@ -200,17 +200,17 @@ public class SqlServerAlterations : Migration
             Alter.Table("Documents")
                 .AddColumn("Content").AsCustom("NVARCHAR(MAX)")
                 .AddColumn("UniqueId").AsCustom("UNIQUEIDENTIFIER").WithDefaultValue(SystemMethods.NewGuid);
-        }
+    });
     }
 
     public override void Down()
     {
-        if (IfDatabase("SqlServer"))
-        {
-            Delete.Column("TotalWithTax").FromTable("Orders");
+            IfDatabase("SqlServer").Delegate(() =>
+    {
+Delete.Column("TotalWithTax").FromTable("Orders");
             Delete.Column("Content").FromTable("Documents");
             Delete.Column("UniqueId").FromTable("Documents");
-        }
+    });
     }
 }
 ```
@@ -222,25 +222,25 @@ public class PostgreSqlAlterations : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("Postgres"))
-        {
-            // Add JSONB column
+            IfDatabase("Postgres").Delegate(() =>
+    {
+// Add JSONB column
             Alter.Table("Settings")
                 .AddColumn("Configuration").AsCustom("JSONB").Nullable();
                 
             // Add array column
             Alter.Table("Users")
                 .AddColumn("Tags").AsCustom("TEXT[]").Nullable();
-        }
+    });
     }
 
     public override void Down()
     {
-        if (IfDatabase("Postgres"))
-        {
-            Delete.Column("Configuration").FromTable("Settings");
+            IfDatabase("Postgres").Delegate(() =>
+    {
+Delete.Column("Configuration").FromTable("Settings");
             Delete.Column("Tags").FromTable("Users");
-        }
+    });
     }
 }
 ```

@@ -136,9 +136,7 @@ public class MigrateLargeDataset : Migration
     public override void Up()
     {
         // For very large tables, process in batches
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 DECLARE @BatchSize INT = 10000;
                 DECLARE @RowsUpdated INT = @BatchSize;
                 
@@ -153,10 +151,7 @@ public class MigrateLargeDataset : Migration
                     -- Brief pause to avoid overwhelming the database
                     WAITFOR DELAY '00:00:01';
                 END");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            Execute.Sql(@"
+    IfDatabase("Postgres").Execute.Sql(@"
                 DO $$
                 DECLARE
                     batch_size INTEGER := 10000;
@@ -178,7 +173,6 @@ public class MigrateLargeDataset : Migration
                         PERFORM pg_sleep(1);
                     END LOOP;
                 END $$");
-        }
     }
 
     public override void Down()
@@ -200,20 +194,14 @@ public class AddEmailWithValidation : Migration
             .AddColumn("Email").AsString(255).Nullable();
             
         // Add check constraint for email format
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 ALTER TABLE Users 
                 ADD CONSTRAINT CK_Users_Email_Format 
                 CHECK (Email IS NULL OR Email LIKE '%_@_%.__%')");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            Execute.Sql(@"
+    IfDatabase("Postgres").Execute.Sql(@"
                 ALTER TABLE Users 
                 ADD CONSTRAINT CK_Users_Email_Format 
                 CHECK (Email IS NULL OR Email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')");
-        }
         
         // Create unique index for non-null emails
         Execute.Sql(@"
@@ -226,14 +214,8 @@ public class AddEmailWithValidation : Migration
     {
         Execute.Sql("DROP INDEX IF EXISTS UQ_Users_Email");
         
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql("ALTER TABLE Users DROP CONSTRAINT CK_Users_Email_Format");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            Execute.Sql("ALTER TABLE Users DROP CONSTRAINT CK_Users_Email_Format");
-        }
+            IfDatabase("SqlServer").Execute.Sql("ALTER TABLE Users DROP CONSTRAINT CK_Users_Email_Format");
+    IfDatabase("Postgres").Execute.Sql("ALTER TABLE Users DROP CONSTRAINT CK_Users_Email_Format");
         
         Delete.Column("Email").FromTable("Users");
     }
@@ -283,32 +265,26 @@ public class OptimizeUserTableIndexes : Migration
             .OnColumn("CreatedAt");   // Used for sorting
             
         // 4. Covering indexes for read-heavy queries
-        if (IfDatabase("SqlServer"))
-        {
-            Create.Index("IX_OptimizedUsers_Status_Covering")
+            IfDatabase("SqlServer").Delegate(() =>
+    {
+Create.Index("IX_OptimizedUsers_Status_Covering")
                 .OnTable("OptimizedUsers")
                 .OnColumn("Status")
                 .WithOptions()
                 .Include("Username")
                 .Include("Email")
                 .Include("CreatedAt");
-        }
+    });
         
         // 5. Filtered indexes for common subsets
-        if (IfDatabase("SqlServer"))
-        {
-            Execute.Sql(@"
+            IfDatabase("SqlServer").Execute.Sql(@"
                 CREATE INDEX IX_OptimizedUsers_ActiveUsers 
                 ON OptimizedUsers (CreatedAt DESC) 
                 WHERE Status = 'Active'");
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            Execute.Sql(@"
+    IfDatabase("Postgres").Execute.Sql(@"
                 CREATE INDEX IX_OptimizedUsers_ActiveUsers 
                 ON OptimizedUsers (CreatedAt DESC) 
                 WHERE Status = 'Active'");
-        }
     }
 
     public override void Down()

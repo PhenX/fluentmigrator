@@ -25,7 +25,7 @@ public class ComplexDataTypeMigration : Migration
             .WithColumn("RawJson").AsString(4000).Nullable(); // Keep original for rollback
             
         // Extract structured data from JSON
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             Execute.Sql(@"
                 INSERT INTO UserPreferencesStaging (
@@ -42,7 +42,7 @@ public class ComplexDataTypeMigration : Migration
                 FROM UserPreferences
                 WHERE PreferencesJson IS NOT NULL");
         }
-        else if (IfDatabase("Postgres"))
+        else IfDatabase("Postgres").Delegate(() =>
         {
             Execute.Sql(@"
                 INSERT INTO UserPreferencesStaging (
@@ -406,7 +406,7 @@ public class UniversalDataTypeMigration : Migration
     
     private void AddDatabaseSpecificColumns()
     {
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             Alter.Table("UniversalDataTypes")
                 .AddColumn("XmlData").AsCustom("XML").Nullable()
@@ -414,7 +414,7 @@ public class UniversalDataTypeMigration : Migration
                 .AddColumn("GeographicData").AsCustom("GEOGRAPHY").Nullable()
                 .AddColumn("RowVersion").AsCustom("ROWVERSION").NotNullable();
         }
-        else if (IfDatabase("Postgres"))
+        else IfDatabase("Postgres").Delegate(() =>
         {
             Alter.Table("UniversalDataTypes")
                 .AddColumn("JsonData").AsCustom("JSONB").Nullable()
@@ -422,7 +422,7 @@ public class UniversalDataTypeMigration : Migration
                 .AddColumn("NumericRange").AsCustom("NUMRANGE").Nullable()
                 .AddColumn("NetworkAddress").AsCustom("INET").Nullable();
         }
-        else if (IfDatabase("MySQL"))
+        else IfDatabase("MySQL").Delegate(() =>
         {
             Alter.Table("UniversalDataTypes")
                 .AddColumn("JsonData").AsCustom("JSON").Nullable()
@@ -430,14 +430,14 @@ public class UniversalDataTypeMigration : Migration
                 .AddColumn("SetValue").AsCustom("SET('red','green','blue')").Nullable()
                 .AddColumn("GeometryData").AsCustom("GEOMETRY").Nullable();
         }
-        else if (IfDatabase("SQLite"))
+        else IfDatabase("SQLite").Delegate(() =>
         {
             // SQLite stores everything as text, numbers, or blobs
             Alter.Table("UniversalDataTypes")
                 .AddColumn("JsonText").AsString(4000).Nullable()
                 .AddColumn("TagsText").AsString(1000).Nullable(); // Comma-separated
         }
-        else if (IfDatabase("Oracle"))
+        else IfDatabase("Oracle").Delegate(() =>
         {
             Alter.Table("UniversalDataTypes")
                 .AddColumn("XmlData").AsCustom("XMLType").Nullable()
@@ -460,7 +460,7 @@ public class UniversalDataTypeMigration : Migration
             .OnColumn("CreatedAt");
             
         // Database-specific index optimizations
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             // Filtered index for active records only
             Execute.Sql(@"
@@ -474,7 +474,7 @@ public class UniversalDataTypeMigration : Migration
                 Execute.Sql("CREATE FULLTEXT INDEX ON UniversalDataTypes (Description)");
             }
         }
-        else if (IfDatabase("Postgres"))
+        else IfDatabase("Postgres").Delegate(() =>
         {
             // Partial index for active records
             Execute.Sql(@"
@@ -490,7 +490,7 @@ public class UniversalDataTypeMigration : Migration
                     ON UniversalDataTypes USING GIN (JsonData)");
             }
         }
-        else if (IfDatabase("MySQL"))
+        else IfDatabase("MySQL").Delegate(() =>
         {
             // MySQL-specific index hints
             Execute.Sql(@"
@@ -517,28 +517,28 @@ public class UniversalDataTypeMigration : Migration
             .Unique();
             
         // Database-specific constraints
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             Execute.Sql(@"
                 ALTER TABLE UniversalDataTypes 
                 ADD CONSTRAINT CK_UniversalDataTypes_Amount_Positive 
                 CHECK (Amount >= 0)");
         }
-        else if (IfDatabase("Postgres"))
+        else IfDatabase("Postgres").Delegate(() =>
         {
             Execute.Sql(@"
                 ALTER TABLE UniversalDataTypes 
                 ADD CONSTRAINT CK_UniversalDataTypes_Amount_Positive 
                 CHECK (Amount >= 0)");
         }
-        else if (IfDatabase("MySQL"))
+        else IfDatabase("MySQL").Delegate(() =>
         {
             Execute.Sql(@"
                 ALTER TABLE UniversalDataTypes 
                 ADD CONSTRAINT CK_UniversalDataTypes_Amount_Positive 
                 CHECK (Amount >= 0)");
         }
-        else if (IfDatabase("SQLite"))
+        else IfDatabase("SQLite").Delegate(() =>
         {
             // SQLite check constraints
             Execute.Sql(@"
@@ -555,11 +555,11 @@ public class UniversalDataTypeMigration : Migration
     public override void Down()
     {
         // Clean up database-specific objects
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             Execute.Sql("DROP FULLTEXT INDEX ON UniversalDataTypes");
         }
-        else if (IfDatabase("SQLite"))
+        else IfDatabase("SQLite").Delegate(() =>
         {
             Execute.Sql("DROP TRIGGER IF EXISTS TR_UniversalDataTypes_Amount_Check");
         }
@@ -593,7 +593,7 @@ public class FeatureDetectionMigration : Migration
     {
         Console.WriteLine("Adding JSON support...");
         
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             // Check for SQL Server 2016+ JSON support
             try
@@ -617,7 +617,7 @@ public class FeatureDetectionMigration : Migration
                 Console.WriteLine("SQL Server JSON not available, using XML");
             }
         }
-        else if (IfDatabase("Postgres"))
+        else IfDatabase("Postgres").Delegate(() =>
         {
             // PostgreSQL has excellent JSON support
             Alter.Table("FeatureDetectionTable")
@@ -629,7 +629,7 @@ public class FeatureDetectionMigration : Migration
                 
             Console.WriteLine("PostgreSQL JSONB support enabled");
         }
-        else if (IfDatabase("MySQL"))
+        else IfDatabase("MySQL").Delegate(() =>
         {
             // Check MySQL version for JSON support
             try
@@ -662,7 +662,7 @@ public class FeatureDetectionMigration : Migration
         
         try
         {
-            if (IfDatabase("SqlServer"))
+            IfDatabase("SqlServer").Delegate(() =>
             {
                 // Check if full-text is available
                 var fullTextAvailable = Execute.Sql(@"
@@ -682,7 +682,7 @@ public class FeatureDetectionMigration : Migration
                     CreateBasicTextIndex();
                 }
             }
-            else if (IfDatabase("Postgres"))
+            else IfDatabase("Postgres").Delegate(() =>
             {
                 Execute.Sql(@"
                     ALTER TABLE FeatureDetectionTable 
@@ -700,7 +700,7 @@ public class FeatureDetectionMigration : Migration
                     
                 Console.WriteLine("PostgreSQL full-text search enabled");
             }
-            else if (IfDatabase("MySQL"))
+            else IfDatabase("MySQL").Delegate(() =>
             {
                 Execute.Sql(@"
                     CREATE FULLTEXT INDEX IX_FeatureDetectionTable_FullText 
@@ -731,7 +731,7 @@ public class FeatureDetectionMigration : Migration
     {
         Console.WriteLine("Adding computed columns...");
         
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             Execute.Sql(@"
                 ALTER TABLE FeatureDetectionTable 
@@ -743,7 +743,7 @@ public class FeatureDetectionMigration : Migration
                 
             Console.WriteLine("SQL Server computed columns added");
         }
-        else if (IfDatabase("Postgres"))
+        else IfDatabase("Postgres").Delegate(() =>
         {
             // PostgreSQL doesn't have computed columns, use generated columns (12+)
             try
@@ -790,7 +790,7 @@ public class FeatureDetectionMigration : Migration
     {
         Console.WriteLine("Adding partitioning support...");
         
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             try
             {
@@ -812,7 +812,7 @@ public class FeatureDetectionMigration : Migration
                 Console.WriteLine($"SQL Server partitioning not available: {ex.Message}");
             }
         }
-        else if (IfDatabase("Postgres"))
+        else IfDatabase("Postgres").Delegate(() =>
         {
             try
             {
@@ -844,14 +844,14 @@ public class FeatureDetectionMigration : Migration
     public override void Down()
     {
         // Clean up database-specific features
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             Execute.Sql("DROP PARTITION SCHEME PS_FeatureDetection");
             Execute.Sql("DROP PARTITION FUNCTION PF_FeatureDetection");
             Execute.Sql("DROP FULLTEXT INDEX ON FeatureDetectionTable");
             Execute.Sql("DROP FULLTEXT CATALOG SearchCatalog");
         }
-        else if (IfDatabase("Postgres"))
+        else IfDatabase("Postgres").Delegate(() =>
         {
             Execute.Sql("DROP TABLE IF EXISTS FeatureDetectionPartitioned_1_1000");
             Execute.Sql("DROP TABLE IF EXISTS FeatureDetectionPartitioned");
@@ -899,14 +899,14 @@ public class LargeTableMigration : Migration
     
     private void CreateIndexConcurrently()
     {
-        if (IfDatabase("Postgres"))
+        IfDatabase("Postgres").Delegate(() =>
         {
             // PostgreSQL supports concurrent index creation
             Execute.Sql(@"
                 CREATE INDEX CONCURRENTLY IX_LargeUserTable_EmailVerified 
                 ON LargeUserTable (EmailVerified)");
         }
-        else if (IfDatabase("SqlServer"))
+        else IfDatabase("SqlServer").Delegate(() =>
         {
             // SQL Server online index creation
             Execute.Sql(@"
@@ -942,15 +942,15 @@ public class LargeTableMigration : Migration
         int batchNumber = 1;
         int totalProcessed = 0;
         
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             UpdateSqlServerBatches(ref batchNumber, ref totalProcessed, totalRecords);
         }
-        else if (IfDatabase("Postgres"))
+        else IfDatabase("Postgres").Delegate(() =>
         {
             UpdatePostgresBatches(ref batchNumber, ref totalProcessed, totalRecords);
         }
-        else if (IfDatabase("MySQL"))
+        else IfDatabase("MySQL").Delegate(() =>
         {
             UpdateMySqlBatches(ref batchNumber, ref totalProcessed, totalRecords);
         }
@@ -1416,7 +1416,7 @@ public class LegacySystemIntegration : Migration
             FROM Customers");
             
         // Create stored procedures for legacy system integration
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             Execute.Sql(@"
                 CREATE PROCEDURE sp_GetLegacyCustomer
@@ -1434,7 +1434,7 @@ public class LegacySystemIntegration : Migration
         // Clean up in reverse order
         Execute.Sql("DROP VIEW IF EXISTS LegacyCustomerView");
         
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             Execute.Sql("DROP PROCEDURE IF EXISTS sp_GetLegacyCustomer");
         }
