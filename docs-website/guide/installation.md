@@ -60,9 +60,6 @@ Choose the package for your database provider:
 
 <!-- Amazon Redshift -->
 <PackageReference Include="FluentMigrator.Runner.Redshift" Version="6.2.0" />
-
-<!-- Microsoft Jet (Access) -->
-<PackageReference Include="FluentMigrator.Runner.Jet" Version="6.2.0" />
 ```
 
 ## Installation Methods

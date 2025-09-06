@@ -13,6 +13,7 @@ export default defineConfig({
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Documentation', link: '/guide/introduction' },
+      { text: 'Release notes', link: 'https://github.com/fluentmigrator/fluentmigrator/releases' },
       { 
         text: 'GitHub',
         link: 'https://github.com/fluentmigrator/fluentmigrator'

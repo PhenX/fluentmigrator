@@ -119,7 +119,6 @@ This allows loading migration assemblies (e.g., .NET 6.0) in a different runtime
 | **SAP HANA** | `Hana` | |
 | **DB2** | `DB2` | |
 | **DB2 iSeries** | `DB2 iSeries` | `DB2` |
-| **Microsoft JET (Access)** | `Jet` | |
 
 **Notes:**
 1. ¹² ³ All integration tests pass using SqlServer2016 dialect
