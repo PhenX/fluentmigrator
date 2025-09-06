@@ -34,7 +34,7 @@ export default defineConfig({
           items: [
             { text: 'Creating Tables', link: '/guide/operations/create-tables' },
             { text: 'Altering Tables', link: '/guide/operations/alter-tables' },
-            { text: 'Managing Columns', link: '/guide/operations/columns' },
+            { text: 'Columns', link: '/guide/operations/columns' },
             { text: 'Data Operations', link: '/guide/operations/data' },
             { text: 'Schema Operations', link: '/guide/operations/schema' }
           ]
@@ -42,10 +42,10 @@ export default defineConfig({
         {
           text: 'Basics',
           items: [
-            { text: 'Managing Columns', link: '/guide/managing-columns' },
-            { text: 'Managing Indexes', link: '/guide/managing-indexes' },
-            { text: 'Working with Constraints', link: '/guide/working-with-constraints' },
-            { text: 'Working with Foreign Keys', link: '/guide/working-with-foreign-keys' },
+            { text: 'Columns', link: '/guide/managing-columns' },
+            { text: 'Indexes', link: '/guide/managing-indexes' },
+            { text: 'Constraints', link: '/guide/working-with-constraints' },
+            { text: 'Foreign Keys', link: '/guide/working-with-foreign-keys' },
             { text: 'Raw SQL Helper', link: '/guide/raw-sql' }
           ]
         },
