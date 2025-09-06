@@ -69,6 +69,14 @@ export default defineConfig({
           ]
         },
         {
+          text: 'Migration Types',
+          items: [
+            { text: 'Maintenance Migrations', link: '/guide/migration-types/maintenance' },
+            { text: 'Tags', link: '/guide/migration-types/tags' },
+            { text: 'Profiles', link: '/guide/migration-types/profiles' }
+          ]
+        },
+        {
           text: 'Advanced Topics',
           items: [
             { text: 'DBMS Extensions', link: '/guide/advanced/dbms-extensions' },
@@ -76,9 +84,7 @@ export default defineConfig({
             { text: 'Best Practices', link: '/guide/advanced/best-practices' },
             { text: 'Migration Versioning', link: '/guide/advanced/versioning' },
             { text: 'Conditional Logic', link: '/guide/advanced/conditional-logic' },
-            { text: 'Custom Extensions', link: '/guide/advanced/custom-extensions' },
-            { text: 'Profiles', link: '/guide/advanced/profiles' },
-            { text: 'Tags', link: '/guide/advanced/tags' }
+            { text: 'Custom Extensions', link: '/guide/advanced/custom-extensions' }
           ]
         },
         {
