@@ -590,6 +590,6 @@ public class OptimizedIndexes : Migration
 
 ## Next Steps
 
-- [Edge Cases](./edge-cases.md) - Learn about handling edge cases in migrations
+- [FAQ & Troubleshooting](../faq.md) - Learn about handling edge cases in migrations
 - [Best Practices](./best-practices.md) - Discover migration best practices
 - [Provider Comparisons](../providers/others.md) - Compare features across providers

@@ -153,7 +153,7 @@ public class AddTableConstraints : Migration
 }
 ```
 
-For comprehensive constraint management, including complex validation rules and cross-database compatibility, see [Working with Constraints](/guide/working-with-constraints).
+For comprehensive constraint management, including complex validation rules and cross-database compatibility, see [Working with Constraints](../working-with-constraints.md).
 
 ### Removing Table Constraints
 
@@ -452,7 +452,7 @@ public class SafeNotNullConversion : Migration
 ## See Also
 
 - [Creating Tables](create-tables.md)
-- [Managing Columns](columns.md)
-- [Managing Indexes](/guide/managing-indexes)
-- [Working with Foreign Keys](/guide/working-with-foreign-keys)
+- [Managing Columns](../managing-columns.md)
+- [Managing Indexes](../managing-indexes.md)
+- [Working with Foreign Keys](../working-with-foreign-keys.md)
 - [Best Practices](../advanced/best-practices.md)

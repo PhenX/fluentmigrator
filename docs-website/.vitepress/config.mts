@@ -57,10 +57,10 @@ export default defineConfig({
                 {
                     text: 'Basics',
                     items: [
-                        {text: 'Columns', link: '/guide/managing-columns'},
-                        {text: 'Indexes', link: '/guide/managing-indexes'},
-                        {text: 'Constraints', link: '/guide/working-with-constraints'},
-                        {text: 'Foreign Keys', link: '/guide/working-with-foreign-keys'},
+                        {text: 'Managing Columns', link: '/guide/managing-columns'},
+                        {text: 'Managing Indexes', link: '/guide/managing-indexes'},
+                        {text: 'Working with Constraints', link: '/guide/working-with-constraints'},
+                        {text: 'Working with Foreign Keys', link: '/guide/working-with-foreign-keys'},
                         {text: 'Raw SQL Helpers', link: '/guide/raw-sql-scripts'}
                     ]
                 },

@@ -1029,4 +1029,4 @@ public class MySqlTroubleshooting : Migration
 - [PostgreSQL Provider](./postgresql.md)
 - [SQL Server Provider](./sql-server.md)
 - [Best Practices](../advanced/best-practices.md)
-- [Troubleshooting](../advanced/edge-cases.md)
+- [FAQ & Troubleshooting](../faq.md)

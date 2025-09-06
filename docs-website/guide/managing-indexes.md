@@ -754,9 +754,9 @@ See: [Raw SQL (Scripts & Helpers)](../raw-sql-scripts.md)
 
 ## See Also
 
-- [Creating Tables](create-tables.md)
-- [Altering Tables](alter-tables.md)
-- [Managing Columns](columns.md)
-- [Foreign Keys](foreign-keys.md)
+- [Creating Tables](../operations/create-tables.md)
+- [Altering Tables](../operations/alter-tables.md)
+- [Managing Columns](../managing-columns.md)
+- [Working with Foreign Keys](../working-with-foreign-keys.md)
 - [Best Practices](../advanced/best-practices.md)
 - [Database Provider Specific Features](../providers/)

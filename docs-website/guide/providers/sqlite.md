@@ -1095,4 +1095,4 @@ public class SQLiteTroubleshooting : Migration
 - [MySQL Provider](./mysql.md)
 - [SQL Server Provider](./sql-server.md)
 - [Best Practices](../advanced/best-practices.md)
-- [Troubleshooting](../advanced/edge-cases.md)
+- [FAQ & Troubleshooting](../faq.md)

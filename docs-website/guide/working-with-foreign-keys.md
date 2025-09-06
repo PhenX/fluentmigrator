@@ -816,10 +816,10 @@ public class CircularReferences : Migration
 
 ## See Also
 
-- [Creating Tables](create-tables.md)
-- [Altering Tables](alter-tables.md)
-- [Managing Columns](columns.md)
-- [Working with Indexes](indexes.md)
-- [Data Operations](data.md)
+- [Creating Tables](../operations/create-tables.md)
+- [Altering Tables](../operations/alter-tables.md)
+- [Managing Columns](../managing-columns.md)
+- [Managing Indexes](../managing-indexes.md)
+- [Data Operations](../operations/data.md)
 - [Best Practices](../advanced/best-practices.md)
 - [Database Providers](../providers/)

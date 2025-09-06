@@ -1125,6 +1125,6 @@ Effective migration versioning ensures smooth database evolution and team collab
 
 - [Best Practices](best-practices.md)
 - [Conditional Logic](conditional-logic.md)
-- [Edge Cases and Troubleshooting](edge-cases.md)
+- [FAQ & Troubleshooting](../faq.md)
 - [Database Providers](../providers/)
 - [Common Operations](../operations/)

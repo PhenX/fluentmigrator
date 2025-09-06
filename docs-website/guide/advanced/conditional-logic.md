@@ -1388,6 +1388,6 @@ Conditional logic in migrations enables powerful, adaptive database evolution wh
 
 - [Best Practices](best-practices.md)
 - [Migration Versioning](versioning.md)
-- [Edge Cases and Troubleshooting](edge-cases.md)
+- [FAQ & Troubleshooting](../faq.md)
 - [Database Providers](../providers/)
 - [Common Operations](../operations/)

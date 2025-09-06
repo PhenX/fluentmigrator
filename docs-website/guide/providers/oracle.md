@@ -1336,4 +1336,4 @@ public class OracleTroubleshooting : Migration
 - [SQL Server Provider](./sql-server.md)
 - [SQLite Provider](./sqlite.md)
 - [Best Practices](../advanced/best-practices.md)
-- [Troubleshooting](../advanced/edge-cases.md)
+- [FAQ & Troubleshooting](../faq.md)

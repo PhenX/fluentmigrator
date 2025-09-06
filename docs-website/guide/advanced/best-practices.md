@@ -1255,7 +1255,7 @@ This comprehensive best practices guide provides the foundation for successful d
 
 ## See Also
 
-- [Edge Cases and Troubleshooting](edge-cases.md)
+- [FAQ & Troubleshooting](../faq.md)
 - [Migration Versioning](versioning.md)
 - [Conditional Logic](conditional-logic.md)
 - [Database Providers](../providers/)

@@ -167,7 +167,7 @@ Create.Table("Orders")
     .WithColumn("Total").AsDecimal(10, 2).NotNullable();
 ```
 
-For comprehensive foreign key management, including cascading actions, self-referencing relationships, and complex constraint scenarios, see [Working with Foreign Keys](/guide/working-with-foreign-keys).
+For comprehensive foreign key management, including cascading actions, self-referencing relationships, and complex constraint scenarios, see [Working with Foreign Keys](../working-with-foreign-keys.md).
 
 ## Table-Level Constraints
 
@@ -204,7 +204,7 @@ Create.Table("Users")
 Create.Index("IX_Users_Email").OnTable("Users").OnColumn("Email");
 ```
 
-For comprehensive index management, including composite indexes, unique indexes, performance optimization, and database-specific features, see [Managing Indexes](/guide/managing-indexes).
+For comprehensive index management, including composite indexes, unique indexes, performance optimization, and database-specific features, see [Managing Indexes](../managing-indexes.md).
 
 ## Schema Support
 
@@ -343,6 +343,6 @@ Insert.IntoTable("OrderStatuses")
 ## Next Steps
 
 - [Altering Tables](./alter-tables.md) - Learn how to modify existing tables
-- [Managing Columns](./columns.md) - Deep dive into column operations
-- [Managing Indexes](/guide/managing-indexes) - Advanced indexing strategies
-- [Working with Foreign Keys](/guide/working-with-foreign-keys) - Relationship management
+- [Managing Columns](../managing-columns.md) - Deep dive into column operations
+- [Managing Indexes](../managing-indexes.md) - Advanced indexing strategies
+- [Working with Foreign Keys](../working-with-foreign-keys.md) - Relationship management
