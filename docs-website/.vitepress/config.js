@@ -43,7 +43,6 @@ export default defineConfig({
         {
           text: 'Migration Runners',
           items: [
-            { text: 'Overview', link: '/guide/runners/' },
             { text: 'In-Process Runner', link: '/guide/runners/in-process' },
             { text: 'Console Tool (Migrate.exe)', link: '/guide/runners/console' },
             { text: 'dotnet-fm CLI', link: '/guide/runners/dotnet-fm' }
