@@ -12,9 +12,7 @@ export default defineConfig({
     
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Quick Start', link: '/guide/quick-start' },
-      { text: 'API Reference', link: '/api/' },
-      { text: 'Examples', link: '/examples/' },
+      { text: 'Documentation', link: '/guide/introduction' },
       { 
         text: 'GitHub',
         link: 'https://github.com/fluentmigrator/fluentmigrator'
@@ -87,26 +85,6 @@ export default defineConfig({
           text: 'Help & Support',
           items: [
             { text: 'FAQ', link: '/guide/faq' }
-          ]
-        }
-      ],
-      '/api/': [
-        {
-          text: 'Core API',
-          items: [
-            { text: 'Migration Base', link: '/api/migration-base' },
-            { text: 'Builders', link: '/api/builders' },
-            { text: 'Expressions', link: '/api/expressions' }
-          ]
-        }
-      ],
-      '/examples/': [
-        {
-          text: 'Examples',
-          items: [
-            { text: 'Basic Examples', link: '/examples/basic' },
-            { text: 'Advanced Scenarios', link: '/examples/advanced' },
-            { text: 'Real-world Use Cases', link: '/examples/real-world' }
           ]
         }
       ]
