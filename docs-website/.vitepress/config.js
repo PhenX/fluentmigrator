@@ -46,8 +46,7 @@ export default defineConfig({
             { text: 'Managing Indexes', link: '/guide/managing-indexes' },
             { text: 'Working with Constraints', link: '/guide/working-with-constraints' },
             { text: 'Working with Foreign Keys', link: '/guide/working-with-foreign-keys' },
-            { text: 'Raw SQL Helper', link: '/guide/raw-sql' },
-            { text: 'Profiles', link: '/guide/profiles' }
+            { text: 'Raw SQL Helper', link: '/guide/raw-sql' }
           ]
         },
         {
@@ -77,7 +76,9 @@ export default defineConfig({
             { text: 'Best Practices', link: '/guide/advanced/best-practices' },
             { text: 'Migration Versioning', link: '/guide/advanced/versioning' },
             { text: 'Conditional Logic', link: '/guide/advanced/conditional-logic' },
-            { text: 'Custom Extensions', link: '/guide/advanced/custom-extensions' }
+            { text: 'Custom Extensions', link: '/guide/advanced/custom-extensions' },
+            { text: 'Profiles', link: '/guide/advanced/profiles' },
+            { text: 'Tags', link: '/guide/advanced/tags' }
           ]
         },
         {
