@@ -34,7 +34,7 @@ export default defineConfig({
         {
           text: 'Basics',
           items: [
-            { text: 'Fluent Interface', link: '/guide/fluent-interface' },
+            { text: 'Column Types and Modifiers', link: '/guide/column-types-modifiers' },
             { text: 'Raw SQL Helper', link: '/guide/raw-sql' },
             { text: 'Profiles', link: '/guide/profiles' }
           ]
@@ -78,7 +78,8 @@ export default defineConfig({
             { text: 'Edge Cases', link: '/guide/advanced/edge-cases' },
             { text: 'Best Practices', link: '/guide/advanced/best-practices' },
             { text: 'Migration Versioning', link: '/guide/advanced/versioning' },
-            { text: 'Conditional Logic', link: '/guide/advanced/conditional-logic' }
+            { text: 'Conditional Logic', link: '/guide/advanced/conditional-logic' },
+            { text: 'Custom Extensions', link: '/guide/advanced/custom-extensions' }
           ]
         },
         {
