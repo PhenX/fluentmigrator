@@ -32,6 +32,23 @@ export default defineConfig({
           ]
         },
         {
+          text: 'Basics',
+          items: [
+            { text: 'Fluent Interface', link: '/guide/fluent-interface' },
+            { text: 'Raw SQL Helper', link: '/guide/raw-sql' },
+            { text: 'Profiles', link: '/guide/profiles' }
+          ]
+        },
+        {
+          text: 'Migration Runners',
+          items: [
+            { text: 'Overview', link: '/guide/runners/' },
+            { text: 'In-Process Runner', link: '/guide/runners/in-process' },
+            { text: 'Console Tool (Migrate.exe)', link: '/guide/runners/console' },
+            { text: 'dotnet-fm CLI', link: '/guide/runners/dotnet-fm' }
+          ]
+        },
+        {
           text: 'Common Operations',
           items: [
             { text: 'Creating Tables', link: '/guide/operations/create-tables' },
@@ -62,6 +79,12 @@ export default defineConfig({
             { text: 'Best Practices', link: '/guide/advanced/best-practices' },
             { text: 'Migration Versioning', link: '/guide/advanced/versioning' },
             { text: 'Conditional Logic', link: '/guide/advanced/conditional-logic' }
+          ]
+        },
+        {
+          text: 'Help & Support',
+          items: [
+            { text: 'FAQ', link: '/guide/faq' }
           ]
         }
       ],
