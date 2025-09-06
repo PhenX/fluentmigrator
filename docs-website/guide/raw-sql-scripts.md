@@ -42,27 +42,20 @@ Execute.Sql(@"
 ```csharp
 public override void Up()
 {
-    if (IfDatabase("SqlServer"))
-    {
-        Execute.Sql(@"
-            UPDATE Users 
-            SET LastLogin = GETUTCDATE()
-            WHERE Email LIKE '%@company.com'");
-    }
-    else if (IfDatabase("Postgres"))
-    {
-        Execute.Sql(@"
-            UPDATE Users 
-            SET LastLogin = NOW()
-            WHERE Email LIKE '%@company.com'");
-    }
-    else if (IfDatabase("MySQL"))
-    {
-        Execute.Sql(@"
-            UPDATE Users 
-            SET LastLogin = UTC_TIMESTAMP()
-            WHERE Email LIKE '%@company.com'");
-    }
+    IfDatabase("SqlServer").Execute.Sql(@"
+        UPDATE Users 
+        SET LastLogin = GETUTCDATE()
+        WHERE Email LIKE '%@company.com'");
+
+    IfDatabase("Postgres").Execute.Sql(@"
+        UPDATE Users 
+        SET LastLogin = NOW()
+        WHERE Email LIKE '%@company.com'");
+
+    IfDatabase("MySQL").Execute.Sql(@"
+        UPDATE Users 
+        SET LastLogin = UTC_TIMESTAMP()
+        WHERE Email LIKE '%@company.com'");
 }
 ```
 
@@ -226,33 +219,26 @@ public override void Up()
         .WithColumn("EventType").AsString(50).NotNullable();
 
     // Insert initial record with database-specific functions
-    if (IfDatabase("SqlServer"))
+    IfDatabase("SqlServer").Insert.IntoTable("SystemEvents").Row(new
     {
-        Insert.IntoTable("SystemEvents").Row(new
-        {
-            EventTime = RawSql.Insert("GETUTCDATE()"),
-            Username = RawSql.Insert("SUSER_SNAME()"),
-            EventType = "SystemInitialized"
-        });
-    }
-    else if (IfDatabase("Postgres"))
+        EventTime = RawSql.Insert("GETUTCDATE()"),
+        Username = RawSql.Insert("SUSER_SNAME()"),
+        EventType = "SystemInitialized"
+    });
+
+    IfDatabase("Postgres").Insert.IntoTable("SystemEvents").Row(new
     {
-        Insert.IntoTable("SystemEvents").Row(new
-        {
-            EventTime = RawSql.Insert("NOW()"),
-            Username = RawSql.Insert("current_user"),
-            EventType = "SystemInitialized"
-        });
-    }
-    else if (IfDatabase("MySQL"))
+        EventTime = RawSql.Insert("NOW()"),
+        Username = RawSql.Insert("current_user"),
+        EventType = "SystemInitialized"
+    });
+
+    IfDatabase("MySQL").Insert.IntoTable("SystemEvents").Row(new
     {
-        Insert.IntoTable("SystemEvents").Row(new
-        {
-            EventTime = RawSql.Insert("UTC_TIMESTAMP()"),
-            Username = RawSql.Insert("USER()"),
-            EventType = "SystemInitialized"
-        });
-    }
+        EventTime = RawSql.Insert("UTC_TIMESTAMP()"),
+        Username = RawSql.Insert("USER()"),
+        EventType = "SystemInitialized"
+    });
 }
 ```
 
@@ -271,7 +257,7 @@ public override void Up()
     if (recordCount > 100000)
     {
         // Use batch processing for large datasets
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             Execute.Sql(@"
                 DECLARE @BatchSize INT = 5000;
@@ -284,16 +270,15 @@ public override void Up()
                     -- Prevent blocking
                     WAITFOR DELAY '00:00:01';
                 END");
-        }
-        else
-        {
-            // For other databases, use smaller batches
-            Execute.Sql(@"
-                UPDATE Users 
-                SET UpdatedAt = NOW()
-                WHERE UpdatedAt IS NULL
-                LIMIT 5000");
-        }
+        });
+        
+        // For other databases, use smaller batches - but we need a way to handle "not SqlServer"
+        // Since IfDatabase doesn't have a "not" operator, we'll handle common alternatives explicitly
+        IfDatabase("Postgres", "MySQL", "SQLite").Execute.Sql(@"
+            UPDATE Users 
+            SET UpdatedAt = NOW()
+            WHERE UpdatedAt IS NULL
+            LIMIT 5000");
     }
     else
     {
@@ -308,38 +293,36 @@ public override void Up()
 ```csharp
 public override void Up()
 {
-    if (IfDatabase("SqlServer"))
-    {
-        Execute.Sql(@"
-            BEGIN TRANSACTION;
+    IfDatabase("SqlServer").Execute.Sql(@"
+        BEGIN TRANSACTION;
+        
+        BEGIN TRY
+            -- Complex multi-step operation
+            UPDATE Users SET Status = 'Migrated' WHERE Status = 'Active';
             
-            BEGIN TRY
-                -- Complex multi-step operation
-                UPDATE Users SET Status = 'Migrated' WHERE Status = 'Active';
+            INSERT INTO UserHistory (UserId, Action, Timestamp)
+            SELECT Id, 'StatusChanged', GETDATE() FROM Users WHERE Status = 'Migrated';
+            
+            -- Verify results
+            IF @@ROWCOUNT = 0
+                THROW 50001, 'No rows were migrated', 1;
                 
-                INSERT INTO UserHistory (UserId, Action, Timestamp)
-                SELECT Id, 'StatusChanged', GETDATE() FROM Users WHERE Status = 'Migrated';
-                
-                -- Verify results
-                IF @@ROWCOUNT = 0
-                    THROW 50001, 'No rows were migrated', 1;
-                    
-                COMMIT TRANSACTION;
-            END TRY
-            BEGIN CATCH
-                ROLLBACK TRANSACTION;
-                THROW;
-            END CATCH");
-    }
-    else
+            COMMIT TRANSACTION;
+        END TRY
+        BEGIN CATCH
+            ROLLBACK TRANSACTION;
+            THROW;
+        END CATCH");
+
+    // FluentMigrator handles transactions automatically for other databases
+    IfDatabase("Postgres", "MySQL", "SQLite").Delegate(() =>
     {
-        // FluentMigrator handles transactions automatically for other databases
         Execute.Sql("UPDATE Users SET Status = 'Migrated' WHERE Status = 'Active'");
         
         Execute.Sql(@"
             INSERT INTO UserHistory (UserId, Action, Timestamp)
             SELECT Id, 'StatusChanged', NOW() FROM Users WHERE Status = 'Migrated'");
-    }
+    });
 }
 ```
 
@@ -375,7 +358,7 @@ public override void Up()
 
 #### SQL Server Specific
 ```csharp
-if (IfDatabase("SqlServer"))
+IfDatabase("SqlServer").Delegate(() =>
 {
     // Create full-text catalog and index
     Execute.Sql("CREATE FULLTEXT CATALOG DocumentsCatalog AS DEFAULT");
@@ -399,12 +382,12 @@ if (IfDatabase("SqlServer"))
         GROUP BY CustomerId");
         
     Execute.Sql("CREATE UNIQUE CLUSTERED INDEX IX_OrderSummary ON OrderSummaryView(CustomerId)");
-}
+});
 ```
 
 #### PostgreSQL Specific
 ```csharp
-if (IfDatabase("Postgres"))
+IfDatabase("Postgres").Delegate(() =>
 {
     // Create custom data types
     Execute.Sql("CREATE TYPE order_status AS ENUM ('pending', 'processing', 'shipped', 'delivered')");
@@ -423,7 +406,7 @@ if (IfDatabase("Postgres"))
         SET search_vector = to_tsvector('english', Title || ' ' || COALESCE(Content, ''))");
         
     Execute.Sql("CREATE INDEX IX_Documents_Search ON Documents USING GIN (search_vector)");
-}
+});
 ```
 
 ## Best Practices and Limitations
@@ -431,7 +414,7 @@ if (IfDatabase("Postgres"))
 ### ✅ Best Practices
 
 1. **Use Execute.Sql for complex operations** not supported by fluent API
-2. **Combine with IfDatabase()** for cross-database compatibility
+2. **Combine with IfDatabase()** for cross-database compatibility using fluent syntax like `IfDatabase("SqlServer").Execute.Sql(...)`
 3. **Validate data before operations** using Returns() methods
 4. **Handle large datasets efficiently** with batch processing
 5. **Document database-specific dependencies** in migration comments
@@ -528,7 +511,7 @@ public class UpdateStatistics : Migration
 {
     public override void Up()
     {
-        if (IfDatabase("SqlServer"))
+        IfDatabase("SqlServer").Delegate(() =>
         {
             // Update table statistics
             Execute.Sql("UPDATE STATISTICS Users");
@@ -544,13 +527,14 @@ public class UpdateStatistics : Migration
                 WHERE i.avg_fragmentation_in_percent > 30;
                 
                 EXEC sp_executesql @sql;");
-        }
-        else if (IfDatabase("Postgres"))
+        });
+
+        IfDatabase("Postgres").Delegate(() =>
         {
             Execute.Sql("VACUUM ANALYZE Users");
             Execute.Sql("VACUUM ANALYZE Orders");
             Execute.Sql("VACUUM ANALYZE Products");
-        }
+        });
     }
     
     public override void Down() { /* Maintenance operations typically don't need rollback */ }

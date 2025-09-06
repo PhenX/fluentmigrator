@@ -12,7 +12,7 @@ The following operations support automatic reversal:
 
 #### Table Operations
 ```csharp
-public class CreateUserTable : Migration
+public class CreateUserTable : AutoReversingMigration
 {
     public override void Up()
     {
@@ -31,7 +31,7 @@ public class CreateUserTable : Migration
 
 #### Column Operations
 ```csharp
-public class AddUserColumns : Migration
+public class AddUserColumns : AutoReversingMigration
 {
     public override void Up()
     {
@@ -51,7 +51,7 @@ public class AddUserColumns : Migration
 
 #### Index Operations
 ```csharp
-public class AddUserIndexes : Migration
+public class AddUserIndexes : AutoReversingMigration
 {
     public override void Up()
     {
@@ -72,7 +72,7 @@ public class AddUserIndexes : Migration
 
 #### Foreign Key Constraints
 ```csharp
-public class AddOrderForeignKeys : Migration
+public class AddOrderForeignKeys : AutoReversingMigration
 {
     public override void Up()
     {
@@ -90,7 +90,7 @@ public class AddOrderForeignKeys : Migration
 
 #### Schema Operations
 ```csharp
-public class CreateReportingSchema : Migration
+public class CreateReportingSchema : AutoReversingMigration
 {
     public override void Up()
     {
@@ -113,7 +113,7 @@ public class CreateReportingSchema : Migration
 
 ```csharp
 [Migration(20241201120000)]
-public class CreateOrdersSystem : Migration
+public class CreateOrdersSystem : AutoReversingMigration
 {
     public override void Up()
     {
@@ -241,7 +241,7 @@ public class ModifyUserColumns : Migration
 You can combine auto-reversible operations with custom Down() logic:
 
 ```csharp
-public class MixedOperations : Migration
+public class MixedOperations : AutoReversingMigration
 {
     public override void Up()
     {
@@ -314,7 +314,7 @@ public override void Down()
 If you want to provide a custom `Down()` method for a migration that could be auto-reversed, simply implement the `Down()` method. FluentMigrator will use your custom implementation instead of generating automatic reversal:
 
 ```csharp
-public class CustomReversalLogic : Migration
+public class CustomReversalLogic : AutoReversingMigration
 {
     public override void Up()
     {
@@ -358,26 +358,22 @@ public class CustomReversalLogic : Migration
 
 ### Conditional Auto-Reversal
 ```csharp
-public class ConditionalOperations : Migration
+public class ConditionalOperations : AutoReversingMigration
 {
     public override void Up()
     {
         Create.Table("PlatformSpecificTable")
             .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity();
             
-        if (IfDatabase("SqlServer"))
-        {
-            // This will auto-reverse only on SQL Server
-            Create.Index("IX_PlatformSpecific").OnTable("PlatformSpecificTable")
+        // Database-specific operations - both auto-reversible
+        IfDatabase("SqlServer")
+            .Create.Index("IX_PlatformSpecific").OnTable("PlatformSpecificTable")
                 .OnColumn("Id").Ascending()
                 .WithOptions().NonClustered();
-        }
-        else if (IfDatabase("Postgres"))
-        {
-            // Different index for PostgreSQL - also auto-reversible
-            Create.Index("IX_PlatformSpecific").OnTable("PlatformSpecificTable")
+                
+        IfDatabase("Postgres")
+            .Create.Index("IX_PlatformSpecific").OnTable("PlatformSpecificTable")
                 .OnColumn("Id").Ascending();
-        }
     }
     
     // Auto-reversal will handle database-specific operations correctly
@@ -386,7 +382,7 @@ public class ConditionalOperations : Migration
 
 ### Schema Evolution with Auto-Reversal
 ```csharp
-public class SchemaEvolution : Migration
+public class SchemaEvolution : AutoReversingMigration
 {
     public override void Up()
     {
@@ -421,7 +417,7 @@ public class SchemaEvolution : Migration
 FluentMigrator's auto-reversal respects transaction boundaries. If a rollback fails, the entire migration transaction is rolled back:
 
 ```csharp
-public class SafeAutoReversibleMigration : Migration
+public class SafeAutoReversibleMigration : AutoReversingMigration
 {
     public override void Up()
     {
