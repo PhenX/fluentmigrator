@@ -293,10 +293,9 @@ public class SqlServerSchemaFeatures : Migration
             Create.Schema("Security");
             Create.Schema("Audit");
             
-            // Create role-specific schemas
+            // Basic schema creation with Execute.Sql - for advanced examples see Raw SQL guide
             Execute.Sql("CREATE SCHEMA [Sales_ReadOnly]");
             Execute.Sql("CREATE SCHEMA [Sales_ReadWrite]");
-            Execute.Sql("CREATE SCHEMA [Admin_Only]");
             
             // Create tables in security-focused schemas
             Create.Table("Users")
@@ -863,6 +862,17 @@ public class SchemaValidation : Migration
     }
 }
 ```
+
+## Advanced Schema Operations with Execute.Sql
+
+For comprehensive examples of advanced schema operations using Execute.Sql including:
+- Database-specific schema management
+- Complex role and permission management
+- Advanced indexing strategies
+- Full-text search setup
+- Custom constraint creation
+
+See: [Raw SQL (Scripts & Helpers)](../raw-sql-scripts.md)
 
 ## See Also
 

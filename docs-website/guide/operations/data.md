@@ -61,11 +61,8 @@ public class BasicUpdateOperations : Migration
             .Set(new { IsActive = false })
             .Where(new { Name = "John Doe" });
             
-        // Update using SQL expression
-        Execute.Sql(@"
-            UPDATE Users 
-            SET LastLoginAt = GETDATE() 
-            WHERE Email LIKE '%@company.com'");
+        // For complex SQL updates, see: Raw SQL (Scripts & Helpers)
+        Execute.Sql("UPDATE Users SET LastLoginAt = GETDATE() WHERE Email LIKE '%@company.com'");
     }
 
     public override void Down()
@@ -93,7 +90,7 @@ public class BasicDeleteOperations : Migration
         Delete.FromTable("Users")
             .Where(new { IsActive = false });
             
-        // Delete using SQL
+        // For complex SQL deletes, see: Raw SQL (Scripts & Helpers)
         Execute.Sql("DELETE FROM Users WHERE CreatedAt < '2020-01-01'");
     }
 
@@ -119,17 +116,8 @@ public class DataColumnMigration : Migration
         Alter.Table("Users")
             .AddColumn("FullName").AsString(200).Nullable();
             
-        // Migrate data from existing columns
-        Execute.Sql(@"
-            UPDATE Users 
-            SET FullName = FirstName + ' ' + LastName 
-            WHERE FirstName IS NOT NULL AND LastName IS NOT NULL");
-            
-        // Handle cases where one name is null
-        Execute.Sql(@"
-            UPDATE Users 
-            SET FullName = COALESCE(FirstName, '') + COALESCE(' ' + LastName, '') 
-            WHERE FullName IS NULL");
+        // Migrate data from existing columns - see Raw SQL guide for complex data migration patterns
+        Execute.Sql("UPDATE Users SET FullName = COALESCE(FirstName + ' ' + LastName, FirstName, LastName) WHERE FullName IS NULL");
             
         // Make column not nullable after data migration
         Alter.Column("FullName").OnTable("Users")
@@ -210,37 +198,19 @@ public class DataTypeConversions : Migration
 
 ### Bulk Data Operations
 
+For comprehensive bulk operations examples, see [Raw SQL (Scripts & Helpers)](../raw-sql-scripts.md#batch-processing-for-large-datasets).
+
 ```csharp
 public class BulkDataOperations : Migration
 {
     public override void Up()
     {
-        // Bulk insert using SQL for better performance
-        Execute.Sql(@"
-            INSERT INTO Categories (Name, Description, IsActive)
-            VALUES 
-                ('Electronics', 'Electronic devices and accessories', 1),
-                ('Clothing', 'Apparel and fashion items', 1),
-                ('Books', 'Books and literature', 1),
-                ('Sports', 'Sports equipment and gear', 1),
-                ('Home', 'Home and garden items', 1)");
-                
-        // Bulk update with complex logic
-        Execute.Sql(@"
-            UPDATE Products 
-            SET 
-                CategoryId = c.Id,
-                UpdatedAt = GETDATE()
-            FROM Products p
-            INNER JOIN Categories c ON p.CategoryName = c.Name
-            WHERE p.CategoryId IS NULL");
-            
-        // Bulk delete with join conditions
-        Execute.Sql(@"
-            DELETE p 
-            FROM Products p
-            LEFT JOIN Categories c ON p.CategoryId = c.Id
-            WHERE c.Id IS NULL AND p.CategoryId IS NOT NULL");
+        // Basic bulk insert example - for complex bulk operations, use Execute.Sql
+        Insert.IntoTable("Categories").Row(new { Name = "Electronics", IsActive = true });
+        Insert.IntoTable("Categories").Row(new { Name = "Clothing", IsActive = true });
+        
+        // For complex bulk operations with joins and batch processing, see Raw SQL guide
+        Execute.Sql("UPDATE Products SET CategoryId = (SELECT Id FROM Categories WHERE Name = 'Electronics') WHERE CategoryName = 'Electronics'");
     }
 
     public override void Down()
@@ -914,6 +884,17 @@ public class TransactionalDataOperations : Migration
     }
 }
 ```
+
+## Advanced SQL Operations
+
+For comprehensive examples of advanced Execute.Sql operations including:
+- Batch processing for large datasets
+- Complex data transformations
+- Database-specific optimizations  
+- Error handling and validation
+- Transaction control
+
+See: [Raw SQL (Scripts & Helpers)](../raw-sql-scripts.md)
 
 ## See Also
 

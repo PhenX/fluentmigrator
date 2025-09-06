@@ -908,6 +908,16 @@ public class IndexPerformanceMonitoring : Migration
 }
 ```
 
+## Advanced Index Operations with Execute.Sql
+
+For comprehensive examples of advanced indexing operations using Execute.Sql including:
+- Database-specific index types and options
+- Complex partial and filtered indexes
+- Index maintenance and optimization
+- Custom index creation with SQL
+
+See: [Raw SQL (Scripts & Helpers)](../raw-sql-scripts.md)
+
 ## See Also
 
 - [Creating Tables](create-tables.md)

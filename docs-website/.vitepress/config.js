@@ -46,7 +46,7 @@ export default defineConfig({
             { text: 'Indexes', link: '/guide/managing-indexes' },
             { text: 'Constraints', link: '/guide/working-with-constraints' },
             { text: 'Foreign Keys', link: '/guide/working-with-foreign-keys' },
-            { text: 'Raw SQL Helper', link: '/guide/raw-sql' }
+            { text: 'Raw SQL (Scripts & Helpers)', link: '/guide/raw-sql-scripts' }
           ]
         },
         {
@@ -72,6 +72,7 @@ export default defineConfig({
           text: 'Migration Types',
           items: [
             { text: 'Maintenance Migrations', link: '/guide/migration-types/maintenance' },
+            { text: 'Auto-Reversing Migrations', link: '/guide/migration-types/auto-reversing' },
             { text: 'Tags', link: '/guide/migration-types/tags' },
             { text: 'Profiles', link: '/guide/migration-types/profiles' }
           ]
