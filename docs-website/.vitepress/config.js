@@ -30,6 +30,16 @@ export default defineConfig({
           ]
         },
         {
+          text: 'Common Operations',
+          items: [
+            { text: 'Creating Tables', link: '/guide/operations/create-tables' },
+            { text: 'Altering Tables', link: '/guide/operations/alter-tables' },
+            { text: 'Managing Columns', link: '/guide/operations/columns' },
+            { text: 'Data Operations', link: '/guide/operations/data' },
+            { text: 'Schema Operations', link: '/guide/operations/schema' }
+          ]
+        },
+        {
           text: 'Basics',
           items: [
             { text: 'Managing Columns', link: '/guide/managing-columns' },
@@ -46,16 +56,6 @@ export default defineConfig({
             { text: 'In-Process Runner', link: '/guide/runners/in-process' },
             { text: 'Console Tool (Migrate.exe)', link: '/guide/runners/console' },
             { text: 'dotnet-fm CLI', link: '/guide/runners/dotnet-fm' }
-          ]
-        },
-        {
-          text: 'Common Operations',
-          items: [
-            { text: 'Creating Tables', link: '/guide/operations/create-tables' },
-            { text: 'Altering Tables', link: '/guide/operations/alter-tables' },
-            { text: 'Managing Columns', link: '/guide/operations/columns' },
-            { text: 'Data Operations', link: '/guide/operations/data' },
-            { text: 'Schema Operations', link: '/guide/operations/schema' }
           ]
         },
         {
