@@ -420,7 +420,7 @@ public class SqlServerForeignKeys : Migration
 {
     public override void Up()
     {
-            IfDatabase("SqlServer").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                 ALTER TABLE DetailTable 
                 ADD CONSTRAINT FK_DetailTable_MasterTable 
                 FOREIGN KEY (MasterId) REFERENCES MasterTable(Id)
@@ -430,7 +430,7 @@ public class SqlServerForeignKeys : Migration
 
     public override void Down()
     {
-            IfDatabase("SqlServer").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 Delete.ForeignKey("FK_DetailTable_MasterTable").OnTable("DetailTable");
             Delete.Table("DetailTable");
@@ -447,7 +447,7 @@ public class PostgreSqlForeignKeys : Migration
 {
     public override void Up()
     {
-            IfDatabase("Postgres").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
                 ALTER TABLE Books 
                 ADD CONSTRAINT FK_Books_Authors 
                 FOREIGN KEY (AuthorId) REFERENCES Authors(Id)
@@ -456,7 +456,7 @@ public class PostgreSqlForeignKeys : Migration
 
     public override void Down()
     {
-            IfDatabase("Postgres").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
     {
 Delete.ForeignKey("FK_Books_Authors").OnTable("Books");
             Delete.Table("Books");

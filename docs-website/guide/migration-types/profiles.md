@@ -230,13 +230,13 @@ public class DatabaseSpecificDevData : Migration
 {
     public override void Up()
     {
-        IfDatabase("SqlServer")
+        IfDatabase(ProcessorIdConstants.SqlServer)
             .Insert.IntoTable("TestData").Row(new { Data = "SQL Server specific data" });
 
         IfDatabase("Sqlite") 
             .Insert.IntoTable("TestData").Row(new { Data = "SQLite specific data" });
 
-        IfDatabase("Postgres")
+        IfDatabase(ProcessorIdConstants.Postgres)
             .Insert.IntoTable("TestData").Row(new { Data = "PostgreSQL specific data" });
     }
 

@@ -252,11 +252,11 @@ public class CreateIndexes : Migration
             .WithOptions().Unique();
 
         // Index on computed expression (database-specific)
-        IfDatabase("SqlServer")
+        IfDatabase(ProcessorIdConstants.SqlServer)
             .Create.Index("IX_Users_FullName").OnTable("Users")
             .OnColumn(RawSql.Insert("FirstName + ' ' + LastName"));
 
-        IfDatabase("Postgres")
+        IfDatabase(ProcessorIdConstants.Postgres)
             .Create.Index("IX_Users_FullName").OnTable("Users")
             .OnColumn(RawSql.Insert("FirstName || ' ' || LastName"));
     }
@@ -342,7 +342,7 @@ public class DatabaseSpecificFeatures : Migration
             .WithColumn("Content").AsString().NotNullable();
 
         // SQL Server specific features
-        IfDatabase("SqlServer").Execute.Sql(@"
+        IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
             ALTER TABLE Documents 
             ADD SearchContent AS (Title + ' ' + Content);
             
@@ -352,7 +352,7 @@ public class DatabaseSpecificFeatures : Migration
         ");
 
         // PostgreSQL specific features
-        IfDatabase("Postgres").Execute.Sql(@"
+        IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
             ALTER TABLE Documents 
             ADD COLUMN search_vector tsvector;
             
@@ -366,7 +366,7 @@ public class DatabaseSpecificFeatures : Migration
         ");
 
         // MySQL specific features
-        IfDatabase("MySql").Execute.Sql(@"
+        IfDatabase(ProcessorIdConstants.MySql).Execute.Sql(@"
             ALTER TABLE Documents 
             ENGINE=InnoDB 
             DEFAULT CHARSET=utf8mb4 

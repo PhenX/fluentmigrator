@@ -37,7 +37,8 @@ export default defineConfig({
             { text: 'Altering Tables', link: '/guide/operations/alter-tables' },
             { text: 'Columns', link: '/guide/operations/columns' },
             { text: 'Data Operations', link: '/guide/operations/data' },
-            { text: 'Schema Operations', link: '/guide/operations/schema' }
+            { text: 'Schema Operations', link: '/guide/operations/schema' },
+            { text: 'SQL Scripts', link: '/guide/operations/sql-scripts' }
           ]
         },
         {
@@ -47,7 +48,7 @@ export default defineConfig({
             { text: 'Indexes', link: '/guide/managing-indexes' },
             { text: 'Constraints', link: '/guide/working-with-constraints' },
             { text: 'Foreign Keys', link: '/guide/working-with-foreign-keys' },
-            { text: 'Raw SQL (Scripts & Helpers)', link: '/guide/raw-sql-scripts' }
+            { text: 'Raw SQL Helpers', link: '/guide/raw-sql-scripts' }
           ]
         },
         {
@@ -82,7 +83,6 @@ export default defineConfig({
           text: 'Advanced Topics',
           items: [
             { text: 'DBMS Extensions', link: '/guide/advanced/dbms-extensions' },
-            { text: 'Edge Cases', link: '/guide/advanced/edge-cases' },
             { text: 'Best Practices', link: '/guide/advanced/best-practices' },
             { text: 'Migration Versioning', link: '/guide/advanced/versioning' },
             { text: 'Conditional Logic', link: '/guide/advanced/conditional-logic' },

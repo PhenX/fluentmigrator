@@ -339,11 +339,11 @@ public override void Up()
 public override void Up()
 {
     // For large tables, create indexes online to avoid blocking
-    IfDatabase("SqlServer")
+    IfDatabase(ProcessorIdConstants.SqlServer)
         .Execute.Sql("CREATE INDEX IX_Users_Email ON Users(Email) WITH (ONLINE=ON)");
         
     // Fallback for other databases
-    IfDatabase("Postgres", "MySql")
+    IfDatabase(ProcessorIdConstants.Postgres, ProcessorIdConstants.MySql)
         .Create.Index("IX_Users_Email").OnTable("Users").OnColumn("Email");
 }
 ```
@@ -452,6 +452,277 @@ FluentMigrator doesn't support SQL batch separators like `GO`.
 The version tracking table hasn't been created.
 
 **Solution**: Ensure the database user has CREATE TABLE permissions.
+
+## Edge Cases and Advanced Troubleshooting
+
+This section covers common edge cases you might encounter when using FluentMigrator and how to handle them effectively.
+
+### Migration Version Conflicts
+
+#### Problem: Duplicate Migration Versions
+```csharp
+[Migration(20240101120000)]
+public class CreateUsersTable : Migration { /* ... */ }
+
+[Migration(20240101120000)] // Same version!
+public class CreateProductsTable : Migration { /* ... */ }
+```
+
+**Error**: FluentMigrator will throw an exception about duplicate migration versions.
+
+**Solution**: Use unique version numbers, preferably timestamps:
+```csharp
+[Migration(20240101120000)]
+public class CreateUsersTable : Migration { /* ... */ }
+
+[Migration(20240101120100)] // Different timestamp
+public class CreateProductsTable : Migration { /* ... */ }
+```
+
+#### Problem: Out-of-Order Migration Versions
+```csharp
+// Already applied: 20240101120000, 20240101130000
+[Migration(20240101125000)] // This is between already applied migrations
+public class LateAddition : Migration { /* ... */ }
+```
+
+**Solution**: FluentMigrator will still apply this migration, but it's better to use a newer timestamp:
+```csharp
+[Migration(20240101140000)] // Use a timestamp after the last applied migration
+public class LateAddition : Migration { /* ... */ }
+```
+
+### Schema and Table Issues
+
+#### Problem: Column Dependencies
+```csharp
+public override void Down()
+{
+    // This will fail if there are constraints referencing this column
+    Delete.Column("UserId").FromTable("Orders");
+}
+```
+
+**Solution**: Drop dependent constraints first:
+```csharp
+public override void Down()
+{
+    Delete.ForeignKey("FK_Orders_Users").OnTable("Orders");
+    Delete.Column("UserId").FromTable("Orders");
+}
+```
+
+#### Problem: Default Constraints (SQL Server)
+```csharp
+public override void Down()
+{
+    // This may fail if there's a default constraint
+    Delete.Column("IsActive").FromTable("Users");
+}
+```
+
+**Solution**: Drop the default constraint first:
+```csharp
+public override void Down()
+{
+    Delete.DefaultConstraint().OnTable("Users").OnColumn("IsActive");
+    Delete.Column("IsActive").FromTable("Users");
+}
+```
+
+### Data Migration Issues
+
+#### Problem: Large Dataset Migrations
+```csharp
+// This can cause timeouts or memory issues
+Execute.Sql("UPDATE Users SET Status = 'Active' WHERE Status IS NULL");
+```
+
+**Solution**: Use batched operations:
+```csharp
+[Migration(1)]
+public class BatchedUpdate : Migration
+{
+    public override void Up()
+    {
+        // SQL Server batch update
+        Execute.Sql(@"
+            WHILE @@ROWCOUNT > 0
+            BEGIN
+                UPDATE TOP (1000) Users 
+                SET Status = 'Active' 
+                WHERE Status IS NULL
+            END");
+    }
+
+    public override void Down()
+    {
+        Execute.Sql(@"
+            WHILE @@ROWCOUNT > 0
+            BEGIN
+                UPDATE TOP (1000) Users 
+                SET Status = NULL 
+                WHERE Status = 'Active'
+            END");
+    }
+}
+```
+
+#### Problem: Data Loss in Down Migrations
+```csharp
+public override void Up()
+{
+    Alter.Table("Users").AddColumn("NewField").AsString(100).Nullable();
+    Execute.Sql("UPDATE Users SET NewField = 'Default Value'");
+}
+
+public override void Down()
+{
+    // This loses all data in NewField!
+    Delete.Column("NewField").FromTable("Users");
+}
+```
+
+**Solution**: Consider data preservation strategies:
+```csharp
+public override void Down()
+{
+    // Option 1: Warn about data loss
+    Execute.Sql("-- WARNING: This will lose data in NewField column");
+    Delete.Column("NewField").FromTable("Users");
+
+    // Option 2: Create backup table (if feasible)
+    // Execute.Sql("SELECT * INTO Users_NewField_Backup FROM Users WHERE NewField IS NOT NULL");
+    // Delete.Column("NewField").FromTable("Users");
+}
+```
+
+### Cross-Database Compatibility Issues
+
+#### Problem: Database-Specific SQL in Migrations
+```csharp
+public override void Up()
+{
+    Execute.Sql("SELECT TOP 10 * FROM Users"); // SQL Server specific
+}
+```
+
+**Solution**: Use conditional logic:
+```csharp
+public override void Up()
+{
+    IfDatabase(ProcessorIdConstants.SqlServer)
+        .Execute.Sql("SELECT TOP 10 * FROM Users");
+        
+    IfDatabase(ProcessorIdConstants.Postgres)
+        .Execute.Sql("SELECT * FROM Users LIMIT 10");
+        
+    IfDatabase(ProcessorIdConstants.MySql)
+        .Execute.Sql("SELECT * FROM Users LIMIT 10");
+}
+```
+
+### Circular Dependencies
+
+#### Problem: Foreign Key Circular References
+```csharp
+// This creates a circular dependency
+Create.Table("Users")
+    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+    .WithColumn("ManagerId").AsInt32().Nullable()
+        .ForeignKey("FK_Users_Manager", "Users", "Id");
+
+Create.Table("Departments")
+    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+    .WithColumn("ManagerId").AsInt32().NotNullable()
+        .ForeignKey("FK_Departments_Users", "Users", "Id");
+
+Alter.Table("Users")
+    .AddColumn("DepartmentId").AsInt32().Nullable()
+        .ForeignKey("FK_Users_Departments", "Departments", "Id");
+```
+
+**Solution**: Create tables without foreign keys first, then add constraints:
+```csharp
+public override void Up()
+{
+    // Create tables without foreign keys
+    Create.Table("Users")
+        .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+        .WithColumn("ManagerId").AsInt32().Nullable()
+        .WithColumn("DepartmentId").AsInt32().Nullable();
+
+    Create.Table("Departments")
+        .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+        .WithColumn("ManagerId").AsInt32().NotNullable();
+
+    // Add foreign keys after tables exist
+    Create.ForeignKey("FK_Users_Manager")
+        .FromTable("Users").ForeignColumn("ManagerId")
+        .ToTable("Users").PrimaryColumn("Id");
+
+    Create.ForeignKey("FK_Departments_Users")
+        .FromTable("Departments").ForeignColumn("ManagerId")
+        .ToTable("Users").PrimaryColumn("Id");
+
+    Create.ForeignKey("FK_Users_Departments")
+        .FromTable("Users").ForeignColumn("DepartmentId")
+        .ToTable("Departments").PrimaryColumn("Id");
+}
+```
+
+### Identity Column Edge Cases
+
+#### Problem: Identity Insert Issues
+```csharp
+public override void Up()
+{
+    Create.Table("Users")
+        .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+        .WithColumn("Username").AsString(50).NotNullable();
+
+    // This will fail because of IDENTITY column
+    Insert.IntoTable("Users").Row(new { Id = 1, Username = "admin" });
+}
+```
+
+**Solution**: Handle identity inserts properly:
+```csharp
+public override void Up()
+{
+    Create.Table("Users")
+        .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+        .WithColumn("Username").AsString(50).NotNullable();
+
+    IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("SET IDENTITY_INSERT Users ON");
+    Insert.IntoTable("Users").Row(new { Id = 1, Username = "admin" });
+    IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("SET IDENTITY_INSERT Users OFF");
+}
+```
+
+### Transaction and Concurrency Issues
+
+#### Problem: Migrations in Transactions
+Some database operations can't be performed within transactions:
+```csharp
+// This might fail in some databases
+public override void Up()
+{
+    Execute.Sql("CREATE INDEX CONCURRENTLY IX_Users_Email ON Users (Email)"); // PostgreSQL
+}
+```
+
+**Solution**: Check if your database supports the operation within transactions:
+```csharp
+public override void Up()
+{
+    IfDatabase(ProcessorIdConstants.Postgres)
+        .Execute.Sql("CREATE INDEX CONCURRENTLY IX_Users_Email ON Users (Email)");
+        
+    IfDatabase(ProcessorIdConstants.SqlServer)
+        .Create.Index("IX_Users_Email").OnTable("Users").OnColumn("Email");
+}
+```
 
 ## Getting Help
 

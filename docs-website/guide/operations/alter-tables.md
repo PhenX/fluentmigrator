@@ -188,7 +188,7 @@ public class SqlServerAlterations : Migration
 {
     public override void Up()
     {
-            IfDatabase("SqlServer").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 // Add computed column
             Alter.Table("Orders")
@@ -205,7 +205,7 @@ public class SqlServerAlterations : Migration
 
     public override void Down()
     {
-            IfDatabase("SqlServer").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 Delete.Column("TotalWithTax").FromTable("Orders");
             Delete.Column("Content").FromTable("Documents");
@@ -222,7 +222,7 @@ public class PostgreSqlAlterations : Migration
 {
     public override void Up()
     {
-            IfDatabase("Postgres").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
     {
 // Add JSONB column
             Alter.Table("Settings")
@@ -236,7 +236,7 @@ public class PostgreSqlAlterations : Migration
 
     public override void Down()
     {
-            IfDatabase("Postgres").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
     {
 Delete.Column("Configuration").FromTable("Settings");
             Delete.Column("Tags").FromTable("Users");

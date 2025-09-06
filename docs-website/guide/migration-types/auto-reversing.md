@@ -366,12 +366,12 @@ public class ConditionalOperations : AutoReversingMigration
             .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity();
             
         // Database-specific operations - both auto-reversible
-        IfDatabase("SqlServer")
+        IfDatabase(ProcessorIdConstants.SqlServer)
             .Create.Index("IX_PlatformSpecific").OnTable("PlatformSpecificTable")
                 .OnColumn("Id").Ascending()
                 .WithOptions().NonClustered();
                 
-        IfDatabase("Postgres")
+        IfDatabase(ProcessorIdConstants.Postgres)
             .Create.Index("IX_PlatformSpecific").OnTable("PlatformSpecificTable")
                 .OnColumn("Id").Ascending();
     }

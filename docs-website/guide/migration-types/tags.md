@@ -497,12 +497,12 @@ public class ConditionalMigration : Migration
 {
     public override void Up()
     {
-        IfDatabase("SqlServer")
+        IfDatabase(ProcessorIdConstants.SqlServer)
             .Create.Index("IX_SqlServer_Only").OnTable("Users").OnColumn("Email");
     }
     public override void Down()
     {
-        IfDatabase("SqlServer")
+        IfDatabase(ProcessorIdConstants.SqlServer)
             .Delete.Index("IX_SqlServer_Only");
     }
 }

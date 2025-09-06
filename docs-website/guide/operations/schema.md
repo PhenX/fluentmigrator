@@ -286,12 +286,12 @@ public class SqlServerSchemaFeatures : Migration
 {
     public override void Up()
     {
-            IfDatabase("SqlServer").Execute.Sql("CREATE SCHEMA [Sales_ReadOnly]");
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("CREATE SCHEMA [Sales_ReadOnly]");
     }
 
     public override void Down()
     {
-            IfDatabase("SqlServer").Execute.Sql("DROP ROLE IF EXISTS [SystemAdmin]");
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("DROP ROLE IF EXISTS [SystemAdmin]");
     }
 }
 ```
@@ -303,14 +303,14 @@ public class PostgreSqlSchemaFeatures : Migration
 {
     public override void Up()
     {
-            IfDatabase("Postgres").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
                 CREATE INDEX ix_user_profiles_profile_data 
                 ON private_data.user_profiles USING GIN (profile_data)");
     }
 
     public override void Down()
     {
-            IfDatabase("Postgres").Execute.Sql("DROP ROLE IF EXISTS staging_user");
+            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql("DROP ROLE IF EXISTS staging_user");
     }
 }
 ```
@@ -322,12 +322,12 @@ public class OracleSchemaFeatures : Migration
 {
     public override void Up()
     {
-            IfDatabase("Oracle").Execute.Sql("CREATE TABLESPACE SALES_DATA DATAFILE 'sales_data.dbf' SIZE 100M AUTOEXTEND ON");
+            IfDatabase(ProcessorIdConstants.Oracle).Execute.Sql("CREATE TABLESPACE SALES_DATA DATAFILE 'sales_data.dbf' SIZE 100M AUTOEXTEND ON");
     }
 
     public override void Down()
     {
-            IfDatabase("Oracle").Execute.Sql("DROP PUBLIC SYNONYM PRODUCTS");
+            IfDatabase(ProcessorIdConstants.Oracle).Execute.Sql("DROP PUBLIC SYNONYM PRODUCTS");
     }
 }
 ```

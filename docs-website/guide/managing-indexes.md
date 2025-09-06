@@ -97,7 +97,7 @@ public class FilteredIndexes : Migration
             .WithColumn("CompletedDate").AsDateTime().Nullable();
             
         // Filtered index for active orders only
-            IfDatabase("SqlServer").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 Create.Index("IX_Orders_CustomerId_Active")
                 .OnTable("Orders")
@@ -114,7 +114,7 @@ Create.Index("IX_Orders_CustomerId_Active")
     });
         
         // PostgreSQL partial indexes
-            IfDatabase("Postgres").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
                 CREATE INDEX IX_Orders_CustomerId_Active 
                 ON Orders (CustomerId) 
                 WHERE Status = 'Active'");
@@ -122,7 +122,7 @@ Create.Index("IX_Orders_CustomerId_Active")
 
     public override void Down()
     {
-        IfDatabase("SqlServer", "Postgres").Delegate(() =>
+        IfDatabase(ProcessorIdConstants.SqlServer, ProcessorIdConstants.Postgres).Delegate(() =>
         {
             Delete.Index("IX_Orders_CustomerId_Active").OnTable("Orders");
             Delete.Index("IX_Orders_CompletedDate").OnTable("Orders");
@@ -151,7 +151,7 @@ public class CoveringIndexes : Migration
             .WithColumn("SaleDate").AsDateTime().NotNullable()
             .WithColumn("SalesPersonId").AsInt32().NotNullable();
             
-            IfDatabase("SqlServer").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 // Covering index with included columns
             Create.Index("IX_Sales_CustomerId_SaleDate_Covering")
@@ -168,7 +168,7 @@ public class CoveringIndexes : Migration
 
     public override void Down()
     {
-            IfDatabase("SqlServer").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 Delete.Index("IX_Sales_CustomerId_SaleDate_Covering").OnTable("Sales");
     });
@@ -192,15 +192,15 @@ public class FunctionalIndexes : Migration
             .WithColumn("Phone").AsString(20).Nullable();
             
         // Case-insensitive index for email searches
-            IfDatabase("SqlServer").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                 CREATE INDEX IX_Customers_Email_Lower 
                 ON Customers (LOWER(Email))");
         
-            IfDatabase("Postgres").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
                 CREATE INDEX IX_Customers_Email_Lower 
                 ON Customers (LOWER(Email))");
         
-            IfDatabase("MySQL").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.MySql).Execute.Sql(@"
                 CREATE INDEX IX_Customers_Email_Lower 
                 ON Customers ((LOWER(Email)))");
     }
@@ -212,7 +212,7 @@ public class FunctionalIndexes : Migration
             Delete.Index("IX_Customers_Email_Lower").OnTable("Customers");
         });
         
-            IfDatabase("Postgres").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
     {
 Delete.Index("IX_Customers_FullName_Text").OnTable("Customers");
     });
@@ -237,10 +237,10 @@ public class FullTextIndexes : Migration
             .WithColumn("Tags").AsString(500).Nullable();
             
         // SQL Server Full-Text Index
-            IfDatabase("SqlServer").Execute.Sql("CREATE FULLTEXT CATALOG ArticlesCatalog AS DEFAULT");
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("CREATE FULLTEXT CATALOG ArticlesCatalog AS DEFAULT");
         
         // PostgreSQL Full-Text Search
-            IfDatabase("Postgres").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
                 CREATE INDEX IX_Articles_FullText 
                 ON Articles USING GIN (
                     to_tsvector('english', 
@@ -251,21 +251,21 @@ public class FullTextIndexes : Migration
                 )");
         
         // MySQL Full-Text Index
-            IfDatabase("MySQL").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.MySql).Execute.Sql(@"
                 CREATE FULLTEXT INDEX IX_Articles_FullText 
                 ON Articles (Title, Content, Summary)");
     }
 
     public override void Down()
     {
-            IfDatabase("SqlServer").Execute.Sql("DROP FULLTEXT INDEX ON Articles");
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("DROP FULLTEXT INDEX ON Articles");
         
-            IfDatabase("Postgres").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
     {
 Delete.Index("IX_Articles_FullText").OnTable("Articles");
     });
         
-            IfDatabase("MySQL").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.MySql).Delegate(() =>
     {
 Delete.Index("IX_Articles_FullText").OnTable("Articles");
     });
@@ -284,14 +284,14 @@ public class SqlServerIndexes : Migration
 {
     public override void Up()
     {
-            IfDatabase("SqlServer").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                 CREATE NONCLUSTERED COLUMNSTORE INDEX IX_LargeTable_Columnstore
                 ON LargeTable (Name, Value, CreatedDate)");
     }
 
     public override void Down()
     {
-            IfDatabase("SqlServer").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 Delete.Index("IX_LargeTable_CreatedDate_Clustered").OnTable("LargeTable");
             Delete.Index("IX_LargeTable_Columnstore").OnTable("LargeTable");
@@ -309,14 +309,14 @@ public class PostgreSqlIndexes : Migration
 {
     public override void Up()
     {
-            IfDatabase("Postgres").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
                 CREATE INDEX IX_PostgresTable_Tags 
                 ON PostgresTable USING GIN (Tags)");
     }
 
     public override void Down()
     {
-            IfDatabase("Postgres").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
     {
 Delete.Index("IX_PostgresTable_Tags").OnTable("PostgresTable");
             Delete.Index("IX_PostgresTable_Data").OnTable("PostgresTable");
@@ -336,14 +336,14 @@ public class MySqlIndexes : Migration
 {
     public override void Up()
     {
-            IfDatabase("MySQL").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.MySql).Execute.Sql(@"
                 CREATE FULLTEXT INDEX IX_MySqlTable_FullText 
                 ON MySqlTable (Name, Description)");
     }
 
     public override void Down()
     {
-            IfDatabase("MySQL").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.MySql).Delegate(() =>
     {
 Delete.Index("IX_MySqlTable_FullText").OnTable("MySqlTable");
             Delete.Index("IX_MySqlTable_Spatial").OnTable("MySqlTable");
@@ -381,9 +381,9 @@ public class RebuildIndexes : Migration
 {
     public override void Up()
     {
-            IfDatabase("SqlServer").Execute.Sql("ALTER INDEX ALL ON Users REBUILD");
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("ALTER INDEX ALL ON Users REBUILD");
         
-            IfDatabase("Postgres").Execute.Sql("REINDEX TABLE Users");
+            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql("REINDEX TABLE Users");
     }
 
     public override void Down()
@@ -400,11 +400,11 @@ public class IndexStatistics : Migration
 {
     public override void Up()
     {
-            IfDatabase("SqlServer").Execute.Sql("UPDATE STATISTICS Users");
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("UPDATE STATISTICS Users");
         
-            IfDatabase("Postgres").Execute.Sql("ANALYZE Users");
+            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql("ANALYZE Users");
         
-            IfDatabase("MySQL").Execute.Sql("ANALYZE TABLE Users");
+            IfDatabase(ProcessorIdConstants.MySql).Execute.Sql("ANALYZE TABLE Users");
     }
 
     public override void Down()
@@ -446,7 +446,7 @@ public class IndexOptimization : Migration
             .OnColumn("CreatedDate"); // Least selective but used in ORDER BY
             
         // Covering index for summary queries
-            IfDatabase("SqlServer").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 Create.Index("IX_OptimizedTable_CategoryId_Covering")
                 .OnTable("OptimizedTable")
@@ -488,7 +488,7 @@ public class ConditionalIndexes : Migration
                 .OnColumn("Name");
                 
             // Create partial index for active records only
-                IfDatabase("SqlServer").Delegate(() =>
+                IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 Create.Index("IX_ConditionalTable_Active")
                     .OnTable("ConditionalTable")
@@ -550,7 +550,7 @@ public class IndexNamingConventions : Migration
             .Unique();
             
         // Filtered index naming: IX_TableName_ColumnName_FilterCondition
-            IfDatabase("SqlServer").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 Create.Index("IX_Orders_OrderDate_Active")
                 .OnTable("Orders")
@@ -581,7 +581,7 @@ public class IndexMonitoring : Migration
             .OnTable("Users")
             .OnColumn("LastLoginDate");
             
-            IfDatabase("SqlServer").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                 -- Use this query to monitor index usage:
                 -- SELECT 
                 --     i.name AS IndexName,
@@ -617,7 +617,7 @@ public class IndexMaintenanceStrategy : Migration
             .WithColumn("Status").AsString(20).NotNullable();
             
         // Create indexes with appropriate fill factor for high-volume tables
-            IfDatabase("SqlServer").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                 CREATE INDEX IX_HighVolumeTable_TransactionDate 
                 ON HighVolumeTable (TransactionDate) 
                 WITH (FILLFACTOR = 85)");
@@ -720,7 +720,7 @@ public class IndexPerformanceMonitoring : Migration
 {
     public override void Up()
     {
-            IfDatabase("SqlServer").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                 -- Index size monitoring query:
                 -- SELECT 
                 --     i.name AS IndexName,

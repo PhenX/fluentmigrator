@@ -414,21 +414,21 @@ public class CrossProviderMigration : Migration
             .WithColumn("CreatedAt").AsDateTime().NotNullable().WithDefault(SystemMethods.CurrentDateTime);
 
         // SQL Server specific features
-        IfDatabase("SqlServer").Execute.Sql(@"
+        IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
             CREATE NONCLUSTERED INDEX IX_Users_Email_Covering 
             ON Users (Email) 
             INCLUDE (Username, CreatedAt)
         ");
 
         // PostgreSQL specific features
-        IfDatabase("Postgres").Execute.Sql(@"
+        IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
             CREATE EXTENSION IF NOT EXISTS ""uuid-ossp"";
             CREATE INDEX CONCURRENTLY IX_Users_Email_Lower 
             ON Users (lower(Email));
         ");
 
         // MySQL specific features
-        IfDatabase("MySql").Execute.Sql(@"
+        IfDatabase(ProcessorIdConstants.MySql).Execute.Sql(@"
             ALTER TABLE Users 
             ENGINE=InnoDB 
             DEFAULT CHARSET=utf8mb4 
@@ -481,7 +481,7 @@ public class ProviderSpecificMigration : Migration
 ### 1. Use Extensions Judiciously
 ```csharp
 // Good - Use extensions for significant performance benefits
-IfDatabase("SqlServer")
+IfDatabase(ProcessorIdConstants.SqlServer)
     .Create.Index("IX_Users_Covering").OnTable("Users")
     .OnColumn("LastName")
     .Include("FirstName", "Email"); // Covering index for better performance
@@ -492,13 +492,13 @@ IfDatabase("SqlServer")
 ### 2. Maintain Compatibility When Possible
 ```csharp
 // Good - Provide fallback for different providers
-IfDatabase("SqlServer")
+IfDatabase(ProcessorIdConstants.SqlServer)
     .Execute.Sql("CREATE UNIQUE INDEX IX_Users_Email ON Users (Email) WHERE IsActive = 1");
 
-IfDatabase("Postgres") 
+IfDatabase(ProcessorIdConstants.Postgres) 
     .Execute.Sql("CREATE UNIQUE INDEX IX_Users_Email ON Users (Email) WHERE IsActive = true");
 
-IfDatabase("MySql")
+IfDatabase(ProcessorIdConstants.MySql)
     .Create.UniqueConstraint("UQ_Users_Email").OnTable("Users").Column("Email");
 ```
 
@@ -568,7 +568,7 @@ public class OptimizedIndexes : Migration
         // Try to use advanced features, fall back to basic if not supported
         try
         {
-            IfDatabase("SqlServer")
+            IfDatabase(ProcessorIdConstants.SqlServer)
                 .Create.Index("IX_Users_Optimized").OnTable("Users")
                 .OnColumn("LastName")
                 .Include("FirstName", "Email");

@@ -474,7 +474,7 @@ Create.Index("IX_Data_Gin").OnTable("MyTable")
 
 ### Conditional PostgreSQL Features
 ```csharp
-IfDatabase("Postgres")
+IfDatabase(ProcessorIdConstants.Postgres)
     .Create.Table("PostgresOnlyTable")
     .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
     .WithColumn("JsonData").AsCustom("JSONB").NotNullable();

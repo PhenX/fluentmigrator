@@ -439,10 +439,10 @@ public class CrossDatabaseMigration : Migration
             .OnColumn("Name");
             
         // Database-specific optimizations
-            IfDatabase("SqlServer").Execute.Sql("CREATE NONCLUSTERED INDEX IX_CrossDbTable_Amount_Filtered ON CrossDbTable (Amount) WHERE Amount > 0");
-    IfDatabase("Postgres").Execute.Sql("CREATE INDEX IX_CrossDbTable_Amount_Partial ON CrossDbTable (Amount) WHERE Amount > 0");
-    IfDatabase("MySQL").Execute.Sql("ALTER TABLE CrossDbTable ENGINE=InnoDB");
-    IfDatabase("Oracle").Execute.Sql("CREATE INDEX IX_CrossDbTable_Amount_Filtered ON CrossDbTable (Amount) WHERE Amount > 0");
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("CREATE NONCLUSTERED INDEX IX_CrossDbTable_Amount_Filtered ON CrossDbTable (Amount) WHERE Amount > 0");
+    IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql("CREATE INDEX IX_CrossDbTable_Amount_Partial ON CrossDbTable (Amount) WHERE Amount > 0");
+    IfDatabase(ProcessorIdConstants.MySql).Execute.Sql("ALTER TABLE CrossDbTable ENGINE=InnoDB");
+    IfDatabase(ProcessorIdConstants.Oracle).Execute.Sql("CREATE INDEX IX_CrossDbTable_Amount_Filtered ON CrossDbTable (Amount) WHERE Amount > 0");
     }
 
     public override void Down()
@@ -468,10 +468,10 @@ public class DataTypeCompatibilityMigration : Migration
             .WithColumn("Timestamp").AsDateTime().NotNullable();
             
         // Handle database-specific data types
-            IfDatabase("SqlServer").Execute.Sql("ALTER TABLE CompatibilityTest ADD XmlData XML");
-    IfDatabase("Postgres").Execute.Sql("ALTER TABLE CompatibilityTest ADD JsonData JSONB");
-    IfDatabase("MySQL").Execute.Sql("ALTER TABLE CompatibilityTest ADD JsonData JSON");
-    IfDatabase("Oracle").Execute.Sql("ALTER TABLE CompatibilityTest ADD XmlData XMLType");
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("ALTER TABLE CompatibilityTest ADD XmlData XML");
+    IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql("ALTER TABLE CompatibilityTest ADD JsonData JSONB");
+    IfDatabase(ProcessorIdConstants.MySql).Execute.Sql("ALTER TABLE CompatibilityTest ADD JsonData JSON");
+    IfDatabase(ProcessorIdConstants.Oracle).Execute.Sql("ALTER TABLE CompatibilityTest ADD XmlData XMLType");
         else
         {
             // Generic fallback
@@ -597,9 +597,9 @@ public class TroubleshootingMigration : Migration
         try
         {
             // Issue 1: Different identifier quoting
-            var tableName = IfDatabase("MySQL") ? "`test_table`" : 
-                           IfDatabase("Postgres") ? "\"test_table\"" :
-                           IfDatabase("SqlServer") ? "[test_table]" :
+            var tableName = IfDatabase(ProcessorIdConstants.MySql) ? "`test_table`" : 
+                           IfDatabase(ProcessorIdConstants.Postgres) ? "\"test_table\"" :
+                           IfDatabase(ProcessorIdConstants.SqlServer) ? "[test_table]" :
                            "test_table";
                            
             // Use FluentMigrator abstractions instead
@@ -608,9 +608,9 @@ public class TroubleshootingMigration : Migration
                 .WithColumn("name").AsString(100).NotNullable();
                 
             // Issue 2: Different date/time handling
-                IfDatabase("MySQL").Execute.Sql("ALTER TABLE test_table ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
-    IfDatabase("Postgres").Execute.Sql("ALTER TABLE test_table ADD COLUMN created_at TIMESTAMP DEFAULT NOW()");
-    IfDatabase("SqlServer").Execute.Sql("ALTER TABLE test_table ADD created_at DATETIME2 DEFAULT GETDATE()");
+                IfDatabase(ProcessorIdConstants.MySql).Execute.Sql("ALTER TABLE test_table ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+    IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql("ALTER TABLE test_table ADD COLUMN created_at TIMESTAMP DEFAULT NOW()");
+    IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("ALTER TABLE test_table ADD created_at DATETIME2 DEFAULT GETDATE()");
             else
             {
                 // Generic fallback
@@ -618,9 +618,9 @@ public class TroubleshootingMigration : Migration
             }
             
             // Issue 3: Different auto-increment syntax
-                IfDatabase("MySQL").Execute.Sql("ALTER TABLE test_table MODIFY id INT AUTO_INCREMENT");
-    IfDatabase("Postgres").Execute.Sql("ALTER TABLE test_table ALTER COLUMN id SET DEFAULT nextval('test_table_id_seq')");
-    IfDatabase("Oracle").Execute.Sql("CREATE SEQUENCE seq_test_table START WITH 1");
+                IfDatabase(ProcessorIdConstants.MySql).Execute.Sql("ALTER TABLE test_table MODIFY id INT AUTO_INCREMENT");
+    IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql("ALTER TABLE test_table ALTER COLUMN id SET DEFAULT nextval('test_table_id_seq')");
+    IfDatabase(ProcessorIdConstants.Oracle).Execute.Sql("CREATE SEQUENCE seq_test_table START WITH 1");
         }
         catch (Exception ex)
         {
@@ -631,7 +631,7 @@ public class TroubleshootingMigration : Migration
 
     public override void Down()
     {
-            IfDatabase("Oracle").Execute.Sql("DROP TRIGGER tr_test_table_bi");
+            IfDatabase(ProcessorIdConstants.Oracle).Execute.Sql("DROP TRIGGER tr_test_table_bi");
         
         Delete.Table("test_table");
     }
@@ -653,10 +653,10 @@ public class PerformanceOptimizationMigration : Migration
             .WithColumn("CreatedDate").AsDateTime().NotNullable();
             
         // Database-specific performance optimizations
-            IfDatabase("SqlServer").Execute.Sql("CREATE INDEX IX_PerformanceTable_Status_Active ON PerformanceTable (Status) WHERE Status = 'Active'");
-    IfDatabase("Postgres").Execute.Sql("CREATE INDEX IX_PerformanceTable_Status_Active ON PerformanceTable (Status) WHERE Status = 'Active'");
-    IfDatabase("MySQL").Execute.Sql("ALTER TABLE PerformanceTable ENGINE=InnoDB");
-    IfDatabase("Oracle").Execute.Sql("CREATE BITMAP INDEX IX_PerformanceTable_Status_BM ON PerformanceTable (Status)");
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("CREATE INDEX IX_PerformanceTable_Status_Active ON PerformanceTable (Status) WHERE Status = 'Active'");
+    IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql("CREATE INDEX IX_PerformanceTable_Status_Active ON PerformanceTable (Status) WHERE Status = 'Active'");
+    IfDatabase(ProcessorIdConstants.MySql).Execute.Sql("ALTER TABLE PerformanceTable ENGINE=InnoDB");
+    IfDatabase(ProcessorIdConstants.Oracle).Execute.Sql("CREATE BITMAP INDEX IX_PerformanceTable_Status_BM ON PerformanceTable (Status)");
         
         // Generic indexes that work across databases
         Create.Index("IX_PerformanceTable_CategoryId")

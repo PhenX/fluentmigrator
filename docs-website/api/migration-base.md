@@ -416,31 +416,31 @@ public class MigrationPropertiesExample : Migration
     private void HandleDatabaseSpecificLogic()
     {
         // Use IfDatabase with Delegate for conditional logic
-        IfDatabase("SqlServer").Delegate(() => 
+        IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() => 
         {
             // SQL Server specific operations
             Execute.Sql("-- SQL Server specific logic");
         });
         
-        IfDatabase("Postgres").Delegate(() => 
+        IfDatabase(ProcessorIdConstants.Postgres).Delegate(() => 
         {
             // PostgreSQL specific operations  
             Execute.Sql("-- PostgreSQL specific logic");
         });
         
-        IfDatabase("MySQL").Delegate(() => 
+        IfDatabase(ProcessorIdConstants.MySql).Delegate(() => 
         {
             // MySQL specific operations
             Execute.Sql("-- MySQL specific logic");
         });
         
-        IfDatabase("SQLite").Delegate(() => 
+        IfDatabase(ProcessorIdConstants.SQLite).Delegate(() => 
         {
             // SQLite specific operations
             Execute.Sql("-- SQLite specific logic");
         });
         
-        IfDatabase("Oracle").Delegate(() => 
+        IfDatabase(ProcessorIdConstants.Oracle).Delegate(() => 
         {
             // Oracle specific operations
             Execute.Sql("-- Oracle specific logic");
@@ -639,7 +639,7 @@ public class MigrationHelperMethods : Migration
     
     private void CreateUpdateTrigger(string tableName)
     {
-            IfDatabase("SqlServer").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 Execute.Sql($@"
                 CREATE TRIGGER TR_{tableName}_UpdatedAt
@@ -653,7 +653,7 @@ Execute.Sql($@"
                     INNER JOIN inserted i ON t.Id = i.Id
                 END");
     });
-    IfDatabase("Postgres").Delegate(() =>
+    IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
     {
 Execute.Sql($@"
                 CREATE OR REPLACE FUNCTION update_{tableName.ToLower()}_updated_at()
@@ -669,7 +669,7 @@ Execute.Sql($@"
                     FOR EACH ROW
                     EXECUTE FUNCTION update_{tableName.ToLower()}_updated_at();");
     });
-    IfDatabase("MySQL").Delegate(() =>
+    IfDatabase(ProcessorIdConstants.MySql).Delegate(() =>
     {
 Execute.Sql($@"
                 CREATE TRIGGER TR_{tableName}_UpdatedAt
@@ -870,7 +870,7 @@ public class ErrorHandlingMigration : Migration
         // For example, checking available space on SQL Server
         try
         {
-                IfDatabase("SqlServer").Execute.Sql(@"
+                IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                     SELECT 
                         SUM(size - FILEPROPERTY(name, 'SpaceUsed')) * 8 / 1024 AS FreeSpaceMB
                     FROM sys.database_files 
@@ -888,7 +888,7 @@ public class ErrorHandlingMigration : Migration
     {
         try
         {
-                IfDatabase("SqlServer").Delegate(() =>
+                IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 var exists = Execute.Sql($@"
                     SELECT COUNT(*)

@@ -143,19 +143,19 @@ public class DataTypeConversions : Migration
             .AddColumn("PriceDecimal").AsDecimal(10, 2).Nullable();
             
         // Convert string price to decimal, handling invalid values
-        IfDatabase("SqlServer").Execute.Sql(@"
+        IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
             UPDATE Products 
             SET PriceDecimal = TRY_CONVERT(DECIMAL(10,2), PriceString)
             WHERE ISNUMERIC(PriceString) = 1");
 
-        IfDatabase("Postgres").Execute.Sql(@"
+        IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
             UPDATE Products 
             SET PriceDecimal = CASE 
                 WHEN PriceString ~ '^[0-9]+\.?[0-9]*$' THEN PriceString::DECIMAL(10,2)
                 ELSE NULL 
             END");
 
-        IfDatabase("MySQL").Execute.Sql(@"
+        IfDatabase(ProcessorIdConstants.MySql).Execute.Sql(@"
             UPDATE Products 
             SET PriceDecimal = CASE 
                 WHEN PriceString REGEXP '^[0-9]+\.?[0-9]*$' THEN CAST(PriceString AS DECIMAL(10,2))
@@ -223,17 +223,17 @@ public class JsonDataOperations : Migration
     public override void Up()
     {
         // Create table with database-specific JSON column types
-        IfDatabase("SqlServer").Create.Table("UserProfiles")
+        IfDatabase(ProcessorIdConstants.SqlServer).Create.Table("UserProfiles")
             .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
             .WithColumn("UserId").AsInt32().NotNullable()
             .WithColumn("ProfileData").AsCustom("NVARCHAR(MAX)").Nullable();
             
-        IfDatabase("Postgres").Create.Table("UserProfiles")
+        IfDatabase(ProcessorIdConstants.Postgres).Create.Table("UserProfiles")
             .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
             .WithColumn("UserId").AsInt32().NotNullable()
             .WithColumn("ProfileData").AsCustom("JSONB").Nullable();
             
-        IfDatabase("MySQL").Create.Table("UserProfiles")
+        IfDatabase(ProcessorIdConstants.MySql).Create.Table("UserProfiles")
             .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
             .WithColumn("UserId").AsInt32().NotNullable()
             .WithColumn("ProfileData").AsCustom("JSON").Nullable();
@@ -257,12 +257,12 @@ public class JsonDataOperations : Migration
             });
             
         // Update JSON properties with database-specific syntax
-        IfDatabase("SqlServer").Execute.Sql(@"
+        IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
             UPDATE UserProfiles 
             SET ProfileData = JSON_MODIFY(ProfileData, '$.preferences.theme', 'light')
             WHERE UserId = 1");
 
-        IfDatabase("Postgres").Execute.Sql(@"
+        IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
             UPDATE UserProfiles 
             SET ProfileData = ProfileData || '{""preferences"": {""theme"": ""light""}}'
             WHERE UserId = 1");
@@ -289,9 +289,9 @@ public class LargeTextDataOperations : Migration
             .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
             .WithColumn("Title").AsString(200).NotNullable()
             .WithColumn("Content").AsCustom(
-                IfDatabase("SqlServer") ? "NVARCHAR(MAX)" :
-                IfDatabase("Postgres") ? "TEXT" :
-                IfDatabase("MySQL") ? "LONGTEXT" : "TEXT").Nullable()
+                IfDatabase(ProcessorIdConstants.SqlServer) ? "NVARCHAR(MAX)" :
+                IfDatabase(ProcessorIdConstants.Postgres) ? "TEXT" :
+                IfDatabase(ProcessorIdConstants.MySql) ? "LONGTEXT" : "TEXT").Nullable()
             .WithColumn("ContentLength").AsInt32().Nullable();
             
         // Calculate and store content length
@@ -301,16 +301,16 @@ public class LargeTextDataOperations : Migration
             WHERE Content IS NOT NULL");
             
         // Full-text indexing for search
-            IfDatabase("SqlServer").Execute.Sql("CREATE FULLTEXT CATALOG DocumentsCatalog AS DEFAULT");
-    IfDatabase("Postgres").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("CREATE FULLTEXT CATALOG DocumentsCatalog AS DEFAULT");
+    IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
                 ALTER TABLE Documents 
                 ADD COLUMN SearchVector tsvector");
     }
 
     public override void Down()
     {
-            IfDatabase("SqlServer").Execute.Sql("DROP FULLTEXT INDEX ON Documents");
-    IfDatabase("Postgres").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("DROP FULLTEXT INDEX ON Documents");
+    IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
     {
 Delete.Index("IX_Documents_SearchVector").OnTable("Documents");
             Delete.Column("SearchVector").FromTable("Documents");
@@ -358,10 +358,10 @@ public class DataQualityChecks : Migration
             WHERE Email != LOWER(TRIM(Email))");
             
         // Remove records with invalid email formats
-            IfDatabase("SqlServer").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                 DELETE FROM Users 
                 WHERE Email NOT LIKE '%_@_%._%'");
-    IfDatabase("Postgres").Execute.Sql(@"
+    IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
                 DELETE FROM Users 
                 WHERE Email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'");
     }
@@ -448,7 +448,7 @@ public class SqlServerDataOperations : Migration
 {
     public override void Up()
     {
-            IfDatabase("SqlServer").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                 MERGE Users AS target
                 USING (VALUES 
                     ('john@example.com', 'John Doe', 1),
@@ -463,7 +463,7 @@ public class SqlServerDataOperations : Migration
 
     public override void Down()
     {
-            IfDatabase("SqlServer").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
     {
 Update.Table("Users").Set(new { Ranking = (int?)null }).AllRows();
     });
@@ -478,7 +478,7 @@ public class PostgreSqlDataOperations : Migration
 {
     public override void Up()
     {
-            IfDatabase("Postgres").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
                 INSERT INTO Users (Email, Name, IsActive)
                 VALUES 
                     ('john@example.com', 'John Doe', true),
@@ -491,7 +491,7 @@ public class PostgreSqlDataOperations : Migration
 
     public override void Down()
     {
-            IfDatabase("Postgres").Execute.Sql("UPDATE Users SET Tags = NULL, Ranking = NULL");
+            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql("UPDATE Users SET Tags = NULL, Ranking = NULL");
     }
 }
 ```
@@ -503,7 +503,7 @@ public class MySqlDataOperations : Migration
 {
     public override void Up()
     {
-            IfDatabase("MySQL").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.MySql).Execute.Sql(@"
                 INSERT INTO Users (Email, Name, IsActive)
                 VALUES 
                     ('john@example.com', 'John Doe', true),
@@ -516,7 +516,7 @@ public class MySqlDataOperations : Migration
 
     public override void Down()
     {
-            IfDatabase("MySQL").Execute.Sql("UPDATE Users SET FullName = NULL");
+            IfDatabase(ProcessorIdConstants.MySql).Execute.Sql("UPDATE Users SET FullName = NULL");
     }
 }
 ```
@@ -531,7 +531,7 @@ public class BatchProcessing : Migration
     public override void Up()
     {
         // Process data in batches to avoid lock escalation
-            IfDatabase("SqlServer").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                 DECLARE @BatchSize INT = 10000;
                 DECLARE @RowsUpdated INT = @BatchSize;
                 
@@ -543,7 +543,7 @@ public class BatchProcessing : Migration
                     
                     SET @RowsUpdated = @@ROWCOUNT;
                 END");
-    IfDatabase("Postgres").Execute.Sql(@"
+    IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
                 DO $$
                 DECLARE
                     batch_size INTEGER := 10000;
@@ -579,7 +579,7 @@ public class TemporaryTableOperations : Migration
     public override void Up()
     {
         // Create temporary table for staging data
-            IfDatabase("SqlServer").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                 CREATE TABLE #TempUserStats (
                     UserId INT,
                     OrderCount INT,
@@ -682,7 +682,7 @@ public class EfficientDataHandling : Migration
         if (userCount > 100000)
         {
             // Use batch processing for large datasets
-                IfDatabase("SqlServer").Execute.Sql(@"
+                IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                     DECLARE @BatchSize INT = 5000;
                     WHILE EXISTS (SELECT 1 FROM Users WHERE UpdatedAt IS NULL)
                     BEGIN

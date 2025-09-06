@@ -234,13 +234,13 @@ public class CreateConditionalTables : Migration
             .WithColumn("Name").AsString(100).NotNullable();
 
         // SQL Server specific table
-        IfDatabase("SqlServer")
+        IfDatabase(ProcessorIdConstants.SqlServer)
             .Create.Table("SqlServerSpecific")
             .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
             .WithColumn("XmlData").AsXml().Nullable();
 
         // PostgreSQL specific table
-        IfDatabase("Postgres")
+        IfDatabase(ProcessorIdConstants.Postgres)
             .Create.Table("PostgresSpecific")
             .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
             .WithColumn("JsonData").AsString().Nullable();
@@ -250,10 +250,10 @@ public class CreateConditionalTables : Migration
     {
         Delete.Table("Users");
         
-        IfDatabase("SqlServer")
+        IfDatabase(ProcessorIdConstants.SqlServer)
             .Delete.Table("SqlServerSpecific");
             
-        IfDatabase("Postgres")
+        IfDatabase(ProcessorIdConstants.Postgres)
             .Delete.Table("PostgresSpecific");
     }
 }

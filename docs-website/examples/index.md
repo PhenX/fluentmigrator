@@ -55,17 +55,17 @@ Insert.IntoTable("Users")
 
 ```csharp
 // SQL Server specific
-IfDatabase("SqlServer")
+IfDatabase(ProcessorIdConstants.SqlServer)
     .Create.Index("IX_Users_Name").OnTable("Users")
     .OnColumn("Name")
     .Include("Email");
 
 // PostgreSQL specific  
-IfDatabase("Postgres")
+IfDatabase(ProcessorIdConstants.Postgres)
     .Execute.Sql("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
 
 // MySQL specific
-IfDatabase("MySql")
+IfDatabase(ProcessorIdConstants.MySql)
     .Execute.Sql("ALTER TABLE Users ENGINE=InnoDB");
 ```
 

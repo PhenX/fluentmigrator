@@ -185,7 +185,7 @@ public class SqlServerConstraints : Migration
 {
     public override void Up()
     {
-            IfDatabase("SqlServer").Execute.Sql(@"
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
                 ALTER TABLE Products 
                 ADD CONSTRAINT CK_Products_PriceQuantity 
                 CHECK (Price * Quantity >= 0)");
@@ -193,7 +193,7 @@ public class SqlServerConstraints : Migration
 
     public override void Down()
     {
-            IfDatabase("SqlServer").Execute.Sql("ALTER TABLE Products DROP CONSTRAINT CK_Products_PriceQuantity");
+            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql("ALTER TABLE Products DROP CONSTRAINT CK_Products_PriceQuantity");
     }
 }
 ```
@@ -205,7 +205,7 @@ public class PostgreSqlConstraints : Migration
 {
     public override void Up()
     {
-            IfDatabase("Postgres").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
     {
 Create.Table("Users")
                 .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
@@ -221,7 +221,7 @@ Create.Table("Users")
 
     public override void Down()
     {
-            IfDatabase("Postgres").Delegate(() =>
+            IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
     {
 Delete.CheckConstraint("CK_Users_Email_Format").FromTable("Users");
             Delete.Table("Users");

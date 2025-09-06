@@ -1,145 +1,6 @@
-# Raw SQL (Scripts & Helpers)
+# Raw SQL Helpers
 
-FluentMigrator provides powerful tools for executing raw SQL when the fluent API doesn't meet your specific needs. This guide covers all Execute.Sql methods, RawSql helpers, and best practices for custom SQL operations.
-
-## Execute.Sql Methods
-
-### Basic SQL Execution
-
-```csharp
-// Execute a simple SQL statement
-Execute.Sql("UPDATE Users SET IsActive = 1 WHERE CreatedAt < '2023-01-01'");
-
-// Execute with parameter-like syntax (still basic string)
-Execute.Sql("DELETE FROM TempData WHERE ProcessedAt < DATEADD(day, -7, GETDATE())");
-```
-
-### Multi-Statement SQL Blocks
-
-```csharp
-Execute.Sql(@"
-    CREATE TABLE #TempResults (
-        Id INT,
-        TotalCount INT
-    );
-    
-    INSERT INTO #TempResults
-    SELECT UserId, COUNT(*) 
-    FROM Orders 
-    GROUP BY UserId;
-    
-    UPDATE Users 
-    SET OrderCount = t.TotalCount
-    FROM Users u
-    INNER JOIN #TempResults t ON u.Id = t.Id;
-    
-    DROP TABLE #TempResults;
-");
-```
-
-### Conditional SQL Execution
-
-```csharp
-public override void Up()
-{
-    IfDatabase("SqlServer").Execute.Sql(@"
-        UPDATE Users 
-        SET LastLogin = GETUTCDATE()
-        WHERE Email LIKE '%@company.com'");
-
-    IfDatabase("Postgres").Execute.Sql(@"
-        UPDATE Users 
-        SET LastLogin = NOW()
-        WHERE Email LIKE '%@company.com'");
-
-    IfDatabase("MySQL").Execute.Sql(@"
-        UPDATE Users 
-        SET LastLogin = UTC_TIMESTAMP()
-        WHERE Email LIKE '%@company.com'");
-}
-```
-
-### SQL Scripts from Files
-
-```csharp
-// Execute script from embedded resource
-Execute.EmbeddedScript("Scripts.CreateStoredProcedures.sql");
-
-// Execute script from file system
-Execute.Script(@"C:\Scripts\DataMigration.sql");
-```
-
-## Data Querying with Returns
-
-### Simple Value Returns
-
-```csharp
-// Get a single integer value
-var userCount = Execute.Sql("SELECT COUNT(*) FROM Users")
-    .Returns<int>()
-    .FirstOrDefault();
-
-// Get multiple values
-var userIds = Execute.Sql("SELECT Id FROM Users WHERE IsActive = 1")
-    .Returns<int>()
-    .ToList();
-
-// Get string values
-var userNames = Execute.Sql("SELECT Username FROM Users ORDER BY Username")
-    .Returns<string>()
-    .ToList();
-```
-
-### Complex Object Returns
-
-```csharp
-// Define a class for complex returns
-public class UserSummary
-{
-    public int Id { get; set; }
-    public string Username { get; set; }
-    public DateTime? LastLogin { get; set; }
-    public int OrderCount { get; set; }
-}
-
-// Query and map to objects
-var userSummaries = Execute.Sql(@"
-    SELECT 
-        u.Id,
-        u.Username,
-        u.LastLogin,
-        COUNT(o.Id) as OrderCount
-    FROM Users u
-    LEFT JOIN Orders o ON u.Id = o.UserId
-    GROUP BY u.Id, u.Username, u.LastLogin")
-    .Returns<UserSummary>()
-    .ToList();
-```
-
-### Validation and Error Checking
-
-```csharp
-public override void Up()
-{
-    // Validate data before making changes
-    var invalidEmailCount = Execute.Sql(@"
-        SELECT COUNT(*) 
-        FROM Users 
-        WHERE Email IS NULL OR Email = '' OR Email NOT LIKE '%@%'")
-        .Returns<int>()
-        .FirstOrDefault();
-        
-    if (invalidEmailCount > 0)
-    {
-        throw new InvalidOperationException(
-            $"Found {invalidEmailCount} users with invalid email addresses. " +
-            "Please fix data before running this migration.");
-    }
-    
-    // Safe to proceed
-    Execute.Sql("UPDATE Users SET Email = LOWER(Email)");
-}
-```
+FluentMigrator provides RawSql helpers that allow you to embed SQL expressions within structured operations like Insert and Update. Starting with [version 7.0.0](https://github.com/fluentmigrator/fluentmigrator/releases/tag/v7.0.0), RawSql.Insert can also be used in SET and WHERE clauses for Update and Delete operations.
 
 ## RawSql Helper for Insert Operations
 
@@ -168,72 +29,62 @@ Insert.IntoTable("Events").Row(new
     EventTime = RawSql.Insert("GETUTCDATE()"),     // UTC timestamp
     MachineName = RawSql.Insert("HOST_NAME()"),    // Machine name
     DatabaseName = RawSql.Insert("DB_NAME()"),     // Current database
-    Username = RawSql.Insert("SUSER_SNAME()")      // Current user
+    ProcessId = RawSql.Insert("@@SPID")            // Session/Process ID
 });
 ```
 
-#### PostgreSQL Functions
+#### PostgreSQL Functions  
 ```csharp
-Insert.IntoTable("Sessions").Row(new
+Insert.IntoTable("Events").Row(new
 {
-    SessionId = RawSql.Insert("gen_random_uuid()"), // UUID generation
-    CreatedAt = RawSql.Insert("NOW()"),             // Current timestamp
-    Username = RawSql.Insert("current_user"),       // Current user
-    DatabaseName = RawSql.Insert("current_database()"), // Database name
-    ProcessId = RawSql.Insert("pg_backend_pid()")   // Process ID
+    EventId = RawSql.Insert("gen_random_uuid()"),  // UUID generation
+    EventTime = RawSql.Insert("NOW()"),            // Current timestamp
+    Username = RawSql.Insert("current_user"),      // Current user
+    DatabaseName = RawSql.Insert("current_database()"), // Current database
+    ProcessId = RawSql.Insert("pg_backend_pid()")  // Process ID
 });
 ```
 
 #### MySQL Functions
-```csharp
-Insert.IntoTable("LoginHistory").Row(new
-{
-    LoginId = RawSql.Insert("UUID()"),             // UUID generation
-    LoginTime = RawSql.Insert("UTC_TIMESTAMP()"),  // UTC timestamp
-    Username = RawSql.Insert("USER()"),            // Current user
-    ConnectionId = RawSql.Insert("CONNECTION_ID()"), // Connection ID
-    Version = RawSql.Insert("VERSION()")           // MySQL version
-});
-```
-
-#### SQLite Functions
-```csharp
+```csharp  
 Insert.IntoTable("Events").Row(new
 {
-    EventTime = RawSql.Insert("datetime('now')"),   // Current datetime
-    EventDate = RawSql.Insert("date('now')"),       // Current date
-    Timestamp = RawSql.Insert("strftime('%s','now')"), // Unix timestamp
-    RandomId = RawSql.Insert("hex(randomblob(16))") // Random hex string
+    EventId = RawSql.Insert("UUID()"),             // UUID generation
+    EventTime = RawSql.Insert("UTC_TIMESTAMP()"),  // UTC timestamp
+    Username = RawSql.Insert("USER()"),            // Current user
+    DatabaseName = RawSql.Insert("DATABASE()"),    // Current database
+    ProcessId = RawSql.Insert("CONNECTION_ID()")   // Connection ID
 });
 ```
 
-### Cross-Database RawSql Usage
+### Cross-Database Insert Examples
 
 ```csharp
 public override void Up()
 {
-    Create.Table("SystemEvents")
-        .WithIdColumn()
-        .WithColumn("EventTime").AsDateTime().NotNullable()
-        .WithColumn("Username").AsString(100).NotNullable()
-        .WithColumn("EventType").AsString(50).NotNullable();
+    // Create audit table first
+    Create.Table("AuditLog")
+        .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+        .WithColumn("Action").AsString(100).NotNullable()
+        .WithColumn("Timestamp").AsDateTime().NotNullable()
+        .WithColumn("Username").AsString(100).Nullable();
 
     // Insert initial record with database-specific functions
-    IfDatabase("SqlServer").Insert.IntoTable("SystemEvents").Row(new
+    IfDatabase(ProcessorIdConstants.SqlServer).Insert.IntoTable("SystemEvents").Row(new
     {
         EventTime = RawSql.Insert("GETUTCDATE()"),
         Username = RawSql.Insert("SUSER_SNAME()"),
         EventType = "SystemInitialized"
     });
 
-    IfDatabase("Postgres").Insert.IntoTable("SystemEvents").Row(new
+    IfDatabase(ProcessorIdConstants.Postgres).Insert.IntoTable("SystemEvents").Row(new
     {
         EventTime = RawSql.Insert("NOW()"),
         Username = RawSql.Insert("current_user"),
         EventType = "SystemInitialized"
     });
 
-    IfDatabase("MySQL").Insert.IntoTable("SystemEvents").Row(new
+    IfDatabase(ProcessorIdConstants.MySql).Insert.IntoTable("SystemEvents").Row(new
     {
         EventTime = RawSql.Insert("UTC_TIMESTAMP()"),
         Username = RawSql.Insert("USER()"),
@@ -242,348 +93,247 @@ public override void Up()
 }
 ```
 
-## Advanced Execute.Sql Patterns
+## RawSql in Update and Delete Operations (v7.0.0+)
 
-### Batch Processing for Large Datasets
+Starting with [FluentMigrator v7.0.0](https://github.com/fluentmigrator/fluentmigrator/releases/tag/v7.0.0), `RawSql.Insert()` can be used in SET and WHERE clauses for Update and Delete operations.
+
+### Update Operations with RawSql
+
+#### Using RawSql in SET clauses
 
 ```csharp
 public override void Up()
 {
-    // Check dataset size
-    var recordCount = Execute.Sql("SELECT COUNT(*) FROM Users")
-        .Returns<int>()
-        .FirstOrDefault();
-    
-    if (recordCount > 100000)
-    {
-        // Use batch processing for large datasets
-        IfDatabase("SqlServer").Delegate(() =>
-        {
-            Execute.Sql(@"
-                DECLARE @BatchSize INT = 5000;
-                WHILE EXISTS (SELECT 1 FROM Users WHERE UpdatedAt IS NULL)
-                BEGIN
-                    UPDATE TOP (@BatchSize) Users 
-                    SET UpdatedAt = GETDATE()
-                    WHERE UpdatedAt IS NULL;
-                    
-                    -- Prevent blocking
-                    WAITFOR DELAY '00:00:01';
-                END");
+    // Update with database functions in SET clause
+    Update.Table("Users")
+        .Set(new { 
+            LastLoginTime = RawSql.Insert("GETUTCDATE()"),
+            LoginCount = RawSql.Insert("LoginCount + 1")
+        })
+        .Where(new { Username = "admin" });
+
+    // Cross-database timestamp updates
+    IfDatabase(ProcessorIdConstants.SqlServer)
+        .Update.Table("Users")
+        .Set(new { ModifiedAt = RawSql.Insert("GETUTCDATE()") })
+        .Where(new { IsActive = true });
+
+    IfDatabase(ProcessorIdConstants.Postgres)  
+        .Update.Table("Users")
+        .Set(new { ModifiedAt = RawSql.Insert("NOW()") })
+        .Where(new { IsActive = true });
+
+    IfDatabase(ProcessorIdConstants.MySql)
+        .Update.Table("Users") 
+        .Set(new { ModifiedAt = RawSql.Insert("UTC_TIMESTAMP()") })
+        .Where(new { IsActive = true });
+}
+```
+
+#### Using RawSql in WHERE clauses
+
+```csharp
+public override void Up()
+{
+    // Update records where date is older than 30 days
+    IfDatabase(ProcessorIdConstants.SqlServer)
+        .Update.Table("TempData")
+        .Set(new { IsArchived = true })
+        .Where(new { CreatedAt = RawSql.Insert("< DATEADD(day, -30, GETDATE())") });
+
+    IfDatabase(ProcessorIdConstants.Postgres)
+        .Update.Table("TempData") 
+        .Set(new { IsArchived = true })
+        .Where(new { CreatedAt = RawSql.Insert("< NOW() - INTERVAL '30 days'") });
+
+    // Update with complex conditions
+    Update.Table("Orders")
+        .Set(new { Status = "Expired" })
+        .Where(new { 
+            Status = "Pending",
+            CreatedAt = RawSql.Insert("< DATEADD(hour, -24, GETDATE())") 
         });
-        
-        // For other databases, use smaller batches - but we need a way to handle "not SqlServer"
-        // Since IfDatabase doesn't have a "not" operator, we'll handle common alternatives explicitly
-        IfDatabase("Postgres", "MySQL", "SQLite").Execute.Sql(@"
-            UPDATE Users 
-            SET UpdatedAt = NOW()
-            WHERE UpdatedAt IS NULL
-            LIMIT 5000");
-    }
-    else
-    {
-        // Process all at once for smaller datasets
-        Execute.Sql("UPDATE Users SET UpdatedAt = NOW() WHERE UpdatedAt IS NULL");
-    }
 }
 ```
 
-### Transaction Control in SQL
+### Delete Operations with RawSql
+
+#### Using RawSql in WHERE clauses for Delete
 
 ```csharp
 public override void Up()
 {
-    IfDatabase("SqlServer").Execute.Sql(@"
-        BEGIN TRANSACTION;
-        
-        BEGIN TRY
-            -- Complex multi-step operation
-            UPDATE Users SET Status = 'Migrated' WHERE Status = 'Active';
-            
-            INSERT INTO UserHistory (UserId, Action, Timestamp)
-            SELECT Id, 'StatusChanged', GETDATE() FROM Users WHERE Status = 'Migrated';
-            
-            -- Verify results
-            IF @@ROWCOUNT = 0
-                THROW 50001, 'No rows were migrated', 1;
-                
-            COMMIT TRANSACTION;
-        END TRY
-        BEGIN CATCH
-            ROLLBACK TRANSACTION;
-            THROW;
-        END CATCH");
+    // Delete old log entries using database functions
+    IfDatabase(ProcessorIdConstants.SqlServer)
+        .Delete.FromTable("AuditLog")
+        .Where(new { CreatedAt = RawSql.Insert("< DATEADD(month, -6, GETDATE())") });
 
-    // FluentMigrator handles transactions automatically for other databases
-    IfDatabase("Postgres", "MySQL", "SQLite").Delegate(() =>
-    {
-        Execute.Sql("UPDATE Users SET Status = 'Migrated' WHERE Status = 'Active'");
-        
-        Execute.Sql(@"
-            INSERT INTO UserHistory (UserId, Action, Timestamp)
-            SELECT Id, 'StatusChanged', NOW() FROM Users WHERE Status = 'Migrated'");
-    });
+    IfDatabase(ProcessorIdConstants.Postgres)
+        .Delete.FromTable("AuditLog") 
+        .Where(new { CreatedAt = RawSql.Insert("< NOW() - INTERVAL '6 months'") });
+
+    IfDatabase(ProcessorIdConstants.MySql)
+        .Delete.FromTable("AuditLog")
+        .Where(new { CreatedAt = RawSql.Insert("< DATE_SUB(NOW(), INTERVAL 6 MONTH)") });
 }
 ```
 
-### Data Migration and Transformation
+#### Complex Delete Conditions
 
 ```csharp
 public override void Up()
 {
-    // Add new column
-    Alter.Table("Users").AddColumn("FullName").AsString(200).Nullable();
-    
-    // Migrate existing data using SQL
-    Execute.Sql(@"
-        UPDATE Users 
-        SET FullName = TRIM(COALESCE(FirstName, '') + ' ' + COALESCE(LastName, ''))
-        WHERE FullName IS NULL");
-        
-    // Handle edge cases
-    Execute.Sql(@"
-        UPDATE Users 
-        SET FullName = CASE 
-            WHEN FullName = '' THEN 'Unknown'
-            WHEN LEN(FullName) > 200 THEN LEFT(FullName, 197) + '...'
-            ELSE FullName
-        END");
-        
-    // Make column not nullable after migration
-    Alter.Column("FullName").OnTable("Users").AsString(200).NotNullable();
+    // Delete with multiple RawSql conditions
+    Delete.FromTable("Sessions")
+        .Where(new { 
+            IsActive = false,
+            LastAccessed = RawSql.Insert("< DATEADD(hour, -2, GETDATE())"),
+            LoginAttempts = RawSql.Insert("> 5")
+        });
+
+    // Delete with subquery conditions  
+    IfDatabase(ProcessorIdConstants.SqlServer)
+        .Delete.FromTable("UserPreferences")
+        .Where(new { 
+            UserId = RawSql.Insert("IN (SELECT Id FROM Users WHERE IsDeleted = 1)")
+        });
 }
 ```
 
-### Database-Specific Operations
+## Advanced RawSql Patterns
 
-#### SQL Server Specific
+### Combining RawSql with Conditional Logic
+
 ```csharp
-IfDatabase("SqlServer").Delegate(() =>
+[Migration(1)]
+public class AdvancedRawSqlMigration : Migration
 {
-    // Create full-text catalog and index
-    Execute.Sql("CREATE FULLTEXT CATALOG DocumentsCatalog AS DEFAULT");
-    Execute.Sql(@"
-        CREATE FULLTEXT INDEX ON Documents(Title, Content)
-        KEY INDEX PK_Documents ON DocumentsCatalog");
-        
-    // Create computed columns
-    Execute.Sql(@"
-        ALTER TABLE Orders 
-        ADD TotalWithTax AS (Subtotal * (1 + TaxRate)) PERSISTED");
-        
-    // Create indexed views
-    Execute.Sql(@"
-        CREATE VIEW OrderSummaryView WITH SCHEMABINDING AS
-        SELECT 
-            CustomerId, 
-            COUNT_BIG(*) as OrderCount,
-            SUM(Total) as TotalAmount
-        FROM dbo.Orders
-        GROUP BY CustomerId");
-        
-    Execute.Sql("CREATE UNIQUE CLUSTERED INDEX IX_OrderSummary ON OrderSummaryView(CustomerId)");
-});
+    public override void Up()
+    {
+        // Insert default admin user with appropriate timestamps
+        IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
+        {
+            Insert.IntoTable("Users").Row(new
+            {
+                Username = "admin",
+                Email = "admin@company.com",
+                CreatedAt = RawSql.Insert("GETUTCDATE()"),
+                PasswordHash = RawSql.Insert("HASHBYTES('SHA2_256', 'TempPassword123')"),
+                IsActive = true
+            });
+        });
+
+        IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
+        {
+            Insert.IntoTable("Users").Row(new
+            {
+                Username = "admin", 
+                Email = "admin@company.com",
+                CreatedAt = RawSql.Insert("NOW()"),
+                PasswordHash = RawSql.Insert("encode(digest('TempPassword123', 'sha256'), 'hex')"),
+                IsActive = true
+            });
+        });
+    }
+
+    public override void Down()
+    {
+        Delete.FromTable("Users").Where(new { Username = "admin" });
+    }
+}
 ```
 
-#### PostgreSQL Specific
+### Data Transformation with RawSql
+
 ```csharp
-IfDatabase("Postgres").Delegate(() =>
+public override void Up()
 {
-    // Create custom data types
-    Execute.Sql("CREATE TYPE order_status AS ENUM ('pending', 'processing', 'shipped', 'delivered')");
-    
-    // Create extensions
-    Execute.Sql("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
-    Execute.Sql("CREATE EXTENSION IF NOT EXISTS \"pg_trgm\"");
-    
-    // Create GIN indexes for full-text search
-    Execute.Sql(@"
-        ALTER TABLE Documents 
-        ADD COLUMN search_vector tsvector");
-        
-    Execute.Sql(@"
-        UPDATE Documents 
-        SET search_vector = to_tsvector('english', Title || ' ' || COALESCE(Content, ''))");
-        
-    Execute.Sql("CREATE INDEX IX_Documents_Search ON Documents USING GIN (search_vector)");
-});
+    // Transform existing data using database functions
+    Update.Table("Products")
+        .Set(new { 
+            Slug = RawSql.Insert("LOWER(REPLACE(REPLACE(Name, ' ', '-'), '&', 'and'))"),
+            UpdatedAt = RawSql.Insert("GETUTCDATE()")
+        })
+        .Where(new { Slug = RawSql.Insert("IS NULL") });
+
+    // Calculate derived values
+    Update.Table("Orders")
+        .Set(new { 
+            TotalAmount = RawSql.Insert("Quantity * UnitPrice"),
+            Tax = RawSql.Insert("(Quantity * UnitPrice) * 0.08")
+        })
+        .Where(new { 
+            TotalAmount = RawSql.Insert("IS NULL"),
+            Status = "Pending"
+        });
+}
 ```
 
 ## Best Practices and Limitations
 
-### ✅ Best Practices
+### When to Use RawSql
 
-1. **Use Execute.Sql for complex operations** not supported by fluent API
-2. **Combine with IfDatabase()** for cross-database compatibility using fluent syntax like `IfDatabase("SqlServer").Execute.Sql(...)`
-3. **Validate data before operations** using Returns() methods
-4. **Handle large datasets efficiently** with batch processing
-5. **Document database-specific dependencies** in migration comments
-6. **Test thoroughly** with your target database(s)
+**✅ Good uses:**
+- Database function calls (timestamps, GUIDs, user functions)
+- Mathematical calculations
+- String transformations
+- Date/time operations
+- Conditional expressions that can't be expressed in the fluent API
 
-### ❌ Common Mistakes
+**❌ Avoid for:**
+- Complex logic (use Execute.Sql instead)
+- Multi-statement operations
+- Operations that vary significantly between databases without conditional wrapping
 
-1. **Don't use RawSql.Insert in Update/Delete operations** - it only works with Insert
-2. **Don't hardcode database-specific syntax** without conditional logic
-3. **Don't ignore transaction boundaries** - large operations might timeout
-4. **Don't skip error handling** for critical data operations
-
-### RawSql.Insert Limitations
-
-::: warning Important Limitations
-The `RawSql.Insert()` method has specific limitations:
-
-- **Insert operations only**: Cannot be used in Update or Delete operations
-- **No type checking**: SQL expressions are passed through without validation
-- **Database-specific**: Makes your migrations dependent on specific database features
-:::
-
-```csharp
-// ❌ These will NOT work
-Update.Table("Users")
-    .Set(new { LastLogin = RawSql.Insert("GETDATE()") }) // Won't work!
-    .Where(new { Id = 1 });
-
-Delete.FromTable("Users")
-    .Row(new { CreatedAt = RawSql.Insert("< DATEADD(day, -30, GETDATE())") }); // Won't work!
-
-// ✅ Use Execute.Sql instead
-Execute.Sql("UPDATE Users SET LastLogin = GETDATE() WHERE Id = 1");
-Execute.Sql("DELETE FROM Users WHERE CreatedAt < DATEADD(day, -30, GETDATE())");
-```
-
-### Database-Agnostic Alternatives
-
-When possible, prefer FluentMigrator's built-in methods:
-
-```csharp
-// ✅ Database-agnostic (preferred)
-.WithColumn("CreatedAt")
-    .AsDateTime()
-    .NotNullable()
-    .WithDefaultValue(SystemMethods.CurrentDateTime)
-
-// vs database-specific RawSql
-// ❌ Database-specific (use only when necessary)
-Execute.Sql("ALTER TABLE Users ADD CONSTRAINT DF_Users_CreatedAt DEFAULT GETDATE() FOR CreatedAt");
-```
-
-## Integration with Migration Features
-
-### With Profiles and Tags
-
-```csharp
-[Profile("Development")]
-[Tags("DataSeeding")]
-public class SeedDevelopmentData : Migration
-{
-    public override void Up()
-    {
-        // Seed test data using database functions
-        Execute.Sql(@"
-            INSERT INTO Users (Username, Email, CreatedAt, PasswordHash)
-            VALUES 
-                ('testuser1', 'test1@example.com', GETDATE(), HASHBYTES('SHA2_256', 'password123')),
-                ('testuser2', 'test2@example.com', GETDATE(), HASHBYTES('SHA2_256', 'password456'))");
-                
-        // Insert using RawSql for specific values
-        Insert.IntoTable("UserProfiles").Row(new
-        {
-            UserId = 1,
-            ProfileData = "{'theme': 'dark'}",
-            CreatedAt = RawSql.Insert("GETDATE()"),
-            LastModified = RawSql.Insert("GETDATE()")
-        });
-    }
-    
-    public override void Down()
-    {
-        Execute.Sql("DELETE FROM UserProfiles WHERE UserId IN (1, 2)");
-        Execute.Sql("DELETE FROM Users WHERE Username IN ('testuser1', 'testuser2')");
-    }
-}
-```
-
-### With Maintenance Migrations
-
-```csharp
-[Maintenance(MigrationStage.AfterAll)]
-public class UpdateStatistics : Migration
-{
-    public override void Up()
-    {
-        IfDatabase("SqlServer").Delegate(() =>
-        {
-            // Update table statistics
-            Execute.Sql("UPDATE STATISTICS Users");
-            Execute.Sql("UPDATE STATISTICS Orders");
-            Execute.Sql("UPDATE STATISTICS Products");
-            
-            // Rebuild fragmented indexes
-            Execute.Sql(@"
-                DECLARE @sql NVARCHAR(MAX) = '';
-                SELECT @sql = @sql + 'ALTER INDEX ' + i.name + ' ON ' + t.name + ' REBUILD;'
-                FROM sys.indexes i
-                INNER JOIN sys.tables t ON i.object_id = t.object_id
-                WHERE i.avg_fragmentation_in_percent > 30;
-                
-                EXEC sp_executesql @sql;");
-        });
-
-        IfDatabase("Postgres").Delegate(() =>
-        {
-            Execute.Sql("VACUUM ANALYZE Users");
-            Execute.Sql("VACUUM ANALYZE Orders");
-            Execute.Sql("VACUUM ANALYZE Products");
-        });
-    }
-    
-    public override void Down() { /* Maintenance operations typically don't need rollback */ }
-}
-```
-
-## Error Handling and Recovery
-
-### Defensive Programming
+### Cross-Database Compatibility
 
 ```csharp
 public override void Up()
 {
-    try
-    {
-        // Backup critical data before changes
-        Execute.Sql(@"
-            SELECT * INTO Users_Backup_" + DateTime.Now.ToString("yyyyMMdd") + @"
-            FROM Users 
-            WHERE IsActive = 0");
-            
-        // Perform risky operation
-        Execute.Sql("UPDATE Users SET Status = 'Archived' WHERE IsActive = 0");
-        
-        // Verify results
-        var updatedCount = Execute.Sql("SELECT @@ROWCOUNT").Returns<int>().FirstOrDefault();
-        if (updatedCount == 0)
+    // Handle database differences explicitly
+    IfDatabase(ProcessorIdConstants.SqlServer)
+        .Insert.IntoTable("Events").Row(new
         {
-            throw new InvalidOperationException("No users were updated - operation may have failed");
-        }
-        
-        // Log the operation
-        Execute.Sql(@"
-            INSERT INTO MigrationLog (Migration, Action, RecordCount, Timestamp)
-            VALUES ('UpdateUserStatus', 'Archive', " + updatedCount + ", GETDATE())");
-    }
-    catch (Exception ex)
-    {
-        // Transaction will be rolled back automatically
-        throw new InvalidOperationException($"User status update failed: {ex.Message}", ex);
-    }
+            Id = RawSql.Insert("NEWID()"),
+            CreatedAt = RawSql.Insert("GETUTCDATE()")
+        });
+
+    IfDatabase(ProcessorIdConstants.Postgres)
+        .Insert.IntoTable("Events").Row(new  
+        {
+            Id = RawSql.Insert("gen_random_uuid()"),
+            CreatedAt = RawSql.Insert("NOW()")
+        });
+
+    IfDatabase(ProcessorIdConstants.MySql)
+        .Insert.IntoTable("Events").Row(new
+        {
+            Id = RawSql.Insert("UUID()"),
+            CreatedAt = RawSql.Insert("UTC_TIMESTAMP()")
+        });
 }
 ```
 
-Raw SQL operations in FluentMigrator provide powerful flexibility when the fluent API limitations require direct database access. Use them judiciously while maintaining code readability and database portability where possible.
+### Performance Considerations
+
+```csharp
+public override void Up()
+{
+    // ✅ Good: Efficient bulk operations
+    Update.Table("Users")
+        .Set(new { 
+            LastLoginTime = RawSql.Insert("GETUTCDATE()"),
+            IsOnline = true 
+        })
+        .Where(new { Status = "LoggedIn" });
+
+    // ❌ Less efficient: Multiple individual updates
+    // (Use Execute.Sql with loops for this pattern instead)
+}
+```
 
 ## See Also
 
-- [Columns](managing-columns.md) - Column management using fluent API
-- [Data Operations](operations/data.md) - Working with data using fluent methods  
-- [Best Practices](advanced/best-practices.md) - Migration best practices
-- [Database-Specific Features](advanced/dbms-extensions.md) - Platform-specific capabilities
+- [SQL Scripts](../operations/sql-scripts.md) - For Execute.Sql methods and custom SQL operations
+- [Data Operations](../operations/data.md) - For structured data operations using FluentMigrator API
+- [Conditional Logic](../advanced/conditional-logic.md) - Advanced patterns for database-specific logic
