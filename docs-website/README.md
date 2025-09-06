@@ -12,7 +12,7 @@ The documentation provides comprehensive coverage of FluentMigrator including:
 - **Common Operations**: Creating tables, indexes, constraints, and data operations
 - **Database Providers**: Provider-specific features and configuration
   - SQL Server
-  - PostgreSQL 
+  - PostgreSQL
   - MySQL
   - SQLite
   - Oracle
@@ -25,7 +25,7 @@ The documentation provides comprehensive coverage of FluentMigrator including:
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm
 
 ### Setup
@@ -41,7 +41,7 @@ npm install
 npm run docs:dev
 ```
 
-The site will be available at http://localhost:5173
+The site will be available at `http://localhost:5173`
 
 ### Build
 
@@ -111,22 +111,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          
+
       - name: Install dependencies
         run: |
           cd docs-website
           npm ci
-          
+
       - name: Build documentation
         run: |
           cd docs-website
           npm run docs:build
-          
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:

@@ -25,7 +25,7 @@ export default defineConfig({
 
         nav: [
             {text: 'Home', link: '/'},
-            {text: 'Documentation', link: '/guide/introduction'},
+            {text: 'Documentation', link: '/intro/quick-start'},
             {text: 'Release notes', link: 'https://github.com/fluentmigrator/fluentmigrator/releases'},
             {
                 text: 'GitHub',
@@ -34,81 +34,75 @@ export default defineConfig({
         ],
 
         sidebar: {
-            '/guide/': [
+            '/': [
                 {
                     text: 'Introduction',
                     items: [
-                        {text: 'What is FluentMigrator?', link: '/guide/introduction'},
-                        {text: 'Quick Start', link: '/guide/quick-start'},
-                        {text: 'Installation', link: '/guide/installation'}
+                        {text: 'Quick Start', link: '/intro/quick-start'},
+                        {text: 'Installation', link: '/intro/installation'},
+                        {text: 'FAQ', link: '/intro/faq'}
                     ]
                 },
                 {
                     text: 'Common Operations',
                     items: [
-                        {text: 'Creating Tables', link: '/guide/operations/create-tables'},
-                        {text: 'Altering Tables', link: '/guide/operations/alter-tables'},
-                        {text: 'Columns', link: '/guide/operations/columns'},
-                        {text: 'Data Operations', link: '/guide/operations/data'},
-                        {text: 'Schema Operations', link: '/guide/operations/schema'},
-                        {text: 'SQL Scripts', link: '/guide/operations/sql-scripts'}
+                        {text: 'Creating Tables', link: '/operations/create-tables'},
+                        {text: 'Altering Tables', link: '/operations/alter-tables'},
+                        {text: 'Columns', link: '/operations/columns'},
+                        {text: 'Data Operations', link: '/operations/data'},
+                        {text: 'Schema Operations', link: '/operations/schema'},
+                        {text: 'SQL Scripts', link: '/operations/sql-scripts'}
                     ]
                 },
                 {
                     text: 'Basics',
                     items: [
-                        {text: 'Managing Columns', link: '/guide/managing-columns'},
-                        {text: 'Managing Indexes', link: '/guide/managing-indexes'},
-                        {text: 'Working with Constraints', link: '/guide/working-with-constraints'},
-                        {text: 'Working with Foreign Keys', link: '/guide/working-with-foreign-keys'},
-                        {text: 'Raw SQL Helpers', link: '/guide/raw-sql-scripts'}
+                        {text: 'Managing Columns', link: '/columns'},
+                        {text: 'Managing Indexes', link: '/indexes'},
+                        {text: 'Working with Constraints', link: '/constraints'},
+                        {text: 'Working with Foreign Keys', link: '/foreign-keys'},
+                        {text: 'Raw SQL Helpers', link: '/raw-sql-scripts'}
                     ]
                 },
                 {
                     text: 'Migration Runners',
                     items: [
-                        {text: 'In-Process Runner', link: '/guide/runners/in-process'},
-                        {text: 'Console Tool (Migrate.exe)', link: '/guide/runners/console'},
-                        {text: 'dotnet-fm CLI', link: '/guide/runners/dotnet-fm'}
+                        {text: 'In-Process Runner', link: '/runners/in-process'},
+                        {text: 'Console Tool (Migrate.exe)', link: '/runners/console'},
+                        {text: 'dotnet-fm CLI', link: '/runners/dotnet-fm'}
                     ]
                 },
                 {
                     text: 'Database Providers',
                     items: [
-                        {text: 'SQL Server', link: '/guide/providers/sql-server'},
-                        {text: 'PostgreSQL', link: '/guide/providers/postgresql'},
-                        {text: 'MySQL', link: '/guide/providers/mysql'},
-                        {text: 'SQLite', link: '/guide/providers/sqlite'},
-                        {text: 'Oracle', link: '/guide/providers/oracle'},
-                        {text: 'Other Providers', link: '/guide/providers/others'}
+                        {text: 'SQL Server', link: '/providers/sql-server'},
+                        {text: 'PostgreSQL', link: '/providers/postgresql'},
+                        {text: 'MySQL', link: '/providers/mysql'},
+                        {text: 'SQLite', link: '/providers/sqlite'},
+                        {text: 'Oracle', link: '/providers/oracle'},
+                        {text: 'Other Providers', link: '/providers/others'}
                     ]
                 },
                 {
                     text: 'Migration Types',
                     items: [
-                        {text: 'Maintenance Migrations', link: '/guide/migration-types/maintenance'},
-                        {text: 'Auto-Reversing Migrations', link: '/guide/migration-types/auto-reversing'},
-                        {text: 'Tags', link: '/guide/migration-types/tags'},
-                        {text: 'Profiles', link: '/guide/migration-types/profiles'}
+                        {text: 'Maintenance Migrations', link: '/migration-types/maintenance'},
+                        {text: 'Auto-Reversing Migrations', link: '/migration-types/auto-reversing'},
+                        {text: 'Tags', link: '/migration-types/tags'},
+                        {text: 'Profiles', link: '/migration-types/profiles'}
                     ]
                 },
                 {
                     text: 'Advanced Topics',
                     items: [
-                        {text: 'DBMS Extensions', link: '/guide/advanced/dbms-extensions'},
-                        {text: 'Best Practices', link: '/guide/advanced/best-practices'},
-                        {text: 'Migration Versioning', link: '/guide/advanced/versioning'},
-                        {text: 'Conditional Logic', link: '/guide/advanced/conditional-logic'},
-                        {text: 'Custom Extensions', link: '/guide/advanced/custom-extensions'},
-                        {text: 'Advanced Logic on Connection', link: '/guide/advanced/connection-logic'}
+                        {text: 'DBMS Extensions', link: '/advanced/dbms-extensions'},
+                        {text: 'Best Practices', link: '/advanced/best-practices'},
+                        {text: 'Migration Versioning', link: '/advanced/versioning'},
+                        {text: 'Conditional Logic', link: '/advanced/conditional-logic'},
+                        {text: 'Custom Extensions', link: '/advanced/custom-extensions'},
+                        {text: 'Advanced Logic on Connection', link: '/advanced/connection-logic'}
                     ]
                 },
-                {
-                    text: 'Help & Support',
-                    items: [
-                        {text: 'FAQ', link: '/guide/faq'}
-                    ]
-                }
             ]
         },
 
