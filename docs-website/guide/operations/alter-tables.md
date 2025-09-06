@@ -153,6 +153,8 @@ public class AddTableConstraints : Migration
 }
 ```
 
+For comprehensive constraint management, including complex validation rules and cross-database compatibility, see [Working with Constraints](/guide/working-with-constraints).
+
 ### Removing Table Constraints
 
 ```csharp
@@ -451,6 +453,6 @@ public class SafeNotNullConversion : Migration
 
 - [Creating Tables](create-tables.md)
 - [Managing Columns](columns.md)
-- [Working with Indexes](indexes.md)
-- [Foreign Keys](foreign-keys.md)
+- [Managing Indexes](/guide/managing-indexes)
+- [Working with Foreign Keys](/guide/working-with-foreign-keys)
 - [Best Practices](../advanced/best-practices.md)

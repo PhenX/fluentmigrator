@@ -158,7 +158,7 @@ Create.Table("Orders")
 
 ## Foreign Keys
 
-### Simple Foreign Key
+### Basic Foreign Key
 ```csharp
 Create.Table("Orders")
     .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
@@ -167,17 +167,7 @@ Create.Table("Orders")
     .WithColumn("Total").AsDecimal(10, 2).NotNullable();
 ```
 
-### Foreign Key with Actions
-```csharp
-Create.Table("OrderItems")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("OrderId").AsInt32().NotNullable()
-        .ForeignKey("FK_OrderItems_Orders", "Orders", "Id")
-        .OnDelete(Rule.Cascade)
-        .OnUpdate(Rule.Restrict)
-    .WithColumn("ProductId").AsInt32().NotNullable()
-        .ForeignKey("FK_OrderItems_Products", "Products", "Id");
-```
+For comprehensive foreign key management, including cascading actions, self-referencing relationships, and complex constraint scenarios, see [Working with Foreign Keys](/guide/working-with-foreign-keys).
 
 ## Table-Level Constraints
 
@@ -208,23 +198,13 @@ Alter.Table("Users")
 Create.Table("Users")
     .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
     .WithColumn("Username").AsString(50).NotNullable()
-    .WithColumn("Email").AsString(255).NotNullable()
-    .WithColumn("LastName").AsString(100).NotNullable()
-    .WithColumn("FirstName").AsString(100).NotNullable();
+    .WithColumn("Email").AsString(255).NotNullable();
 
-// Single column index
-Create.Index("IX_Users_Email").OnTable("Users").OnColumn("Email").Ascending();
-
-// Multi-column index
-Create.Index("IX_Users_Name").OnTable("Users")
-    .OnColumn("LastName").Ascending()
-    .OnColumn("FirstName").Ascending();
-
-// Unique index
-Create.Index("IX_Users_Username").OnTable("Users")
-    .OnColumn("Username").Ascending()
-    .WithOptions().Unique();
+// Basic index example
+Create.Index("IX_Users_Email").OnTable("Users").OnColumn("Email");
 ```
+
+For comprehensive index management, including composite indexes, unique indexes, performance optimization, and database-specific features, see [Managing Indexes](/guide/managing-indexes).
 
 ## Schema Support
 
@@ -364,5 +344,5 @@ Insert.IntoTable("OrderStatuses")
 
 - [Altering Tables](./alter-tables.md) - Learn how to modify existing tables
 - [Managing Columns](./columns.md) - Deep dive into column operations
-- [Working with Indexes](./indexes.md) - Advanced indexing strategies
-- [Foreign Keys](./foreign-keys.md) - Relationship management
+- [Managing Indexes](/guide/managing-indexes) - Advanced indexing strategies
+- [Working with Foreign Keys](/guide/working-with-foreign-keys) - Relationship management

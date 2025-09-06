@@ -1,4 +1,4 @@
-# Working with Indexes
+# Managing Indexes
 
 Indexes are crucial for database performance optimization. FluentMigrator provides comprehensive support for creating, modifying, and managing database indexes across different database providers.
 

@@ -1,4 +1,4 @@
-# Foreign Keys
+# Working with Foreign Keys
 
 Foreign key constraints are essential for maintaining data integrity and establishing relationships between tables. FluentMigrator provides comprehensive support for creating and managing foreign key relationships across different database providers.
 
