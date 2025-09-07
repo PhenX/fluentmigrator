@@ -93,6 +93,99 @@ Create.Table("Products")
     .WithColumn("SearchName").AsString(255).Computed("UPPER(Name)").Persisted();
 ```
 
+### Column Documentation and Descriptions
+
+FluentMigrator provides several methods to document columns and tables, allowing you to add metadata that can be stored in the database (depending on provider support).
+
+#### Basic Column Description
+
+Use `WithColumnDescription` to add a primary description for a column:
+
+```csharp
+Create.Table("Users")
+    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+    .WithColumn("Email").AsString(255).NotNullable()
+        .WithColumnDescription("User's primary email address for authentication")
+    .WithColumn("CreatedAt").AsDateTime().NotNullable()
+        .WithColumnDescription("Timestamp when the user account was created");
+
+// When altering existing columns
+Alter.Column("Status").OnTable("Orders")
+    .AsString(50).NotNullable()
+    .WithColumnDescription("Current order status: Pending, Processing, Shipped, or Delivered");
+```
+
+#### Additional Column Descriptions
+
+Use `WithColumnAdditionalDescription` to add named metadata beyond the primary description:
+
+```csharp
+Create.Table("Products")
+    .WithColumn("Price").AsDecimal(10, 2).NotNullable()
+        .WithColumnDescription("Product price in USD")
+        .WithColumnAdditionalDescription("Currency", "USD")
+        .WithColumnAdditionalDescription("LastUpdated", "2024-01-01")
+        .WithColumnAdditionalDescription("ValidationRule", "Must be positive value");
+```
+
+#### Multiple Additional Descriptions
+
+Use `WithColumnAdditionalDescriptions` to add multiple metadata entries at once:
+
+```csharp
+var metadata = new Dictionary<string, string>
+{
+    {"DataSource", "External API"},
+    {"RefreshFrequency", "Daily"},
+    {"Owner", "DataTeam"},
+    {"SensitivityLevel", "Internal"}
+};
+
+Create.Table("ExternalData")
+    .WithColumn("ExternalId").AsString(100).NotNullable()
+        .WithColumnDescription("Unique identifier from external system")
+        .WithColumnAdditionalDescriptions(metadata);
+```
+
+#### Database Provider Support
+
+Column descriptions are supported by different databases with varying storage mechanisms:
+
+| Provider | Storage Method | Notes |
+|----------|---------------|-------|
+| SQL Server | Extended Properties | Stored as MS_Description properties |
+| PostgreSQL | COMMENT ON COLUMN | Native comment support |
+| Oracle | COMMENT ON COLUMN | Native comment support |
+| MySQL | Column comments | Native comment support |
+| SQLite | Not supported | Descriptions are ignored |
+
+#### Advanced Description Patterns
+
+```csharp
+// Environment-specific documentation
+Create.Table("Configuration")
+    .WithColumn("Setting").AsString(100).NotNullable()
+        .WithColumnDescription("Application configuration setting")
+        .WithColumnAdditionalDescription("Environment", "Production")
+        .WithColumnAdditionalDescription("Example", "timeout=30000");
+
+// Data lineage documentation
+Create.Table("Analytics")
+    .WithColumn("MetricValue").AsDecimal(18, 4).NotNullable()
+        .WithColumnDescription("Calculated metric value")
+        .WithColumnAdditionalDescription("Formula", "SUM(revenue) / COUNT(orders)")
+        .WithColumnAdditionalDescription("DataSource", "orders.revenue")
+        .WithColumnAdditionalDescription("UpdateFrequency", "Hourly");
+
+// Business rule documentation
+Create.Table("Employees")
+    .WithColumn("Salary").AsCurrency().NotNullable()
+        .WithColumnDescription("Employee annual salary")
+        .WithColumnAdditionalDescription("Range", "30000-200000")
+        .WithColumnAdditionalDescription("ReviewCycle", "Annual")
+        .WithColumnAdditionalDescription("Approver", "HR Director");
+```
+
 ### Setting Initial Values for Existing Rows
 
 When adding new columns to existing tables with data, you may need to populate the new column with initial values for existing rows. The `SetExistingRowsTo` method provides this functionality.

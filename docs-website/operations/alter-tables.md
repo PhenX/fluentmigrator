@@ -125,6 +125,115 @@ public class RenameColumns : Migration
 }
 ```
 
+## Table Documentation
+
+Use `WithDescription` to add or update documentation for existing tables. This is useful for adding context to tables created in earlier migrations.
+
+### Adding Table Descriptions
+
+```csharp
+public class AddTableDocumentation : Migration
+{
+    public override void Up()
+    {
+        Alter.Table("Users")
+            .WithDescription("Application users with authentication credentials and profile data. " +
+                           "Central entity linking to user preferences, roles, and activity logs.");
+    }
+
+    public override void Down()
+    {
+        // Note: Description removal is not directly supported in all databases
+        // Consider using Execute.Sql for provider-specific removal if needed
+    }
+}
+```
+
+### Updating Existing Table Descriptions
+
+```csharp
+public class UpdateTableDocumentation : Migration
+{
+    public override void Up()
+    {
+        Alter.Table("Orders")
+            .WithDescription("Customer order records with comprehensive tracking from creation " +
+                           "through fulfillment. Updated in v2.1 to include international shipping support " +
+                           "and multi-currency pricing. Links to Customers, OrderItems, and ShippingAddresses.");
+    }
+
+    public override void Down()
+    {
+        Alter.Table("Orders")
+            .WithDescription("Customer order records with basic tracking and fulfillment status.");
+    }
+}
+```
+
+### Batch Documentation Updates
+
+```csharp
+public class DocumentAllTables : Migration
+{
+    public override void Up()
+    {
+        // Core business entities
+        Alter.Table("Customers")
+            .WithDescription("Primary customer records containing contact info and account status");
+
+        Alter.Table("Products")
+            .WithDescription("Product catalog with pricing, inventory, and categorization data");
+
+        Alter.Table("Orders")
+            .WithDescription("Customer order transactions with line items and fulfillment tracking");
+
+        // Lookup/reference tables
+        Alter.Table("Categories")
+            .WithDescription("Product categorization hierarchy for navigation and reporting");
+
+        Alter.Table("PaymentMethods")
+            .WithDescription("Accepted payment types and processor configuration");
+    }
+
+    public override void Down()
+    {
+        // Descriptions typically don't need explicit removal in Down()
+        // unless business requirements dictate it
+    }
+}
+```
+
+### Provider-Specific Description Management
+
+Different databases handle description updates differently:
+
+```csharp
+public class ProviderSpecificDocumentation : Migration
+{
+    public override void Up()
+    {
+        // Standard approach works for most providers
+        Alter.Table("Analytics")
+            .WithDescription("Performance metrics and usage statistics for business intelligence");
+
+        // For complex description removal (if needed)
+        IfDatabase(ProcessorIdConstants.SqlServer)
+            .Execute.Sql(@"
+                IF EXISTS (SELECT * FROM fn_listextendedproperty(N'MS_Description', N'SCHEMA', N'dbo', N'TABLE', N'OldTable', NULL, NULL))
+                    EXEC sys.sp_dropextendedproperty @name=N'MS_Description', @level0type=N'SCHEMA', @level0name='dbo', @level1type=N'TABLE', @level1name='OldTable'
+            ");
+
+        IfDatabase(ProcessorIdConstants.PostgreSql)
+            .Execute.Sql("COMMENT ON TABLE \"OldTable\" IS NULL");
+    }
+
+    public override void Down()
+    {
+        // Rollback if needed for your use case
+    }
+}
+```
+
 ## Working with Table Constraints
 
 ### Adding Unique Constraints

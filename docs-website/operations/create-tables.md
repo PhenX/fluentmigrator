@@ -307,6 +307,91 @@ Create.Index("IX_Orders_UserId").OnTable("Orders").OnColumn("UserId");
 Create.Index("IX_Orders_CreatedAt").OnTable("Orders").OnColumn("CreatedAt");
 ```
 
+## Table Documentation
+
+Use `WithDescription` to add documentation metadata to tables. This helps document the purpose, usage, and business context of your database tables.
+
+### Basic Table Description
+```csharp
+Create.Table("Users")
+    .WithDescription("System users with authentication and profile information")
+    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+    .WithColumn("Username").AsString(50).NotNullable().Unique()
+    .WithColumn("Email").AsString(255).NotNullable();
+```
+
+### Comprehensive Table Documentation
+```csharp
+Create.Table("OrderHistory")
+    .WithDescription("Historical record of all order state changes for audit and analytics purposes. " +
+                    "Contains immutable records of order lifecycle events including creation, " +
+                    "payment processing, fulfillment, and delivery status updates.")
+    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+    .WithColumn("OrderId").AsInt32().NotNullable().ForeignKey("Orders", "Id")
+    .WithColumn("Status").AsString(50).NotNullable()
+    .WithColumn("Timestamp").AsDateTime().NotNullable().WithDefault(SystemMethods.CurrentDateTime)
+    .WithColumn("Details").AsString().Nullable();
+```
+
+### Business Domain Documentation
+```csharp
+// Customer data table
+Create.Table("Customers")
+    .WithDescription("Primary customer entity containing contact information, preferences, " +
+                    "and account status. Links to Orders, Addresses, and CustomerPreferences.")
+    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+    .WithColumn("CompanyName").AsString(255).Nullable()
+    .WithColumn("ContactName").AsString(255).NotNullable()
+    .WithColumn("AccountStatus").AsString(20).NotNullable().WithDefaultValue("Active");
+
+// Configuration table
+Create.Table("ApplicationSettings")
+    .WithDescription("System-wide configuration settings. Key-value pairs for application " +
+                    "behavior control. Updated via admin interface only.")
+    .WithColumn("Key").AsString(100).NotNullable().PrimaryKey()
+    .WithColumn("Value").AsString().Nullable()
+    .WithColumn("Category").AsString(50).NotNullable()
+    .WithColumn("LastModified").AsDateTime().NotNullable().WithDefault(SystemMethods.CurrentDateTime);
+```
+
+### Database Provider Support
+
+Table descriptions are supported differently across database providers:
+
+| Provider | Storage Method | Access Method |
+|----------|---------------|---------------|
+| SQL Server | Extended Properties | `sys.fn_listextendedproperty()` |
+| PostgreSQL | Table Comments | `pg_description` catalog |
+| Oracle | Table Comments | `USER_TAB_COMMENTS` view |
+| MySQL | Table Comments | `INFORMATION_SCHEMA.TABLES` |
+| SQLite | Not supported | Descriptions are ignored |
+
+### Querying Table Descriptions
+
+Different databases store and expose table descriptions differently:
+
+```sql
+-- SQL Server
+SELECT objname, value as description 
+FROM fn_listextendedproperty('MS_Description', 'SCHEMA', 'dbo', 'TABLE', 'Users', NULL, NULL);
+
+-- PostgreSQL
+SELECT description 
+FROM pg_description 
+JOIN pg_class ON pg_description.objoid = pg_class.oid 
+WHERE relname = 'Users';
+
+-- MySQL
+SELECT table_comment as description 
+FROM information_schema.tables 
+WHERE table_name = 'Users';
+
+-- Oracle
+SELECT comments as description 
+FROM user_tab_comments 
+WHERE table_name = 'USERS';
+```
+
 ## Common Patterns
 
 ### Audit Columns Pattern
