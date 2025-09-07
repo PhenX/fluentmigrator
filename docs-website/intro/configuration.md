@@ -43,39 +43,18 @@ The `ConfigureRunner` method provides a fluent interface for all configuration o
 
 ### Available Database Providers
 
-| Provider | Method | Package Required |
-|----------|--------|------------------|
-| SQL Server | `.AddSqlServer()` | FluentMigrator.Runner.SqlServer |
-| PostgreSQL | `.AddPostgres()` | FluentMigrator.Runner.Postgres |
-| MySQL | `.AddMySql5()` | FluentMigrator.Runner.MySql |
-| SQLite | `.AddSQLite()` | FluentMigrator.Runner.SQLite |
-| Oracle | `.AddOracle()` | FluentMigrator.Runner.Oracle |
-| Firebird | `.AddFirebird()` | FluentMigrator.Runner.Firebird |
-| IBM DB2 | `.AddDb2()` | FluentMigrator.Runner.Db2 |
-| SAP HANA | `.AddHana()` | FluentMigrator.Runner.Hana |
-| Snowflake | `.AddSnowflake()` | FluentMigrator.Runner.Snowflake |
-| Redshift | `.AddRedshift()` | FluentMigrator.Runner.Redshift |
-
-### Multiple Providers Setup
-
-```csharp
-.ConfigureRunner(rb => rb
-    .AddSqlServer()
-    .AddPostgres()
-    .WithGlobalConnectionString(connectionString) // Used by all providers
-    .ScanIn(typeof(MyMigration).Assembly).For.All())
-```
-
-### Provider-Specific Connection Strings
-
-```csharp
-.ConfigureRunner(rb => rb
-    .AddSqlServer()
-    .WithGlobalConnectionString(sqlServerConnectionString)
-    .AddPostgres()
-    .WithGlobalConnectionString(postgresConnectionString)
-    .ScanIn(typeof(MyMigration).Assembly).For.All())
-```
+| Provider   | Method               | Package Required                |
+|------------|----------------------|---------------------------------|
+| SQL Server | `.AddSqlServerXXX()` | FluentMigrator.Runner.SqlServer |
+| PostgreSQL | `.AddPostgresXXX()`  | FluentMigrator.Runner.Postgres  |
+| MySQL      | `.AddMySqlXXX()`     | FluentMigrator.Runner.MySql     |
+| SQLite     | `.AddSQLite()`       | FluentMigrator.Runner.SQLite    |
+| Oracle     | `.AddOracleXXX()`    | FluentMigrator.Runner.Oracle    |
+| Firebird   | `.AddFirebird()`     | FluentMigrator.Runner.Firebird  |
+| IBM DB2    | `.AddDb2()`          | FluentMigrator.Runner.Db2       |
+| SAP HANA   | `.AddHana()`         | FluentMigrator.Runner.Hana      |
+| Snowflake  | `.AddSnowflake()`    | FluentMigrator.Runner.Snowflake |
+| Redshift   | `.AddRedshift()`     | FluentMigrator.Runner.Redshift  |
 
 ## Assembly Scanning Configuration
 
@@ -96,16 +75,16 @@ The `ConfigureRunner` method provides a fluent interface for all configuration o
 ```csharp
 .ScanIn(Assembly.GetExecutingAssembly())
     .For.Migrations()              // Only migrations
-    .For.Profiles()                // Only profiles  
+    .For.Profiles()                // Only profiles
     .For.MaintenanceMigrations()   // Only maintenance migrations
     .For.All()                     // All types (default)
 ```
 
-### Assembly Path Scanning
+### Assembly Scanning
 
 ```csharp
 .WithMigrationsIn(Assembly.GetExecutingAssembly())
-.WithMigrationsIn("/path/to/migrations.dll")
+.WithMigrationsIn("SpecificNamespace")
 ```
 
 ## Global Processor Options
@@ -122,13 +101,13 @@ The `ConfigureRunner` method provides a fluent interface for all configuration o
 
 ### Available Processor Options
 
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `Timeout` | `TimeSpan` | Command execution timeout | 30 seconds |
-| `ProviderSwitches` | `string` | Provider-specific switches | Empty |
-| `ConnectionString` | `string` | Database connection string | From runner |
-| `PreviewOnly` | `bool` | Generate SQL without execution | `false` |
-| `StripComments` | `bool` | Remove comments from SQL | `false` |
+| Option             | Type       | Description                    | Default     |
+|--------------------|------------|--------------------------------|-------------|
+| `Timeout`          | `TimeSpan` | Command execution timeout      | 30 seconds  |
+| `ProviderSwitches` | `string`   | Provider-specific switches     | Empty       |
+| `ConnectionString` | `string`   | Database connection string     | From runner |
+| `PreviewOnly`      | `bool`     | Generate SQL without execution | `false`     |
+| `StripComments`    | `bool`     | Remove comments from SQL       | `false`     |
 
 ### Provider Switches
 
@@ -206,11 +185,11 @@ public class CustomConventionSet : IConventionSet
 }
 
 // Register custom conventions
-services.Configure<SelectingProcessorAccessorOptions>(opt => 
+services.Configure<SelectingProcessorAccessorOptions>(opt =>
 {
     opt.ProcessorFactories.Add(new SqlServerProcessorFactory());
 })
-.Configure<ProcessorOptions>(opt => 
+.Configure<ProcessorOptions>(opt =>
 {
     opt.ConventionSet = new CustomConventionSet();
 });
@@ -337,7 +316,7 @@ public class SetupMigration : Migration
         // This migration runs without a transaction
         Execute.Sql("CREATE DATABASE MyApp");
     }
-    
+
     public override void Down() { }
 }
 ```
@@ -360,7 +339,7 @@ For console and dotnet-fm runners:
 # Console runner
 Migrate.exe -p sqlserver -c "..." -a "MyApp.dll" --output --outputFileName "migration.sql"
 
-# dotnet-fm runner  
+# dotnet-fm runner
 dotnet fm migrate -p sqlserver -c "..." -a "MyApp.dll" --output --outputFileName "migration.sql"
 ```
 
@@ -383,7 +362,7 @@ public class TenantMigrationRunner : ITenantMigrationRunner
     {
         using var scope = serviceProvider.CreateScope();
         var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
-        
+
         // Override connection string for this tenant
         runner.Processor.ConnectionString = tenantConnectionString;
         runner.MigrateUp();
@@ -400,16 +379,16 @@ public class CustomSqlServerProcessorFactory : SqlServerProcessorFactory
     {
         // Custom processor creation logic
         var processor = base.Create(connectionString, announcer, options);
-        
+
         // Apply custom configuration
         processor.Options.Timeout = TimeSpan.FromMinutes(30);
-        
+
         return processor;
     }
 }
 
 // Register custom factory
-services.Configure<SelectingProcessorAccessorOptions>(opt => 
+services.Configure<SelectingProcessorAccessorOptions>(opt =>
 {
     opt.ProcessorFactories.Clear();
     opt.ProcessorFactories.Add(new CustomSqlServerProcessorFactory());
@@ -440,8 +419,8 @@ public void ConfigureServices(IServiceCollection services, IHostEnvironment env)
         });
     }
 
-    builder.AddLogging(lb => env.IsDevelopment() 
-        ? lb.AddFluentMigratorConsole() 
+    builder.AddLogging(lb => env.IsDevelopment()
+        ? lb.AddFluentMigratorConsole()
         : lb.AddFile("logs/migrations.log"));
 }
 ```
@@ -456,7 +435,7 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     // Validate FluentMigrator configuration
     using var scope = app.ApplicationServices.CreateScope();
     var runner = scope.ServiceProvider.GetService<IMigrationRunner>();
-    
+
     if (runner == null)
     {
         throw new InvalidOperationException("FluentMigrator is not properly configured");
@@ -485,12 +464,12 @@ services.AddHealthChecks()
 public class FluentMigratorHealthCheck : IHealthCheck
 {
     private readonly IMigrationRunner _runner;
-    
+
     public FluentMigratorHealthCheck(IMigrationRunner runner)
     {
         _runner = runner;
     }
-    
+
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try

@@ -130,4 +130,4 @@ public class FilteredIndexes : Migration
 
 * See [SQL Server Provider](/providers/sql-server.md) for SQL Server-specific index features like covering indexes and filtered indexes.
 * See [PostgreSQL Provider](/providers/postgresql.md) for PostgreSQL-specific index types like GIN, GiST, and partial indexes.
-* See [SQL Scripts](/operations/sql-scripts.md) when you need to create indexes with specific options not supported directly by FluentMigrator.
+* See [Execute SQL](/operations/execute-sql.md) when you need to create indexes with specific options not supported directly by FluentMigrator.

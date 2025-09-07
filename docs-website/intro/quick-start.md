@@ -89,7 +89,7 @@ dotnet add package FluentMigrator.Runner
 ### Using PackageReference
 Add these to your `.csproj` file:
 ```xml
-<PackageReference Include="FluentMigrator" Version="7.2.0" />
+<PackageReference Include="FluentMigrator" Version="7.2.0" /> <!-- Use the latest stable version -->
 <PackageReference Include="FluentMigrator.Runner" Version="7.2.0" />
 ```
 

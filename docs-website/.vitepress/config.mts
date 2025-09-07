@@ -19,7 +19,7 @@ export default defineConfig({
     head: headers,
 
     themeConfig: {
-        outline: 'deep',
+        outline: 2,
         logo: '/logo.svg',
         externalLinkIcon: true,
 
@@ -45,14 +45,15 @@ export default defineConfig({
                     ]
                 },
                 {
-                    text: 'Common Operations',
+                    text: 'Operations',
                     items: [
                         {text: 'Creating Tables', link: '/operations/create-tables'},
                         {text: 'Altering Tables', link: '/operations/alter-tables'},
                         {text: 'Managing Columns', link: '/operations/columns'},
                         {text: 'Data Operations', link: '/operations/data'},
                         {text: 'Schema Operations', link: '/operations/schema'},
-                        {text: 'SQL Scripts', link: '/operations/sql-scripts'}
+                        {text: 'Execute SQL', link: '/operations/execute-sql'},
+                        {text: 'Run code on connection', link: '/operations/with-connection'}
                     ]
                 },
                 {
@@ -99,8 +100,7 @@ export default defineConfig({
                         {text: 'Best Practices', link: '/advanced/best-practices'},
                         {text: 'Migration Versioning', link: '/advanced/versioning'},
                         {text: 'Conditional Logic', link: '/advanced/conditional-logic'},
-                        {text: 'Custom Extensions', link: '/advanced/custom-extensions'},
-                        {text: 'Advanced Logic on Connection', link: '/advanced/connection-logic'}
+                        {text: 'Custom Extensions', link: '/advanced/custom-extensions'}
                     ]
                 },
             ]

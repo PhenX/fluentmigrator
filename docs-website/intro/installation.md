@@ -8,59 +8,23 @@ FluentMigrator can be installed in several ways depending on your project type a
 
 All projects need these base packages:
 
-```xml
-<PackageReference Include="FluentMigrator" Version="7.2.0" />
-<PackageReference Include="FluentMigrator.Runner" Version="7.2.0" />
-```
+* [FluentMigrator](https://www.nuget.org/packages/FluentMigrator/)
+* [FluentMigrator.Runner](https://www.nuget.org/packages/FluentMigrator.Runner/)
 
 ### Database Provider Packages
 
 Choose the package for your database provider:
 
-#### SQL Server
-```xml
-<PackageReference Include="FluentMigrator.Runner.SqlServer" Version="7.2.0" />
-```
-
-#### PostgreSQL
-```xml
-<PackageReference Include="FluentMigrator.Runner.Postgres" Version="7.2.0" />
-```
-
-#### MySQL / MariaDB
-```xml
-<PackageReference Include="FluentMigrator.Runner.MySql" Version="7.2.0" />
-```
-
-#### SQLite
-```xml
-<PackageReference Include="FluentMigrator.Runner.SQLite" Version="7.2.0" />
-```
-
-#### Oracle
-```xml
-<PackageReference Include="FluentMigrator.Runner.Oracle" Version="7.2.0" />
-```
-
-#### Firebird
-```xml
-<PackageReference Include="FluentMigrator.Runner.Firebird" Version="7.2.0" />
-```
-
-#### Other Providers
-```xml
-<!-- IBM DB2 -->
-<PackageReference Include="FluentMigrator.Runner.Db2" Version="7.2.0" />
-
-<!-- SAP HANA -->
-<PackageReference Include="FluentMigrator.Runner.Hana" Version="7.2.0" />
-
-<!-- Snowflake -->
-<PackageReference Include="FluentMigrator.Runner.Snowflake" Version="7.2.0" />
-
-<!-- Amazon Redshift -->
-<PackageReference Include="FluentMigrator.Runner.Redshift" Version="7.2.0" />
-```
+* [SQL Server](https://www.nuget.org/packages/FluentMigrator.Runner.SqlServer/)
+* [PostgreSQL](https://www.nuget.org/packages/FluentMigrator.Runner.Postgres/)
+* [MySQL / MariaDB](https://www.nuget.org/packages/FluentMigrator.Runner.MySql/)
+* [SQLite](https://www.nuget.org/packages/FluentMigrator.Runner.SQLite/)
+* [Oracle](https://www.nuget.org/packages/FluentMigrator.Runner.Oracle/)
+* [Firebird](https://www.nuget.org/packages/FluentMigrator.Runner.Firebird/)
+* [IBM DB2](https://www.nuget.org/packages/FluentMigrator.Runner.Db2/)
+* [SAP HANA](https://www.nuget.org/packages/FluentMigrator.Runner.Hana/)
+* [Snowflake](https://www.nuget.org/packages/FluentMigrator.Runner.Snowflake/)
+* [Amazon Redshift](https://www.nuget.org/packages/FluentMigrator.Runner.Redshift/)
 
 ## Installation Methods
 
@@ -68,14 +32,14 @@ Choose the package for your database provider:
 ```bash
 dotnet add package FluentMigrator
 dotnet add package FluentMigrator.Runner
-dotnet add package FluentMigrator.Runner.SqlServer
+# And then the provider package you need ...
 ```
 
 ### Package Manager Console (Visual Studio)
 ```powershell
 Install-Package FluentMigrator
 Install-Package FluentMigrator.Runner
-Install-Package FluentMigrator.Runner.SqlServer
+# And then the provider package you need ...
 ```
 
 ### Package Manager UI
@@ -98,10 +62,14 @@ dotnet fm migrate -p sqlserver -c "Server=.;Database=MyApp;Trusted_Connection=tr
 ```
 
 ### MSBuild Integration
-For MSBuild integration, add the MSBuild package:
+For MSBuild integration, add the MSBuild package.
 
-```xml
-<PackageReference Include="FluentMigrator.MSBuild" Version="7.2.0" />
+```bash
+dotnet add package FluentMigrator.MSBuild
+```
+
+```powershell
+Install-Package FluentMigrator.MSBuild
 ```
 
 ## Project Templates
@@ -129,7 +97,7 @@ For ASP.NET Core applications, add migration support to your existing web projec
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentMigrator" Version="7.2.0" />
+    <PackageReference Include="FluentMigrator" Version="7.2.0" /> <!-- Use the latest stable version -->
     <PackageReference Include="FluentMigrator.Runner" Version="7.2.0" />
     <PackageReference Include="FluentMigrator.Runner.SqlServer" Version="7.2.0" />
   </ItemGroup>
@@ -181,7 +149,7 @@ If the code compiles without errors, FluentMigrator is correctly installed.
 If you encounter package conflicts, ensure all FluentMigrator packages are the same version:
 
 ```xml
-<PackageReference Include="FluentMigrator" Version="7.2.0" />
+<PackageReference Include="FluentMigrator" Version="7.2.0" /> <!-- Use the latest stable version -->
 <PackageReference Include="FluentMigrator.Runner" Version="7.2.0" />
 <PackageReference Include="FluentMigrator.Runner.SqlServer" Version="7.2.0" />
 ```

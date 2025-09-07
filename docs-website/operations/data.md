@@ -214,7 +214,7 @@ public class DataTypeConversions : Migration
 
 ### Bulk Data Operations
 
-For comprehensive bulk operations examples, see [Advanced Logic on Connection](../advanced/connection-logic.md#bulk-data-operations).
+For comprehensive bulk operations examples, see [Execute code on connection](../operations/with-connection.md#bulk-data-operations).
 
 ```csharp
 public class BulkDataOperations : Migration
@@ -256,4 +256,4 @@ For comprehensive examples of advanced Execute.Sql operations including:
 - Error handling and validation
 - Transaction control
 
-See: [SQL Scripts](/operations/sql-scripts.md) and [Advanced Logic on Connection](../advanced/connection-logic.md).
+See: [Execute SQL](/operations/execute-sql.md) and [Execute code on connection](../operations/with-connection.md).

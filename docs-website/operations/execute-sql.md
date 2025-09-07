@@ -413,4 +413,4 @@ public class MaintenanceSql : Migration
 }
 ```
 
-See also [Advanced Logic on Connection](../advanced/connection-logic.md) for more complex scenarios involving direct SQL execution.
+See also [Execute code on connection](../operations/with-connection.md) for more complex scenarios involving direct SQL execution.
