@@ -50,72 +50,27 @@ class Program
 }
 ```
 
-## Database Provider Configuration
+## Configuration
 
-### SQL Server
+The in-process runner offers extensive configuration options for database providers, assembly scanning, processor options, and more.
+
+For comprehensive configuration details, see the [Configuration Guide](/intro/configuration.md).
+
+### Basic Provider Setup
+```csharp
+.ConfigureRunner(rb => rb
+    .AddSqlServer()                                    // Database provider
+    .WithGlobalConnectionString(connectionString)      // Connection string
+    .ScanIn(typeof(MyMigration).Assembly).For.All())  // Assembly scanning
+```
+
+### Common Configuration Patterns
 ```csharp
 .ConfigureRunner(rb => rb
     .AddSqlServer()
     .WithGlobalConnectionString(connectionString)
-    .ScanIn(typeof(MyMigration).Assembly).For.All())
-```
-
-### PostgreSQL
-```csharp
-.ConfigureRunner(rb => rb
-    .AddPostgres()
-    .WithGlobalConnectionString(connectionString)
-    .ScanIn(typeof(MyMigration).Assembly).For.All())
-```
-
-### MySQL
-```csharp
-.ConfigureRunner(rb => rb
-    .AddMySql5()
-    .WithGlobalConnectionString(connectionString)
-    .ScanIn(typeof(MyMigration).Assembly).For.All())
-```
-
-### SQLite
-```csharp
-.ConfigureRunner(rb => rb
-    .AddSQLite()
-    .WithGlobalConnectionString(connectionString)
-    .ScanIn(typeof(MyMigration).Assembly).For.All())
-```
-
-## Advanced Configuration
-
-### Multiple Assemblies
-```csharp
-.ConfigureRunner(rb => rb
-    .AddSqlServer()
-    .WithGlobalConnectionString(connectionString)
-    .ScanIn(typeof(Migration1).Assembly, typeof(Migration2).Assembly)
+    .ScanIn(typeof(Migration1).Assembly, typeof(Migration2).Assembly) // Multiple assemblies
     .For.All())
-```
-
-### Specific Migration Types
-```csharp
-.ConfigureRunner(rb => rb
-    .AddSqlServer()
-    .WithGlobalConnectionString(connectionString)
-    .ScanIn(Assembly.GetExecutingAssembly())
-    .For.Migrations()     // Only migrations
-    .For.Profiles()       // Only profiles
-    .For.MaintenanceMigrations()) // Only maintenance migrations
-```
-
-### Custom Configuration
-```csharp
-.ConfigureRunner(rb => rb
-    .AddSqlServer()
-    .WithGlobalConnectionString(connectionString)
-    .WithMigrationsIn(Assembly.GetExecutingAssembly())
-    .ConfigureGlobalProcessorOptions(opt => {
-        opt.ProviderSwitches = "ForceQuote=false";
-        opt.Timeout = TimeSpan.FromMinutes(5);
-    }))
 ```
 
 ## Application Integration
@@ -228,32 +183,28 @@ catch (FluentMigratorException ex)
 
 ### Advanced Error Handling
 ```csharp
-.ConfigureRunner(rb => rb
-    .AddSqlServer()
-    .WithGlobalConnectionString(connectionString)
-    .WithVersionTable(new DefaultVersionTableMetaData())
-    .ConfigureGlobalProcessorOptions(opt => {
-        opt.Timeout = TimeSpan.FromMinutes(10);
-        opt.ProviderSwitches = "ForceQuote=true";
-    }))
+try
+{
+    runner.MigrateUp();
+    Console.WriteLine("Migrations completed successfully");
+}
+catch (FluentMigratorException ex)
+{
+    Console.WriteLine($"Migration failed: {ex.Message}");
+    // Log details for debugging
+    Console.WriteLine($"Details: {ex.InnerException?.Message}");
+}
 ```
 
-## Logging Configuration
+For advanced processor configuration options, see the [Configuration Guide](/intro/configuration.md#global-processor-options).
 
-### Console Logging
+## Logging
+
+The in-process runner supports various logging configurations. See the [Configuration Guide](/intro/configuration.md#logging-configuration) for comprehensive logging setup options.
+
+### Basic Console Logging
 ```csharp
 .AddLogging(lb => lb.AddFluentMigratorConsole())
-```
-
-### File Logging with Serilog
-```csharp
-// Install: Serilog.Extensions.Logging.File
-.AddLogging(lb => lb.AddFile("logs/migrations.log"))
-```
-
-### Custom Logging
-```csharp
-.AddLogging(lb => lb.AddConsole().AddDebug())
 ```
 
 ## Best Practices

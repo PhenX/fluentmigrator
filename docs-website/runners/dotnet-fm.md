@@ -34,6 +34,10 @@ dotnet tool update FluentMigrator.DotNet.Cli
 You need at least .NET Core 2.1 preview 2 SDK or later to use this tool.
 :::
 
+## Configuration
+
+The dotnet-fm CLI tool provides comprehensive configuration options through command-line parameters. For configuration concepts and advanced scenarios, see the [Configuration Guide](/intro/configuration.md).
+
 ## Basic Usage
 
 ### Migrate to Latest Version

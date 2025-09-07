@@ -241,6 +241,8 @@ public class AddUserRoles : Migration
 
 ## Alternative Database Configurations
 
+For comprehensive database provider configuration and advanced options, see the [Configuration Guide](./configuration.md).
+
 ### PostgreSQL
 ```csharp
 .AddPostgres()
@@ -292,6 +294,7 @@ return new ServiceCollection()
 
 Now that you have your first migration running, explore these topics:
 
+- [Configuration](./configuration.md) - Comprehensive configuration guide for all runners and scenarios
 - [Creating Tables](/operations/create-tables.md) - Learn all the options for creating tables
 - [Altering Tables](/operations/alter-tables.md) - Modify existing tables safely
 - [Database Providers](/providers/sql-server.md) - Provider-specific features and considerations

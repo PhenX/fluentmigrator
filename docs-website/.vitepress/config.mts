@@ -40,6 +40,7 @@ export default defineConfig({
                     items: [
                         {text: 'Quick Start', link: '/intro/quick-start'},
                         {text: 'Installation', link: '/intro/installation'},
+                        {text: 'Configuration', link: '/intro/configuration'},
                         {text: 'FAQ', link: '/intro/faq'}
                     ]
                 },

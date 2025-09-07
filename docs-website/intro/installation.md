@@ -199,6 +199,7 @@ Se e the [FAQ](/intro/faq.md) for more help.
 ## Next Steps
 
 Once FluentMigrator is installed, proceed to:
+- [Configuration](./configuration.md) - Comprehensive configuration guide for all scenarios
 - [Quick Start Guide](./quick-start.md) - Create your first migration
 - [Creating Tables](/operations/create-tables.md) - Learn the table creation API
 - [Database Providers](/providers/sql-server.md) - Provider-specific configuration

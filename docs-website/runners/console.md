@@ -37,7 +37,11 @@ Choose the correct target framework that matches your migration assembly. Otherw
 On non-Windows platforms, you need to install and use Mono to run the console tool.
 :::
 
-## Basic Usage
+## Command Line Configuration
+
+The console runner provides extensive command-line options for configuration. For detailed configuration concepts and advanced scenarios, see the [Configuration Guide](/intro/configuration.md).
+
+### Basic Usage
 
 ### Migrate Up (Latest)
 ```bash
@@ -81,7 +85,13 @@ Migrate.exe -p sqlserver -c "Server=.;Database=MyDb;Integrated Security=true" -a
 | `--transaction-mode`     |       | Transaction behavior                  | `true`          |
 | `--allowDirtyAssemblies` |       | Allow loading different .NET versions | `false`         |
 
-## Database Providers
+## Configuration Options
+
+### Database Provider Configuration
+
+The console runner supports all FluentMigrator database providers through command-line switches. See the [Configuration Guide](/intro/configuration.md#database-provider-configuration) for comprehensive provider setup.
+
+### Database Providers
 
 ### SQL Server
 ```bash
