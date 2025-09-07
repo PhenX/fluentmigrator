@@ -44,8 +44,8 @@ while the CI builds are stored on [Azure Artifacts](https://dev.azure.com/fluent
 # Powered by
 
 <span>
-<a href="https://www.jetbrains.com"><img src="https://raw.githubusercontent.com/fluentmigrator/fluentmigrator/main/jetbrains/jetbrains.png" alt="JetBrains"  width="15%" /></a>
-<a href="https://www.jetbrains.com/resharper"><img src="https://raw.githubusercontent.com/fluentmigrator/fluentmigrator/main/jetbrains/logo.png" alt="ReSharper"  width="15%" /></a>
+<a href="https://www.jetbrains.com"><img src="https://raw.githubusercontent.com/fluentmigrator/fluentmigrator/main/docs/jetbrains/jetbrains.png" alt="JetBrains"  width="15%" /></a>
+<a href="https://www.jetbrains.com/resharper"><img src="https://raw.githubusercontent.com/fluentmigrator/fluentmigrator/main/docs/jetbrains/logo.png" alt="ReSharper"  width="15%" /></a>
 </span>
 
 <a href="https://azure.microsoft.com/en-us/services/devops/"><img src="https://azurecomcdn.azureedge.net/cvt-2b18021399b1b3aa2c405a40ce4e9b89f162d9e5b3d6df838d13aae49f3608ea/images/shared/services/devops/pipelines-icon-80.png" alt="Azure DevOps"  width="20%" /></a>
