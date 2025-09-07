@@ -60,7 +60,3 @@ public class RemoveColumn : Migration
     }
 }
 ```
-
-## See Also
-
-- **[Columns](/basics/columns.md)** - Comprehensive guide to column data types, modifiers, and best practices

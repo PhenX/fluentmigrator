@@ -289,29 +289,7 @@ using (var scope = serviceProvider.CreateScope())
 - **BeforeProfiles**: Data validation, required data setup
 - **AfterAll**: Final cleanup, reporting, database maintenance
 
-### 2. Handle Errors Gracefully
-```csharp
-[Maintenance(MigrationStage.AfterEach)]
-public class SafeMaintenance : Migration
-{
-    public override void Up()
-    {
-        try
-        {
-            Execute.Sql("UPDATE STATISTICS");
-        }
-        catch
-        {
-            // Log error but don't fail the migration
-            Execute.Sql("INSERT INTO ErrorLog VALUES ('Statistics update failed', GETDATE())");
-        }
-    }
-
-    public override void Down() { }
-}
-```
-
-### 3. Keep Operations Idempotent
+### 2. Keep Operations Idempotent
 ```csharp
 [Maintenance(MigrationStage.BeforeAll)]
 public class IdempotentSetup : Migration
@@ -333,7 +311,7 @@ public class IdempotentSetup : Migration
 }
 ```
 
-### 4. Use Tags for Environment-Specific Maintenance
+### 3. Use Tags for Environment-Specific Maintenance
 ```csharp
 [Maintenance(MigrationStage.AfterAll)]
 [Tags("Development")]

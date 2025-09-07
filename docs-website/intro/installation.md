@@ -140,19 +140,16 @@ For ASP.NET Core applications, add migration support to your existing web projec
 
 FluentMigrator supports multiple .NET frameworks:
 
-- **.NET 8.0** ✅ (Recommended)
-- **.NET 7.0** ✅
-- **.NET 6.0** ✅ (LTS)
-- **.NET Standard 2.0** ✅
+- **.NET 8.0+** ✅ (Recommended)
 - **.NET Framework 4.8** ✅
 
 ## Version Compatibility
 
-| FluentMigrator Version | .NET Version | Status |
-|----------------------|--------------|---------|
-| 6.2.x | .NET 6+ | Current |
-| 5.x | .NET 5+ | Supported |
-| 3.x | .NET Core 2+ | Legacy |
+| FluentMigrator Version | .NET Version | Status      |
+|------------------------|--------------|-------------|
+| 7+                     | .NET 8+      | Current     |
+| 5+                     | .NET 5+      | Legacy      |
+| 3.x                    | .NET Core 2+ | Unsupported |
 
 ## Verification
 
@@ -196,6 +193,8 @@ Solution: Install the appropriate database provider package for your database.
 
 ### Assembly Loading Issues
 If you get assembly loading errors, ensure your target framework is compatible and all dependencies are properly installed.
+
+Se e the [FAQ](/intro/faq.md) for more help.
 
 ## Next Steps
 

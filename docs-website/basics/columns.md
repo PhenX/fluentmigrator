@@ -2,44 +2,33 @@
 
 This comprehensive guide covers all aspects of column management in FluentMigrator, including data types, modifiers, constraints, and best practices for working with database columns across different providers.
 
+github.com/fluentmigrator/fluentmigrator/blob/main/src/FluentMigrator.Runner.Postgres/Generators/Postgres/PostgresTypeMap.cs
+
 ## Column Data Types
 
 ### Basic Types
 ```csharp
-.WithColumn("StringCol").AsString(100)           // VARCHAR(100)
-.WithColumn("AnsiStringCol").AsAnsiString(50)    // VARCHAR(50) non-Unicode
-.WithColumn("TextCol").AsString()                // TEXT/VARCHAR(MAX)
-.WithColumn("IntCol").AsInt32()                  // INT
-.WithColumn("LongCol").AsInt64()                 // BIGINT
-.WithColumn("ShortCol").AsInt16()                // SMALLINT
-.WithColumn("ByteCol").AsByte()                  // TINYINT
-.WithColumn("DecimalCol").AsDecimal(10, 2)       // DECIMAL(10,2)
-.WithColumn("MoneyCol").AsCurrency()             // MONEY
-.WithColumn("FloatCol").AsFloat()                // FLOAT
-.WithColumn("DoubleCol").AsDouble()              // DOUBLE
-.WithColumn("DateCol").AsDate()                  // DATE
-.WithColumn("DateTimeCol").AsDateTime()          // DATETIME
-.WithColumn("DateTime2Col").AsDateTime2()        // DATETIME2
-.WithColumn("TimeCol").AsTime()                  // TIME
-.WithColumn("BoolCol").AsBoolean()               // BIT/BOOLEAN
-.WithColumn("GuidCol").AsGuid()                  // UNIQUEIDENTIFIER/UUID
-.WithColumn("BinaryCol").AsBinary(100)           // VARBINARY(100)
-.WithColumn("BlobCol").AsBinary()                // BLOB/VARBINARY(MAX)
-```
-
-### Database-Specific Types
-```csharp
-// SQL Server specific
-.WithColumn("XmlCol").AsXml()                    // XML
-.WithColumn("JsonCol").AsCustom("NVARCHAR(MAX)") // Custom type
-
-// PostgreSQL specific
-.WithColumn("JsonCol").AsCustom("jsonb")         // JSONB
-.WithColumn("ArrayCol").AsCustom("text[]")       // Array type
-
-// MySQL specific
-.WithColumn("JsonCol").AsCustom("JSON")          // JSON
-.WithColumn("EnumCol").AsCustom("ENUM('A','B','C')") // ENUM
+.WithColumn("StringCol").AsString(100)
+.WithColumn("AnsiStringCol").AsAnsiString(50)
+.WithColumn("TextCol").AsString()
+.WithColumn("IntCol").AsInt32()
+.WithColumn("LongCol").AsInt64()
+.WithColumn("ShortCol").AsInt16()
+.WithColumn("ByteCol").AsByte()
+.WithColumn("DecimalCol").AsDecimal(10, 2)
+.WithColumn("MoneyCol").AsCurrency()
+.WithColumn("FloatCol").AsFloat()
+.WithColumn("DoubleCol").AsDouble()
+.WithColumn("DateCol").AsDate()
+.WithColumn("DateTimeCol").AsDateTime()
+.WithColumn("DateTime2Col").AsDateTime2()
+.WithColumn("TimeCol").AsTime()
+.WithColumn("BoolCol").AsBoolean()
+.WithColumn("GuidCol").AsGuid()
+.WithColumn("BinaryCol").AsBinary(100)
+.WithColumn("BlobCol").AsBinary()
+.WithColumn("XmlCol").AsXml()
+.WithColumn("JsonCol").AsCustom("ENUM('A','B','C')") // Custom type, depending on DB
 ```
 
 ## Column Modifiers
@@ -85,6 +74,24 @@ This comprehensive guide covers all aspects of column management in FluentMigrat
     .Indexed()                                 // Creates index automatically
     .Unique()                                  // UNIQUE constraint
 ```
+### Computed Columns
+
+#### Basic Computed Column
+```csharp
+Create.Table("Orders")
+    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+    .WithColumn("Subtotal").AsDecimal(10, 2).NotNullable()
+    .WithColumn("Tax").AsDecimal(10, 2).NotNullable()
+    .WithColumn("Total").AsDecimal(10, 2).Computed("Subtotal + Tax");
+```
+
+#### Persisted Computed Column
+```csharp
+Create.Table("Products")
+    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+    .WithColumn("Name").AsString(255).NotNullable()
+    .WithColumn("SearchName").AsString(255).Computed("UPPER(Name)").Persisted();
+```
 
 ## Best Practices
 
@@ -96,6 +103,7 @@ This comprehensive guide covers all aspects of column management in FluentMigrat
 
 ### Nullability Guidelines
 - Make columns `NotNullable()` when business logic requires values
+- Specify explicitly `Nullable()` for optional fields
 - Provide appropriate `WithDefaultValue()` for NOT NULL columns
 - Use `SystemMethods.CurrentDateTime` for timestamp defaults
 - Consider database-specific defaults with `IfDatabase()` conditionals
@@ -103,13 +111,14 @@ This comprehensive guide covers all aspects of column management in FluentMigrat
 ### Performance Considerations
 - Use `Indexed()` for frequently queried columns
 - Avoid over-indexing - each index has maintenance overhead
-- Consider composite indexes for multi-column queries
+- Consider composite indexes for multi-column queries (see [Indexes](/basics/indexes.md))
 - Use appropriate string lengths to optimize storage and performance
 
 ### Cross-Database Compatibility
 - Test data types across all target database providers
 - Use `AsCustom()` with `IfDatabase()` for provider-specific types
-- Be aware of different NULL handling across providers
+- Be aware of different NULL handling across providers, especially with unique constraints
+- Consider maximum identifier lengths for different databases (30 for Oracle 12, etc)
 
 ## Column Operations
 
@@ -182,26 +191,3 @@ public class RemoveColumns : Migration
 }
 ```
 
-## Best Practices
-
-### Choose Appropriate Data Types
-- Use specific sizes for strings to prevent over-allocation
-- Use appropriate numeric types (AsInt16() for small values, AsInt64() for large numbers)
-- Use decimal for monetary values, not float/double
-- Use DateTime2 instead of DateTime in SQL Server for better precision
-
-### Handle Column Modifications Safely
-When changing column data types or sizes, always:
-1. Check existing data compatibility first
-2. Consider data migration requirements
-3. Test the changes in a non-production environment
-4. Have a rollback plan ready
-
-### Performance Considerations
-- Choose optimal data types for storage efficiency
-- Use appropriate string lengths
-- Consider indexing strategy for frequently queried columns
-- See [Indexes](/basics/indexes.md) for detailed indexing guidance
-
-## Provider specific notes
-- Consider maximum identifier lengths for different databases (30 for Oracle 12, etc)

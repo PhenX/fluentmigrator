@@ -6,6 +6,10 @@ FluentMigrator provides the Execute.Sql family of methods for running custom SQL
 
 ### Basic SQL Execution
 
+::: info
+Note that these examples are possible with FluentMigrator's fluent API as well (see [Operations > Data](./data.md))
+:::
+
 ```csharp
 // Execute a simple SQL statement
 Execute.Sql("UPDATE Users SET IsActive = 1 WHERE CreatedAt < '2023-01-01'");
@@ -331,23 +335,6 @@ public override void Up()
 }
 ```
 
-### Cross-Database Compatibility
-
-```csharp
-public override void Up()
-{
-    // Handle database differences explicitly
-    IfDatabase(ProcessorIdConstants.SqlServer)
-        .Execute.Sql("SELECT TOP 10 * FROM Users");
-
-    IfDatabase(ProcessorIdConstants.Postgres, ProcessorIdConstants.MySql)
-        .Execute.Sql("SELECT * FROM Users LIMIT 10");
-
-    IfDatabase(ProcessorIdConstants.SQLite)
-        .Execute.Sql("SELECT * FROM Users LIMIT 10");
-}
-```
-
 ## Integration with Migration Features
 
 ### Working with Tags
@@ -426,58 +413,4 @@ public class MaintenanceSql : Migration
 }
 ```
 
-## Error Handling and Recovery
-
-### Handling Migration Failures
-
-```csharp
-[Migration(1)]
-public class SafeSqlMigration : Migration
-{
-    public override void Up()
-    {
-        // Log migration start
-        Execute.Sql("INSERT INTO MigrationLog (Migration, Status, StartTime) VALUES ('SafeSqlMigration', 'Started', GETDATE())");
-
-        try
-        {
-            // Your migration logic here
-            Execute.Sql("UPDATE Users SET IsActive = 1 WHERE IsActive IS NULL");
-
-            // Log success
-            Execute.Sql("UPDATE MigrationLog SET Status = 'Completed', EndTime = GETDATE() WHERE Migration = 'SafeSqlMigration'");
-        }
-        catch
-        {
-            // Log failure (in a real implementation, you'd need custom processor support for this)
-            Execute.Sql("UPDATE MigrationLog SET Status = 'Failed', EndTime = GETDATE() WHERE Migration = 'SafeSqlMigration'");
-            throw;
-        }
-    }
-
-    public override void Down()
-    {
-        Execute.Sql("UPDATE Users SET IsActive = NULL WHERE IsActive = 1");
-        Execute.Sql("INSERT INTO MigrationLog (Migration, Status, StartTime, EndTime) VALUES ('SafeSqlMigration', 'Rolled Back', GETDATE(), GETDATE())");
-    }
-}
-```
-
-### Recovery Strategies
-
-When Execute.Sql migrations fail, you may need manual intervention:
-
-```sql
--- recovery_checklist.sql
--- 1. Check current database state
-SELECT * FROM VersionInfo WHERE Version = 20240101120000;
-
--- 2. Verify partial changes
-SELECT COUNT(*) FROM Users WHERE IsActive = 1;
-
--- 3. Clean up if needed
-UPDATE Users SET IsActive = NULL WHERE IsActive = 1;
-
--- 4. Reset migration state (if needed)
-DELETE FROM VersionInfo WHERE Version = 20240101120000;
-```
+See also [Advanced Logic on Connection](../advanced/connection-logic.md) for more complex scenarios involving direct SQL execution.

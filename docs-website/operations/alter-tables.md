@@ -127,18 +127,13 @@ public class RenameColumns : Migration
 
 ## Working with Table Constraints
 
-### Adding Table Constraints
+### Adding Unique Constraints
 
 ```csharp
 public class AddTableConstraints : Migration
 {
     public override void Up()
     {
-        // Add check constraint
-        Create.CheckConstraint("CK_Users_Age")
-            .OnTable("Users")
-            .WithSql("Age >= 0 AND Age <= 150");
-
         // Add unique constraint
         Create.UniqueConstraint("UQ_Users_Email")
             .OnTable("Users")
@@ -147,13 +142,12 @@ public class AddTableConstraints : Migration
 
     public override void Down()
     {
-        Delete.CheckConstraint("CK_Users_Age").FromTable("Users");
         Delete.UniqueConstraint("UQ_Users_Email").FromTable("Users");
     }
 }
 ```
 
-For comprehensive constraint management, including complex validation rules and cross-database compatibility, see [Constraints](/basics/constraints.md).
+For comprehensive constraint management and cross-database compatibility, see [Constraints](/basics/constraints.md).
 
 ### Removing Table Constraints
 
@@ -162,85 +156,14 @@ public class RemoveConstraints : Migration
 {
     public override void Up()
     {
-        Delete.CheckConstraint("CK_Products_Price").FromTable("Products");
         Delete.UniqueConstraint("UQ_Products_SKU").FromTable("Products");
     }
 
     public override void Down()
     {
-        Create.CheckConstraint("CK_Products_Price")
-            .OnTable("Products")
-            .WithSql("Price > 0");
-
         Create.UniqueConstraint("UQ_Products_SKU")
             .OnTable("Products")
             .Column("SKU");
-    }
-}
-```
-
-## Database-Specific Alterations
-
-### SQL Server Specific
-
-```csharp
-public class SqlServerAlterations : Migration
-{
-    public override void Up()
-    {
-            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
-    {
-// Add computed column
-            Alter.Table("Orders")
-                .AddColumn("TotalWithTax")
-                .AsDecimal(10, 2)
-                .Computed("Total * 1.08");
-
-            // Add column with SQL Server specific data types
-            Alter.Table("Documents")
-                .AddColumn("Content").AsCustom("NVARCHAR(MAX)")
-                .AddColumn("UniqueId").AsCustom("UNIQUEIDENTIFIER").WithDefaultValue(SystemMethods.NewGuid);
-    });
-    }
-
-    public override void Down()
-    {
-            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
-    {
-Delete.Column("TotalWithTax").FromTable("Orders");
-            Delete.Column("Content").FromTable("Documents");
-            Delete.Column("UniqueId").FromTable("Documents");
-    });
-    }
-}
-```
-
-### PostgreSQL Specific
-
-```csharp
-public class PostgreSqlAlterations : Migration
-{
-    public override void Up()
-    {
-            IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
-    {
-// Add JSONB column
-            Alter.Table("Settings")
-                .AddColumn("Configuration").AsCustom("JSONB").Nullable();
-
-            // Add array column
-            Alter.Table("Users")
-                .AddColumn("Tags").AsCustom("TEXT[]").Nullable();
-    });
-    }
-
-    public override void Down()
-    {
-            IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
-    {
-Delete.Column("Configuration").FromTable("Settings");
-            Delete.Column("Tags").FromTable("Users");
-    });
     }
 }
 ```

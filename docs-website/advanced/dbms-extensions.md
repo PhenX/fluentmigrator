@@ -64,22 +64,6 @@ Create.Table("Invoices")
     .WithColumn("InvoiceNumber").AsString(20).NotNullable();
 ```
 
-#### Computed Columns
-```csharp
-Create.Table("OrderItems")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("Quantity").AsInt32().NotNullable()
-    .WithColumn("UnitPrice").AsDecimal(10, 2).NotNullable()
-    .WithColumn("TotalPrice").AsDecimal(10, 2).Computed("[Quantity] * [UnitPrice]");
-
-// Persisted computed column
-Create.Table("Products")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("Name").AsString(255).NotNullable()
-    .WithColumn("SearchName").AsString(255)
-        .Computed("UPPER([Name])").Persisted();
-```
-
 #### Column Store Indexes (SQL Server 2012+)
 ```csharp
 Create.Index("CIX_Sales_ColumnStore").OnTable("Sales")
@@ -196,19 +180,6 @@ Create.Table("Products")
     .WithColumn("Name").AsString(255).NotNullable();
 ```
 
-#### Array Columns with Constraints
-```csharp
-Create.Table("UserRoles")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("UserId").AsInt32().NotNullable()
-    .WithColumn("Roles").AsCustom("text[]").NotNullable()
-    .WithColumn("Permissions").AsCustom("integer[]").Nullable();
-
-// Check constraint on array
-Create.CheckConstraint("CK_UserRoles_ValidRoles").OnTable("UserRoles")
-    .Expression("array_length(roles, 1) > 0 AND array_length(roles, 1) <= 10");
-```
-
 ### PostgreSQL-Specific Data Types
 ```csharp
 Create.Table("AdvancedTypes")
@@ -242,159 +213,6 @@ Create.Index("IX_UserPreferences_Settings_Gin").OnTable("UserPreferences")
 // Index on specific JSON key
 Create.Index("IX_UserPreferences_Theme").OnTable("UserPreferences")
     .OnColumn(RawSql.Insert("(settings->>'theme')"));
-
-// Check constraint on JSON
-Create.CheckConstraint("CK_UserPreferences_ValidTheme").OnTable("UserPreferences")
-    .Expression("settings ? 'theme' AND settings->>'theme' IN ('light', 'dark')");
-```
-
-## MySQL Extensions
-
-### Installation
-```xml
-<PackageReference Include="FluentMigrator.Extensions.MySql" Version="7.2.0" />
-```
-
-### Storage Engine Specification
-```csharp
-using FluentMigrator.MySql;
-
-[Migration(1)]
-public class CreateMySqlTables : Migration
-{
-    public override void Up()
-    {
-        // InnoDB table (default for MySQL 5.5+)
-        Execute.Sql(@"
-CREATE TABLE Users (
-    Id INT AUTO_INCREMENT PRIMARY KEY,
-    Username VARCHAR(50) NOT NULL,
-    Email VARCHAR(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-        ");
-
-        // MyISAM table (for read-heavy operations)
-        Execute.Sql(@"
-CREATE TABLE SearchCache (
-    Id INT AUTO_INCREMENT PRIMARY KEY,
-    Query VARCHAR(255) NOT NULL,
-    Results TEXT,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-        ");
-    }
-
-    public override void Down()
-    {
-        Delete.Table("SearchCache");
-        Delete.Table("Users");
-    }
-}
-```
-
-### Character Set and Collation
-```csharp
-Create.Table("Articles")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("Title").AsString(255).NotNullable()
-    .WithColumn("Content").AsString().NotNullable()
-    .WithColumn("Slug").AsString(255).NotNullable();
-
-// Set character set and collation
-Execute.Sql("ALTER TABLE Articles CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-```
-
-### Full-Text Indexes
-```csharp
-Create.Table("Documents")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("Title").AsString(255).NotNullable()
-    .WithColumn("Content").AsString().NotNullable()
-    .WithColumn("Tags").AsString(500).Nullable();
-
-// Full-text index
-Execute.Sql("CREATE FULLTEXT INDEX FTI_Documents_Content ON Documents (title, content)");
-
-// Full-text index with parser
-Execute.Sql("CREATE FULLTEXT INDEX FTI_Documents_Tags ON Documents (tags) WITH PARSER ngram");
-```
-
-## Oracle Extensions
-
-### Installation
-```xml
-<PackageReference Include="FluentMigrator.Extensions.Oracle" Version="7.2.0" />
-```
-
-### Sequences and Triggers
-```csharp
-[Migration(1)]
-public class CreateOracleSequences : Migration
-{
-    public override void Up()
-    {
-        // Create sequence
-        Execute.Sql("CREATE SEQUENCE users_seq START WITH 1 INCREMENT BY 1 NOCACHE");
-
-        // Create table
-        Create.Table("Users")
-            .WithColumn("Id").AsInt32().NotNullable().PrimaryKey()
-            .WithColumn("Username").AsString(50).NotNullable()
-            .WithColumn("Email").AsString(255).NotNullable();
-
-        // Create trigger for auto-increment
-        Execute.Sql(@"
-CREATE OR REPLACE TRIGGER users_trigger
-BEFORE INSERT ON Users
-FOR EACH ROW
-BEGIN
-    SELECT users_seq.NEXTVAL INTO :NEW.Id FROM dual;
-END;
-        ");
-    }
-
-    public override void Down()
-    {
-        Execute.Sql("DROP TRIGGER users_trigger");
-        Delete.Table("Users");
-        Execute.Sql("DROP SEQUENCE users_seq");
-    }
-}
-```
-
-### Oracle Data Types
-```csharp
-Create.Table("OracleTypes")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey()
-    .WithColumn("NumberValue").AsCustom("NUMBER(10,2)").NotNullable()
-    .WithColumn("VarcharValue").AsCustom("VARCHAR2(255)").NotNullable()
-    .WithColumn("ClobValue").AsCustom("CLOB").Nullable()
-    .WithColumn("BlobValue").AsCustom("BLOB").Nullable()
-    .WithColumn("DateValue").AsCustom("DATE").NotNullable()
-    .WithColumn("TimestampValue").AsCustom("TIMESTAMP").NotNullable()
-    .WithColumn("IntervalValue").AsCustom("INTERVAL DAY TO SECOND").Nullable();
-```
-
-## Snowflake Extensions
-
-### Installation
-```xml
-<PackageReference Include="FluentMigrator.Extensions.Snowflake" Version="7.2.0" />
-```
-
-### Snowflake-Specific Features
-```csharp
-using FluentMigrator.Snowflake;
-
-Create.Table("SnowflakeTable")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey()
-    .WithColumn("Data").AsCustom("VARIANT").Nullable()    // Semi-structured data
-    .WithColumn("ArrayData").AsCustom("ARRAY").Nullable()
-    .WithColumn("ObjectData").AsCustom("OBJECT").Nullable()
-    .WithColumn("GeographyData").AsCustom("GEOGRAPHY").Nullable();
-
-// Cluster key for performance
-Execute.Sql("ALTER TABLE SnowflakeTable CLUSTER BY (Id)");
 ```
 
 ## Cross-Provider Compatibility
@@ -439,39 +257,6 @@ public class CrossProviderMigration : Migration
     public override void Down()
     {
         Delete.Table("Users");
-    }
-}
-```
-
-### Provider Detection
-```csharp
-[Migration(1)]
-public class ProviderSpecificMigration : Migration
-{
-    public override void Up()
-    {
-        var processorType = ApplicationContext.Connection.GetType().Name;
-
-        if (processorType.Contains("SqlServer"))
-        {
-            // SQL Server specific code
-            Execute.Sql("SELECT @@VERSION");
-        }
-        else if (processorType.Contains("Postgres"))
-        {
-            // PostgreSQL specific code
-            Execute.Sql("SELECT version()");
-        }
-        else if (processorType.Contains("MySql"))
-        {
-            // MySQL specific code
-            Execute.Sql("SELECT @@version");
-        }
-    }
-
-    public override void Down()
-    {
-        // Rollback logic
     }
 }
 ```

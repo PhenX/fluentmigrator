@@ -16,9 +16,12 @@ FluentMigrator supports:
 
 Install the PostgreSQL provider package:
 
-```xml
-<PackageReference Include="FluentMigrator.Runner.Postgres" Version="7.2.0" />
-<PackageReference Include="FluentMigrator.Extensions.Postgres" Version="7.2.0" />
+```bash
+# For .NET CLI
+dotnet add package FluentMigrator.Runner.Postgres
+
+# For Package Manager Console
+Install-Package FluentMigrator.Runner.Postgres
 ```
 
 ## Configuration
@@ -32,57 +35,13 @@ services.AddFluentMigratorCore()
         .ScanIn(typeof(MyMigration).Assembly).For.Migrations());
 ```
 
-### Connection String Examples
-
-#### Basic Connection
-```csharp
-"Host=localhost;Database=myapp;Username=myuser;Password=mypass"
-```
-
-#### With Port and SSL
-```csharp
-"Host=localhost;Port=5432;Database=myapp;Username=myuser;Password=mypass;SSL Mode=Require"
-```
-
-#### Connection Pooling
-```csharp
-"Host=localhost;Database=myapp;Username=myuser;Password=mypass;Pooling=true;MinPoolSize=1;MaxPoolSize=20"
-```
-
-#### AWS RDS PostgreSQL
-```csharp
-"Host=myinstance.region.rds.amazonaws.com;Port=5432;Database=myapp;Username=myuser;Password=mypass;SSL Mode=Require"
-```
+## Column types
 
 ## PostgreSQL Specific Features
 
 ### Data Types
 
-#### PostgreSQL Native Types
-```csharp
-using FluentMigrator.Postgres;
-
-Create.Table("PostgresTypes")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("JsonData").AsCustom("JSONB").Nullable()
-    .WithColumn("JsonTextData").AsCustom("JSON").Nullable()
-    .WithColumn("UuidValue").AsGuid().NotNullable()
-    .WithColumn("InetAddress").AsCustom("INET").Nullable()
-    .WithColumn("MacAddress").AsCustom("MACADDR").Nullable()
-    .WithColumn("IntRange").AsCustom("INT4RANGE").Nullable()
-    .WithColumn("TimestampRange").AsCustom("TSRANGE").Nullable()
-    .WithColumn("PointGeometry").AsCustom("POINT").Nullable()
-    .WithColumn("ArrayInts").AsCustom("INTEGER[]").Nullable()
-    .WithColumn("ArrayStrings").AsCustom("TEXT[]").Nullable();
-```
-
-#### Serial Types (Auto-increment)
-```csharp
-Create.Table("SerialTypes")
-    .WithColumn("Id").AsCustom("SERIAL").NotNullable().PrimaryKey()      // 4-byte auto-incrementing integer
-    .WithColumn("BigId").AsCustom("BIGSERIAL").NotNullable()             // 8-byte auto-incrementing integer
-    .WithColumn("SmallId").AsCustom("SMALLSERIAL").NotNullable();        // 2-byte auto-incrementing integer
-```
+Column types are specified in the [PostgresTypeMap](https://github.com/fluentmigrator/fluentmigrator/blob/main/src/FluentMigrator.Runner.Postgres/Generators/Postgres/PostgresTypeMap.cs).
 
 ### Sequences
 
@@ -197,23 +156,6 @@ Create.Table("FlexibleUsers")
     .WithColumn("Username").AsString(50).NotNullable();
 ```
 
-#### JSON Operations
-```csharp
-Create.Table("Products")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("Data").AsCustom("JSONB").NotNullable()
-    .WithColumn("Metadata").AsCustom("JSON").Nullable();
-
-// Index on JSON property
-Create.Index("IX_Products_JsonCategory").OnTable("Products")
-    .OnColumn(RawSql.Insert("(data->>'category')"));
-
-// GIN index for JSON containment queries
-Create.Index("IX_Products_DataGin").OnTable("Products")
-    .OnColumn("Data")
-    .UsingIndexAlgorithm(PostgresIndexAlgorithm.Gin);
-```
-
 ### Full-Text Search
 
 #### Text Search Configuration
@@ -259,29 +201,6 @@ Create.Table("UserPermissions")
 Create.Index("IX_UserPermissions_Permissions").OnTable("UserPermissions")
     .OnColumn("Permissions")
     .UsingIndexAlgorithm(PostgresIndexAlgorithm.Gin);
-```
-
-### Constraints
-
-#### Check Constraints with PostgreSQL Features
-```csharp
-Create.Table("Users")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("Email").AsString(255).NotNullable()
-    .WithColumn("Age").AsInt32().NotNullable()
-    .WithColumn("Settings").AsCustom("JSONB").NotNullable();
-
-Create.CheckConstraint("CK_Users_Email_Valid")
-    .OnTable("Users")
-    .Expression("email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'"); // Regex validation
-
-Create.CheckConstraint("CK_Users_Age_Valid")
-    .OnTable("Users")
-    .Expression("age >= 0 AND age <= 150");
-
-Create.CheckConstraint("CK_Users_Settings_HasTheme")
-    .OnTable("Users")
-    .Expression("settings ? 'theme'"); // JSON key exists
 ```
 
 ### Enums
@@ -334,33 +253,11 @@ CREATE TABLE Employees (
 ) INHERITS (Users)");
 ```
 
-## Schemas and Databases
-
-### Multiple Schemas
-```csharp
-Create.Schema("sales");
-Create.Schema("inventory");
-
-Create.Table("Products").InSchema("inventory")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("Name").AsString(255).NotNullable();
-
-Create.Table("Orders").InSchema("sales")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("ProductId").AsInt32().NotNullable()
-        .ForeignKey("FK_Orders_Products", "inventory", "Products", "Id");
-```
-
-### Search Path Configuration
-```csharp
-Execute.Sql("SET search_path TO sales, inventory, public");
-```
-
 ## Performance Optimization
 
 ### VACUUM and ANALYZE
 ```csharp
-[Migration(1)]
+[Maintenance(MigrationStage.AfterAll)]
 public class MaintenanceMigration : Migration
 {
     public override void Up()
@@ -376,59 +273,6 @@ public class MaintenanceMigration : Migration
     }
 }
 ```
-
-### Connection Pooling
-```csharp
-// Connection string with pooling
-"Host=localhost;Database=myapp;Username=myuser;Password=mypass;Pooling=true;MinPoolSize=5;MaxPoolSize=100;Connection Lifetime=300"
-```
-
-## Best Practices
-
-### 1. Use Appropriate PostgreSQL Types
-```csharp
-// Use JSONB for queryable JSON data
-.WithColumn("Settings").AsCustom("JSONB").NotNullable()
-
-// Use JSON for write-heavy JSON data
-.WithColumn("LogData").AsCustom("JSON").NotNullable()
-
-// Use arrays for list data
-.WithColumn("Tags").AsCustom("TEXT[]").Nullable()
-```
-
-### 2. Create Proper Indexes
-```csharp
-// GIN indexes for JSONB
-Create.Index("IX_Settings_Gin").OnTable("Users")
-    .OnColumn("Settings")
-    .UsingIndexAlgorithm(PostgresIndexAlgorithm.Gin);
-
-// Partial indexes for filtered queries
-Create.Index("IX_Users_Active").OnTable("Users")
-    .OnColumn("Email")
-    .Where("is_active = true");
-```
-
-### 3. Use Extensions Wisely
-```csharp
-// Enable commonly used extensions
-Execute.Sql("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");   // UUID functions
-Execute.Sql("CREATE EXTENSION IF NOT EXISTS \"pg_trgm\"");     // Trigram matching
-Execute.Sql("CREATE EXTENSION IF NOT EXISTS \"unaccent\"");    // Remove accents
-```
-
-### 4. Handle Text Search Properly
-```csharp
-// Use tsvector for full-text search
-.WithColumn("SearchVector").AsCustom("TSVECTOR").Nullable()
-
-// Create appropriate indexes
-Create.Index("IX_SearchVector").OnTable("Articles")
-    .OnColumn("SearchVector")
-    .UsingIndexAlgorithm(PostgresIndexAlgorithm.Gin);
-```
-
 ## Common Issues and Solutions
 
 ### Issue: Case Sensitivity
@@ -468,54 +312,6 @@ Use JSONB for better performance with JSON operations:
 Create.Index("IX_Data_Gin").OnTable("MyTable")
     .OnColumn("Data")
     .UsingIndexAlgorithm(PostgresIndexAlgorithm.Gin);
-```
-
-## Migration Patterns
-
-### Conditional PostgreSQL Features
-```csharp
-IfDatabase(ProcessorIdConstants.Postgres)
-    .Create.Table("PostgresOnlyTable")
-    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-    .WithColumn("JsonData").AsCustom("JSONB").NotNullable();
-```
-
-### Version-Specific Features
-```csharp
-[Migration(1)]
-public class PostgresVersionSpecific : Migration
-{
-    public override void Up()
-    {
-        // Check PostgreSQL version and use appropriate features
-        var version = ApplicationContext.Connection.ServerVersion;
-
-        if (version.StartsWith("10") || version.StartsWith("11") ||
-            version.StartsWith("12") || version.StartsWith("13") ||
-            version.StartsWith("14") || version.StartsWith("15") ||
-            version.StartsWith("16"))
-        {
-            // Use GENERATED ALWAYS AS IDENTITY (PostgreSQL 10+)
-            Execute.Sql(@"
-                CREATE TABLE modern_users (
-                    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                    username VARCHAR(50) NOT NULL
-                )");
-        }
-        else
-        {
-            // Use SERIAL for older versions
-            Create.Table("modern_users")
-                .WithColumn("id").AsCustom("SERIAL").NotNullable().PrimaryKey()
-                .WithColumn("username").AsString(50).NotNullable();
-        }
-    }
-
-    public override void Down()
-    {
-        Delete.Table("modern_users");
-    }
-}
 ```
 
 ## Next Steps

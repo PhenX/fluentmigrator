@@ -1,4 +1,4 @@
-# Working with Foreign Keys
+# Foreign Keys
 
 Foreign key constraints are essential for maintaining data integrity and establishing relationships between tables. FluentMigrator provides comprehensive support for creating and managing foreign key relationships across different database providers.
 
@@ -420,22 +420,22 @@ public class SqlServerForeignKeys : Migration
 {
     public override void Up()
     {
-            IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
-                ALTER TABLE DetailTable
-                ADD CONSTRAINT FK_DetailTable_MasterTable
-                FOREIGN KEY (MasterId) REFERENCES MasterTable(Id)
-                ON DELETE CASCADE
-                ON UPDATE CASCADE");
+        IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
+            ALTER TABLE DetailTable
+            ADD CONSTRAINT FK_DetailTable_MasterTable
+            FOREIGN KEY (MasterId) REFERENCES MasterTable(Id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE");
     }
 
     public override void Down()
     {
-            IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
-    {
-Delete.ForeignKey("FK_DetailTable_MasterTable").OnTable("DetailTable");
+        IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
+        {
+            Delete.ForeignKey("FK_DetailTable_MasterTable").OnTable("DetailTable");
             Delete.Table("DetailTable");
             Delete.Table("MasterTable");
-    });
+        });
     }
 }
 ```
@@ -447,77 +447,21 @@ public class PostgreSqlForeignKeys : Migration
 {
     public override void Up()
     {
-            IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
-                ALTER TABLE Books
-                ADD CONSTRAINT FK_Books_Authors
-                FOREIGN KEY (AuthorId) REFERENCES Authors(Id)
-                DEFERRABLE INITIALLY DEFERRED");
+        IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
+            ALTER TABLE Books
+            ADD CONSTRAINT FK_Books_Authors
+            FOREIGN KEY (AuthorId) REFERENCES Authors(Id)
+            DEFERRABLE INITIALLY DEFERRED");
     }
 
     public override void Down()
     {
-            IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
-    {
-Delete.ForeignKey("FK_Books_Authors").OnTable("Books");
+        IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
+        {
+            Delete.ForeignKey("FK_Books_Authors").OnTable("Books");
             Delete.Table("Books");
             Delete.Table("Authors");
-    });
-    }
-}
-```
-
-## Foreign Key Validation and Constraints
-
-### Existing Data Validation
-
-```csharp
-public class ForeignKeyValidation : Migration
-{
-    public override void Up()
-    {
-        Create.Table("ValidatedMaster")
-            .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-            .WithColumn("Code").AsString(10).NotNullable()
-            .WithColumn("Name").AsString(100).NotNullable();
-
-        Create.Table("ValidatedDetail")
-            .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-            .WithColumn("MasterCode").AsString(10).NotNullable()
-            .WithColumn("Description").AsString(500).NotNullable();
-
-        // Insert some master data first
-        Insert.IntoTable("ValidatedMaster")
-            .Row(new { Code = "A001", Name = "Category A" })
-            .Row(new { Code = "B001", Name = "Category B" });
-
-        // Insert detail data
-        Insert.IntoTable("ValidatedDetail")
-            .Row(new { MasterCode = "A001", Description = "Item 1" })
-            .Row(new { MasterCode = "B001", Description = "Item 2" });
-
-        // Validate existing data before creating foreign key
-        var invalidRecords = Execute.Sql(@"
-            SELECT COUNT(*)
-            FROM ValidatedDetail d
-            LEFT JOIN ValidatedMaster m ON d.MasterCode = m.Code
-            WHERE m.Code IS NULL").Returns<int>().FirstOrDefault();
-
-        if (invalidRecords > 0)
-        {
-            throw new InvalidOperationException($"Found {invalidRecords} orphaned records. Clean data before creating foreign key.");
-        }
-
-        // Safe to create foreign key
-        Create.ForeignKey("FK_ValidatedDetail_ValidatedMaster")
-            .FromTable("ValidatedDetail").ForeignColumn("MasterCode")
-            .ToTable("ValidatedMaster").PrimaryColumn("Code");
-    }
-
-    public override void Down()
-    {
-        Delete.ForeignKey("FK_ValidatedDetail_ValidatedMaster").OnTable("ValidatedDetail");
-        Delete.Table("ValidatedDetail");
-        Delete.Table("ValidatedMaster");
+        });
     }
 }
 ```
@@ -549,64 +493,6 @@ public class ConditionalForeignKeys : Migration
         {
             Delete.ForeignKey("FK_Users_Roles").OnTable("Users");
         }
-    }
-}
-```
-
-## Performance Considerations
-
-### Indexing Foreign Key Columns
-
-```csharp
-public class ForeignKeyIndexing : Migration
-{
-    public override void Up()
-    {
-        Create.Table("Orders")
-            .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
-            .WithColumn("CustomerId").AsInt32().NotNullable()
-            .WithColumn("ProductId").AsInt32().NotNullable()
-            .WithColumn("SalespersonId").AsInt32().Nullable()
-            .WithColumn("OrderDate").AsDateTime().NotNullable();
-
-        // Create foreign keys
-        Create.ForeignKey("FK_Orders_Customers")
-            .FromTable("Orders").ForeignColumn("CustomerId")
-            .ToTable("Customers").PrimaryColumn("Id");
-
-        Create.ForeignKey("FK_Orders_Products")
-            .FromTable("Orders").ForeignColumn("ProductId")
-            .ToTable("Products").PrimaryColumn("Id");
-
-        Create.ForeignKey("FK_Orders_Salespersons")
-            .FromTable("Orders").ForeignColumn("SalespersonId")
-            .ToTable("Employees").PrimaryColumn("Id")
-            .OnDelete(Rule.SetNull);
-
-        // Create indexes on foreign key columns for better performance
-        // Note: Some databases automatically create these, others don't
-        Create.Index("IX_Orders_CustomerId")
-            .OnTable("Orders")
-            .OnColumn("CustomerId");
-
-        Create.Index("IX_Orders_ProductId")
-            .OnTable("Orders")
-            .OnColumn("ProductId");
-
-        Create.Index("IX_Orders_SalespersonId")
-            .OnTable("Orders")
-            .OnColumn("SalespersonId");
-    }
-
-    public override void Down()
-    {
-        Delete.Index("IX_Orders_SalespersonId").OnTable("Orders");
-        Delete.Index("IX_Orders_ProductId").OnTable("Orders");
-        Delete.Index("IX_Orders_CustomerId").OnTable("Orders");
-        Delete.ForeignKey("FK_Orders_Salespersons").OnTable("Orders");
-        Delete.ForeignKey("FK_Orders_Products").OnTable("Orders");
-        Delete.ForeignKey("FK_Orders_Customers").OnTable("Orders");
-        Delete.Table("Orders");
     }
 }
 ```
@@ -733,46 +619,6 @@ public class ForeignKeyDocumentation : Migration
 ```
 
 ## Troubleshooting Foreign Key Issues
-
-### Common Problems and Solutions
-
-```csharp
-public class ForeignKeyTroubleshooting : Migration
-{
-    public override void Up()
-    {
-        // Problem: Existing data violates foreign key constraint
-        // Solution: Clean up data before creating foreign key
-
-        // Check for orphaned records
-        var orphanedCount = Execute.Sql(@"
-            SELECT COUNT(*)
-            FROM Orders o
-            LEFT JOIN Customers c ON o.CustomerId = c.Id
-            WHERE c.Id IS NULL").Returns<int>().FirstOrDefault();
-
-        if (orphanedCount > 0)
-        {
-            // Option 1: Delete orphaned records
-            Execute.Sql("DELETE FROM Orders WHERE CustomerId NOT IN (SELECT Id FROM Customers)");
-
-            // Option 2: Create placeholder records
-            // Execute.Sql("INSERT INTO Customers (Name) VALUES ('Unknown Customer')");
-            // Execute.Sql("UPDATE Orders SET CustomerId = (SELECT Id FROM Customers WHERE Name = 'Unknown Customer') WHERE CustomerId NOT IN (SELECT Id FROM Customers)");
-        }
-
-        // Now safe to create foreign key
-        Create.ForeignKey("FK_Orders_Customers")
-            .FromTable("Orders").ForeignColumn("CustomerId")
-            .ToTable("Customers").PrimaryColumn("Id");
-    }
-
-    public override void Down()
-    {
-        Delete.ForeignKey("FK_Orders_Customers").OnTable("Orders");
-    }
-}
-```
 
 ### Handling Circular References
 

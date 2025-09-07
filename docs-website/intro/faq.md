@@ -46,7 +46,7 @@ public class AddUserTable : Migration  // Must be public and inherit from Migrat
 
 // ✅ Finds all migration types
 .ConfigureRunner(rb => rb
-    .AddSqlServer() 
+    .AddSqlServer()
     .WithGlobalConnectionString(connectionString)
     .ScanIn(typeof(MyMigration).Assembly).For.All())
 ```
@@ -92,33 +92,33 @@ This allows loading migration assemblies (e.g., .NET 6.0) in a different runtime
 
 ### What databases are supported?
 
-| Database | Identifier | Alternative Identifiers |
-|----------|------------|------------------------|
-| **SQL Server 2022** | `SqlServer2016`¹ | `SqlServer` |
-| **SQL Server 2019** | `SqlServer2016`² | `SqlServer` |
-| **SQL Server 2017** | `SqlServer2016`³ | `SqlServer` |
-| **SQL Server 2016** | `SqlServer2016` | `SqlServer` |
-| **SQL Server 2014** | `SqlServer2014` | `SqlServer` |
-| **SQL Server 2012** | `SqlServer2012` | `SqlServer` |
-| **SQL Server 2008** | `SqlServer2008` | `SqlServer` |
-| **SQL Server 2005** | `SqlServer2005` | `SqlServer` |
-| **PostgreSQL** | `Postgres` | `PostgreSQL` |
-| **PostgreSQL 15.0** | `PostgreSQL15_0` | `PostgreSQL` |
-| **PostgreSQL 11.0** | `PostgreSQL11_0` | `PostgreSQL` |
-| **PostgreSQL 10.0** | `PostgreSQL10_0` | `PostgreSQL` |
-| **PostgreSQL 9.2** | `Postgres92` | `PostgreSQL92` |
-| **MySQL 8** | `MySQL8` | `MySql`, `MariaDB` |
-| **MySQL 5** | `MySql5` | `MySql`, `MariaDB` |
-| **MySQL 4** | `MySql4` | `MySql` |
-| **Oracle** | `Oracle` | |
-| **Oracle (managed)** | `OracleManaged` | `Oracle` |
-| **Oracle (DotConnect)** | `OracleDotConnect` | `Oracle` |
-| **SQLite** | `Sqlite` | |
-| **Firebird** | `Firebird` | |
-| **Amazon Redshift** | `Redshift` | |
-| **SAP HANA** | `Hana` | |
-| **DB2** | `DB2` | |
-| **DB2 iSeries** | `DB2 iSeries` | `DB2` |
+| Database                | Identifier         | Alternative Identifiers |
+|-------------------------|--------------------|-------------------------|
+| **SQL Server 2022**     | `SqlServer2016`¹   | `SqlServer`             |
+| **SQL Server 2019**     | `SqlServer2016`²   | `SqlServer`             |
+| **SQL Server 2017**     | `SqlServer2016`³   | `SqlServer`             |
+| **SQL Server 2016**     | `SqlServer2016`    | `SqlServer`             |
+| **SQL Server 2014**     | `SqlServer2014`    | `SqlServer`             |
+| **SQL Server 2012**     | `SqlServer2012`    | `SqlServer`             |
+| **SQL Server 2008**     | `SqlServer2008`    | `SqlServer`             |
+| **SQL Server 2005**     | `SqlServer2005`    | `SqlServer`             |
+| **PostgreSQL**          | `Postgres`         | `PostgreSQL`            |
+| **PostgreSQL 15.0**     | `PostgreSQL15_0`   | `PostgreSQL`            |
+| **PostgreSQL 11.0**     | `PostgreSQL11_0`   | `PostgreSQL`            |
+| **PostgreSQL 10.0**     | `PostgreSQL10_0`   | `PostgreSQL`            |
+| **PostgreSQL 9.2**      | `Postgres92`       | `PostgreSQL92`          |
+| **MySQL 8**             | `MySQL8`           | `MySql`, `MariaDB`      |
+| **MySQL 5**             | `MySql5`           | `MySql`, `MariaDB`      |
+| **MySQL 4**             | `MySql4`           | `MySql`                 |
+| **Oracle**              | `Oracle`           |                         |
+| **Oracle (managed)**    | `OracleManaged`    | `Oracle`                |
+| **Oracle (DotConnect)** | `OracleDotConnect` | `Oracle`                |
+| **SQLite**              | `Sqlite`           |                         |
+| **Firebird**            | `Firebird`         |                         |
+| **Amazon Redshift**     | `Redshift`         |                         |
+| **SAP HANA**            | `Hana`             |                         |
+| **DB2**                 | `DB2`              |                         |
+| **DB2 iSeries**         | `DB2 iSeries`      | `DB2`                   |
 
 **Notes:**
 1. ¹² ³ All integration tests pass using SqlServer2016 dialect
@@ -146,7 +146,7 @@ public class DbMigrationLockBefore : Migration
 
             IF @result < 0
             BEGIN
-                DECLARE @msg NVARCHAR(1000) = 'Received error code ' + 
+                DECLARE @msg NVARCHAR(1000) = 'Received error code ' +
                     CAST(@result AS VARCHAR(10)) + ' from sp_getapplock during migrations'
                 THROW 99999, @msg, 1
             END
@@ -186,7 +186,7 @@ async Task RunMigrationsWithDistributedLock(IMigrationRunner runner)
     var expiry = TimeSpan.FromMinutes(5);
 
     using var redLock = await redlockFactory.CreateLockAsync(resource, expiry);
-    
+
     if (redLock.IsAcquired)
     {
         runner.MigrateUp();
@@ -263,9 +263,9 @@ ALTER DATABASE [' + @DbName + '] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
 
 ALTER DATABASE [' + @DbName + '] SET MULTI_USER;
 ';
-        
+
         EXEC(@SqlCommand);
-        
+
         -- Switch back to original database
         SET @SqlCommand = 'USE [' + @DbName + ']';
         EXEC(@SqlCommand);
@@ -310,23 +310,23 @@ public override void Up()
     // Process in batches to avoid memory issues
     var batchSize = 1000;
     var processed = 0;
-    
+
     do
     {
         var sql = $@"
-            UPDATE Users 
-            SET ProcessedFlag = 1 
-            WHERE ProcessedFlag = 0 
+            UPDATE Users
+            SET ProcessedFlag = 1
+            WHERE ProcessedFlag = 0
             AND Id IN (
-                SELECT TOP {batchSize} Id 
-                FROM Users 
-                WHERE ProcessedFlag = 0 
+                SELECT TOP {batchSize} Id
+                FROM Users
+                WHERE ProcessedFlag = 0
                 ORDER BY Id
             )";
-            
+
         var rowsAffected = Execute.Sql(sql);
         processed += rowsAffected;
-        
+
     } while (processed > 0);
 }
 ```
@@ -341,7 +341,7 @@ public override void Up()
     // For large tables, create indexes online to avoid blocking
     IfDatabase(ProcessorIdConstants.SqlServer)
         .Execute.Sql("CREATE INDEX IX_Users_Email ON Users(Email) WITH (ONLINE=ON)");
-        
+
     // Fallback for other databases
     IfDatabase(ProcessorIdConstants.Postgres, ProcessorIdConstants.MySql)
         .Create.Index("IX_Users_Email").OnTable("Users").OnColumn("Email");
@@ -369,9 +369,9 @@ public void TestMigration()
 
     using var scope = serviceProvider.CreateScope();
     var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
-    
+
     runner.MigrateUp();
-    
+
     // Assert migration results
     Assert.That(runner.HasMigrationsToApplyUp(), Is.False);
 }
@@ -387,13 +387,13 @@ public void TestMigrationRollback()
 {
     // Migrate up
     runner.MigrateUp(20231201120000);
-    
+
     // Verify up migration
     Assert.That(Schema.Table("Users").Exists(), Is.True);
-    
+
     // Migrate down
     runner.MigrateDown(20231201120000);
-    
+
     // Verify down migration
     Assert.That(Schema.Table("Users").Exists(), Is.False);
 }
@@ -549,8 +549,8 @@ public class BatchedUpdate : Migration
         Execute.Sql(@"
             WHILE @@ROWCOUNT > 0
             BEGIN
-                UPDATE TOP (1000) Users 
-                SET Status = 'Active' 
+                UPDATE TOP (1000) Users
+                SET Status = 'Active'
                 WHERE Status IS NULL
             END");
     }
@@ -560,8 +560,8 @@ public class BatchedUpdate : Migration
         Execute.Sql(@"
             WHILE @@ROWCOUNT > 0
             BEGIN
-                UPDATE TOP (1000) Users 
-                SET Status = NULL 
+                UPDATE TOP (1000) Users
+                SET Status = NULL
                 WHERE Status = 'Active'
             END");
     }
@@ -613,11 +613,8 @@ public override void Up()
 {
     IfDatabase(ProcessorIdConstants.SqlServer)
         .Execute.Sql("SELECT TOP 10 * FROM Users");
-        
-    IfDatabase(ProcessorIdConstants.Postgres)
-        .Execute.Sql("SELECT * FROM Users LIMIT 10");
-        
-    IfDatabase(ProcessorIdConstants.MySql)
+
+    IfDatabase(ProcessorIdConstants.Postgres, ProcessorIdConstants.MySql)
         .Execute.Sql("SELECT * FROM Users LIMIT 10");
 }
 ```
@@ -718,7 +715,7 @@ public override void Up()
 {
     IfDatabase(ProcessorIdConstants.Postgres)
         .Execute.Sql("CREATE INDEX CONCURRENTLY IX_Users_Email ON Users (Email)");
-        
+
     IfDatabase(ProcessorIdConstants.SqlServer)
         .Create.Index("IX_Users_Email").OnTable("Users").OnColumn("Email");
 }
