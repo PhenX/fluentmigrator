@@ -41,6 +41,294 @@ Execute.Sql(@"
 ");
 ```
 
+## Using Parameters in SQL Scripts
+
+FluentMigrator supports parameterized SQL scripts through the `parameters` argument available in `Execute.Sql`, `Execute.Script`, and `Execute.EmbeddedScript` methods. Parameters use token replacement with the `$(parameterName)` syntax.
+
+### Basic Parameter Usage with Execute.Sql
+
+```csharp
+public override void Up()
+{
+    var parameters = new Dictionary<string, string>
+    {
+        ["TablePrefix"] = "App_",
+        ["DefaultStatus"] = "Active",
+        ["CurrentDate"] = "GETDATE()"
+    };
+
+    Execute.Sql(@"
+        CREATE TABLE $(TablePrefix)Users (
+            Id INT IDENTITY(1,1) PRIMARY KEY,
+            Username NVARCHAR(50) NOT NULL,
+            Status NVARCHAR(20) DEFAULT '$(DefaultStatus)',
+            CreatedAt DATETIME DEFAULT $(CurrentDate)
+        );
+
+        INSERT INTO $(TablePrefix)Users (Username, Status, CreatedAt)
+        VALUES ('admin', '$(DefaultStatus)', $(CurrentDate));
+    ", parameters);
+}
+```
+
+### Parameter Usage with Execute.Script
+
+```csharp
+public override void Up()
+{
+    var parameters = new Dictionary<string, string>
+    {
+        ["Environment"] = "Production",
+        ["DatabaseName"] = "MyAppDB",
+        ["BackupPath"] = "C:\\Backups\\MyAppDB.bak"
+    };
+
+    // Assuming you have a SQL script file: Scripts/CreateDatabase.sql
+    Execute.Script("Scripts/CreateDatabase.sql", parameters);
+}
+```
+
+**Example Scripts/CreateDatabase.sql:**
+```sql
+-- Create database for $(Environment) environment
+CREATE DATABASE $(DatabaseName)_$(Environment);
+
+-- Set backup path
+BACKUP DATABASE $(DatabaseName)_$(Environment) 
+TO DISK = '$(BackupPath)';
+```
+
+### Parameter Usage with Execute.EmbeddedScript
+
+```csharp
+public override void Up()
+{
+    var parameters = new Dictionary<string, string>
+    {
+        ["SchemaName"] = "Reporting",
+        ["TableSpace"] = "USERS",
+        ["IndexSpace"] = "INDX"
+    };
+
+    // Assuming you have an embedded resource: MyAssembly.Scripts.CreateReportingSchema.sql
+    Execute.EmbeddedScript("CreateReportingSchema.sql", parameters);
+}
+```
+
+### Parameter Overloads with Descriptions
+
+```csharp
+public override void Up()
+{
+    var parameters = new Dictionary<string, string>
+    {
+        ["BatchSize"] = "1000",
+        ["TableName"] = "LargeDataTable"
+    };
+
+    Execute.Sql(@"
+        DECLARE @BatchSize INT = $(BatchSize);
+        
+        WHILE EXISTS(SELECT 1 FROM $(TableName) WHERE ProcessedAt IS NULL)
+        BEGIN
+            UPDATE TOP (@BatchSize) $(TableName)
+            SET ProcessedAt = GETDATE()
+            WHERE ProcessedAt IS NULL;
+        END
+    ", "Batch process large data table with parameterized batch size", parameters);
+}
+```
+
+### Database-Specific Parameters
+
+```csharp
+public override void Up()
+{
+    // SQL Server parameters
+    var sqlServerParams = new Dictionary<string, string>
+    {
+        ["CurrentDateTime"] = "GETDATE()",
+        ["StringConcat"] = "+",
+        ["TopClause"] = "TOP (100)"
+    };
+
+    IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
+        SELECT $(TopClause) * 
+        FROM Users 
+        WHERE CreatedAt > DATEADD(day, -30, $(CurrentDateTime))
+        ORDER BY Username $(StringConcat) ' (' $(StringConcat) Email $(StringConcat) ')'
+    ", sqlServerParams);
+
+    // PostgreSQL parameters  
+    var postgresParams = new Dictionary<string, string>
+    {
+        ["CurrentDateTime"] = "NOW()",
+        ["StringConcat"] = "||",
+        ["LimitClause"] = "LIMIT 100"
+    };
+
+    IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
+        SELECT * 
+        FROM Users 
+        WHERE CreatedAt > $(CurrentDateTime) - INTERVAL '30 days'
+        ORDER BY Username $(StringConcat) ' (' $(StringConcat) Email $(StringConcat) ')'
+        $(LimitClause)
+    ", postgresParams);
+}
+```
+
+### Parameter Escaping
+
+When you need to include the literal text `$(parameterName)` in your SQL (not as a parameter), use double dollar signs and double parentheses:
+
+```csharp
+public override void Up()
+{
+    var parameters = new Dictionary<string, string>
+    {
+        ["ActualTableName"] = "Users",
+        ["ActualColumnName"] = "Username"
+    };
+
+    Execute.Sql(@"
+        -- This will be replaced: $(ActualTableName) becomes 'Users'
+        SELECT * FROM $(ActualTableName);
+
+        -- This will NOT be replaced: $$((ParameterName)) becomes '$(ParameterName)' literally
+        INSERT INTO DocumentationTable (Description) 
+        VALUES ('Use $$((ParameterName)) syntax to include literal parameter syntax');
+
+        -- Mixed example:
+        COMMENT ON COLUMN $(ActualTableName).$(ActualColumnName) 
+        IS 'This column was created using parameter $$((ActualTableName))';
+    ", parameters);
+}
+```
+
+### Environment-Based Parameters
+
+```csharp
+public override void Up()
+{
+    // Determine environment-specific values
+    var environment = Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "Development";
+    
+    var parameters = new Dictionary<string, string>
+    {
+        ["Environment"] = environment,
+        ["ConnectionTimeout"] = environment == "Production" ? "30" : "300",
+        ["LogLevel"] = environment == "Production" ? "ERROR" : "DEBUG",
+        ["MaxConnections"] = environment == "Production" ? "100" : "10"
+    };
+
+    Execute.Sql(@"
+        -- Environment-specific configuration
+        EXEC sp_configure 'remote query timeout', $(ConnectionTimeout);
+        
+        INSERT INTO AppSettings (SettingKey, SettingValue, Environment)
+        VALUES 
+            ('LogLevel', '$(LogLevel)', '$(Environment)'),
+            ('MaxConnections', '$(MaxConnections)', '$(Environment)');
+    ", $"Configure settings for {environment} environment", parameters);
+}
+```
+
+### Parameters with File Scripts - Advanced Example
+
+```csharp
+[Migration(1)]
+public class CreateMultiTenantSchema : Migration
+{
+    public override void Up()
+    {
+        var tenants = new[] { "TenantA", "TenantB", "TenantC" };
+
+        foreach (var tenant in tenants)
+        {
+            var parameters = new Dictionary<string, string>
+            {
+                ["TenantName"] = tenant,
+                ["SchemaName"] = $"Tenant_{tenant}",
+                ["TablePrefix"] = $"{tenant}_",
+                ["CreatedBy"] = "Migration System",
+                ["CreatedDate"] = "GETDATE()"
+            };
+
+            Execute.Script("Scripts/CreateTenantSchema.sql", parameters);
+        }
+    }
+
+    public override void Down()
+    {
+        var tenants = new[] { "TenantA", "TenantB", "TenantC" };
+        
+        foreach (var tenant in tenants)
+        {
+            var parameters = new Dictionary<string, string>
+            {
+                ["SchemaName"] = $"Tenant_{tenant}"
+            };
+
+            Execute.Script("Scripts/DropTenantSchema.sql", parameters);
+        }
+    }
+}
+```
+
+### Best Practices for Parameters
+
+**✅ Good practices:**
+- Use descriptive parameter names that clearly indicate their purpose
+- Validate parameter values before passing them to avoid SQL injection
+- Use parameters for table names, column names, and configuration values that change between environments
+- Keep parameter dictionaries organized and well-documented
+- Use consistent naming conventions across your migrations
+
+**❌ Avoid:**
+- Using parameters for complex logic that should be in C# code instead
+- Passing user input directly as parameters without validation
+- Using parameters for values that never change (use constants in SQL instead)
+- Creating overly complex parameter hierarchies that are hard to maintain
+
+```csharp
+public override void Up()
+{
+    // ✅ Good: Validated parameters with clear names
+    var environment = ValidateEnvironment(GetCurrentEnvironment());
+    var parameters = new Dictionary<string, string>
+    {
+        ["EnvironmentName"] = environment,
+        ["DatabasePrefix"] = GetDatabasePrefix(environment),
+        ["RetentionDays"] = GetRetentionDays(environment).ToString(),
+        ["BackupEnabled"] = environment == "Production" ? "1" : "0"
+    };
+
+    Execute.Sql(@"
+        CREATE TABLE $(DatabasePrefix)AuditLog (
+            Id BIGINT IDENTITY(1,1) PRIMARY KEY,
+            Action NVARCHAR(100) NOT NULL,
+            CreatedAt DATETIME DEFAULT GETDATE(),
+            RetentionDate DATETIME DEFAULT DATEADD(day, $(RetentionDays), GETDATE()),
+            Environment NVARCHAR(50) DEFAULT '$(EnvironmentName)'
+        );
+
+        IF $(BackupEnabled) = 1
+        BEGIN
+            -- Setup backup job for production
+            EXEC CreateBackupJob '$(DatabasePrefix)AuditLog';
+        END
+    ", "Create audit log table with environment-specific configuration", parameters);
+}
+
+private string ValidateEnvironment(string env)
+{
+    var validEnvironments = new[] { "Development", "Staging", "Production" };
+    if (!validEnvironments.Contains(env))
+        throw new ArgumentException($"Invalid environment: {env}");
+    return env;
+}
+```
+
 ### Conditional SQL Execution
 
 ```csharp
