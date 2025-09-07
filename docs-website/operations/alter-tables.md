@@ -149,60 +149,6 @@ public class AddTableDocumentation : Migration
 }
 ```
 
-### Updating Existing Table Descriptions
-
-```csharp
-public class UpdateTableDocumentation : Migration
-{
-    public override void Up()
-    {
-        Alter.Table("Orders")
-            .WithDescription("Customer order records with comprehensive tracking from creation " +
-                           "through fulfillment. Updated in v2.1 to include international shipping support " +
-                           "and multi-currency pricing. Links to Customers, OrderItems, and ShippingAddresses.");
-    }
-
-    public override void Down()
-    {
-        Alter.Table("Orders")
-            .WithDescription("Customer order records with basic tracking and fulfillment status.");
-    }
-}
-```
-
-### Batch Documentation Updates
-
-```csharp
-public class DocumentAllTables : Migration
-{
-    public override void Up()
-    {
-        // Core business entities
-        Alter.Table("Customers")
-            .WithDescription("Primary customer records containing contact info and account status");
-
-        Alter.Table("Products")
-            .WithDescription("Product catalog with pricing, inventory, and categorization data");
-
-        Alter.Table("Orders")
-            .WithDescription("Customer order transactions with line items and fulfillment tracking");
-
-        // Lookup/reference tables
-        Alter.Table("Categories")
-            .WithDescription("Product categorization hierarchy for navigation and reporting");
-
-        Alter.Table("PaymentMethods")
-            .WithDescription("Accepted payment types and processor configuration");
-    }
-
-    public override void Down()
-    {
-        // Descriptions typically don't need explicit removal in Down()
-        // unless business requirements dictate it
-    }
-}
-```
-
 ### Provider-Specific Description Management
 
 Different databases handle description updates differently:

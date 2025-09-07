@@ -186,7 +186,7 @@ $assembly = "MyApp.dll"
 
 Write-Host "Running FluentMigrator migrations..." -ForegroundColor Green
 
-& .\tools\net45\Migrate.exe -p $provider -c $connectionString -a $assembly
+& .\tools\net48\Migrate.exe -p $provider -c $connectionString -a $assembly
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Migration failed with exit code $LASTEXITCODE" -ForegroundColor Red
@@ -205,7 +205,7 @@ Write-Host "Migrations completed successfully!" -ForegroundColor Green
   inputs:
     targetType: 'inline'
     script: |
-      $migratePath = "$(Build.SourcesDirectory)\packages\FluentMigrator.Console\tools\net45\Migrate.exe"
+      $migratePath = "$(Build.SourcesDirectory)\packages\FluentMigrator.Console\tools\net48\Migrate.exe"
       $connectionString = "$(DatabaseConnectionString)"
       $assembly = "$(Build.ArtifactStagingDirectory)\MyApp.dll"
 
@@ -221,7 +221,7 @@ Write-Host "Migrations completed successfully!" -ForegroundColor Green
 stage('Database Migration') {
     steps {
         bat """
-            tools\\net45\\Migrate.exe ^
+            tools\\net48\\Migrate.exe ^
             -p sqlserver ^
             -c "${DATABASE_CONNECTION_STRING}" ^
             -a "bin\\Release\\MyApp.dll"

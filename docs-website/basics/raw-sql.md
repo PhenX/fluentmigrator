@@ -1,12 +1,13 @@
-# Raw SQL Helpers
+# Raw SQL Helper
 
-FluentMigrator provides RawSql helpers that allow you to embed SQL expressions within structured operations like Insert and Update. Starting with [version 7.0.0](https://github.com/fluentmigrator/fluentmigrator/releases/tag/v7.0.0), RawSql.Insert can also be used in SET and WHERE clauses for Update and Delete operations.
+FluentMigrator provides a RawSql helper class that allows you to embed SQL expressions within structured operations like Insert and Update.
+Starting with [version 7.0.0](https://github.com/fluentmigrator/fluentmigrator/releases/tag/v7.0.0), RawSql.Insert can also be used in SET and WHERE clauses for Update and Delete operations.
 
 ## RawSql Helper for Insert Operations
 
 ### Basic RawSql.Insert Usage
 
-When you need to use database functions in insert operations, `RawSql.Insert()` allows you to embed SQL expressions:
+When you need to use database functions in insert operations, `RawSql.Insert()` or `new RawSql()` allows you to embed SQL expressions:
 
 ```csharp
 // Insert with database functions

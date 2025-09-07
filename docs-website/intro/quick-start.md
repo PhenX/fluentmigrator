@@ -63,12 +63,12 @@ dotnet fm migrate -p sqlite -c "Data Source=test.db" -a "MyApp.dll"
 Install-Package FluentMigrator.Console
 
 # Run from tools directory
-..\tools\net45\Migrate.exe -p sqlserver -c "Server=.;Database=MyDb;Integrated Security=true" -a "MyApp.dll"
+..\tools\net48\Migrate.exe -p sqlserver -c "Server=.;Database=MyDb;Integrated Security=true" -a "MyApp.dll"
 ```
 
 ## Prerequisites
 
-- .NET 6.0 or later
+- .NET 8.0 or later
 - A supported database (SQL Server, PostgreSQL, MySQL, SQLite, etc.)
 - Basic knowledge of C# and database concepts
 

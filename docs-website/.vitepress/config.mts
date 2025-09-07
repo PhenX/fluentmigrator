@@ -63,7 +63,7 @@ export default defineConfig({
                         {text: 'Indexes', link: '/basics/indexes'},
                         {text: 'Constraints', link: '/basics/constraints'},
                         {text: 'Foreign Keys', link: '/basics/foreign-keys'},
-                        {text: 'Raw SQL Helpers', link: '/basics/raw-sql'}
+                        {text: 'Raw SQL Helper', link: '/basics/raw-sql'}
                     ]
                 },
                 {
