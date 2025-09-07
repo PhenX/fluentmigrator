@@ -36,6 +36,14 @@ services.AddFluentMigratorCore()
         .WithGlobalConnectionString("Server=.;Database=MyApp;Trusted_Connection=true;")
         .ScanIn(typeof(MyMigration).Assembly).For.Migrations());
 ```
+## SQL Server Extensions Package
+
+For advanced SQL Server features, install the extensions package:
+
+```xml
+<PackageReference Include="FluentMigrator.Extensions.SqlServer" Version="7.2.0" />
+```
+
 ## SQL Server Specific Features
 
 ### Identity Columns
@@ -45,6 +53,12 @@ services.AddFluentMigratorCore()
 Create.Table("Orders")
     .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity(1000, 5) // Start at 1000, increment by 5
     .WithColumn("OrderNumber").AsString(20).NotNullable();
+
+// Advanced identity options
+Create.Table("Invoices")
+    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey()
+        .Identity(1000, 5) // Start at 1000, increment by 5
+    .WithColumn("InvoiceNumber").AsString(20).NotNullable();
 ```
 
 ### Unique Identifiers (GUIDs)
@@ -71,7 +85,7 @@ Column types are specified in the DBMS specific type map classes :
 * [SQL Server 2005](https://github.com/fluentmigrator/fluentmigrator/blob/main/src/FluentMigrator.Runner.SqlServer/Generators/SqlServer/SqlServer2005TypeMap.cs)
 * [SQL Server 2008+](https://github.com/fluentmigrator/fluentmigrator/blob/main/src/FluentMigrator.Runner.SqlServer/Generators/SqlServer/SqlServer2008TypeMap.cs)
 
-### Indexes
+### Indexes and Index Extensions
 
 #### Clustered and Non-Clustered Indexes
 ```csharp
@@ -101,7 +115,17 @@ Create.Index("IX_Users_LastName_Covering").OnTable("Users")
     .OnColumn("LastName").Ascending()
     .WithOptions().NonClustered()
     .Include("FirstName")
-    .Include("Email");
+    .Include("Email")
+    .Include("PhoneNumber");
+
+// Complex covering index
+Create.Index("IX_Orders_Covering").OnTable("Orders")
+    .OnColumn("CustomerId").Ascending()
+    .OnColumn("OrderDate").Descending()
+    .WithOptions().NonClustered()
+    .Include("TotalAmount")
+    .Include("Status")
+    .Include("ShippingAddress");
 ```
 
 #### Filtered Indexes
@@ -109,10 +133,16 @@ Create.Index("IX_Users_LastName_Covering").OnTable("Users")
 Create.Index("IX_Users_Active").OnTable("Users")
     .OnColumn("LastName").Ascending()
     .WithOptions().NonClustered()
-    .WithOptions().Filter("[IsActive] = 1");
+    .Filter("[IsActive] = 1");
+
+Create.Index("IX_Orders_ActiveOnly").OnTable("Orders")
+    .OnColumn("OrderDate").Descending()
+    .WithOptions()
+        .NonClustered()
+        .Filter("[Status] = 'Active'");
 ```
 
-#### Index Options
+#### Advanced Index Options
 ```csharp
 Create.Index("IX_Users_Complex").OnTable("Users")
     .OnColumn("LastName").Ascending()
@@ -122,6 +152,31 @@ Create.Index("IX_Users_Complex").OnTable("Users")
         .WithFillFactor(80)
         .WithPadIndex()
         .WithIgnoreDuplicateKeys();
+
+Create.Index("IX_Products_Complex").OnTable("Products")
+    .OnColumn("CategoryId").Ascending()
+    .OnColumn("Name").Ascending()
+    .WithOptions()
+        .NonClustered()
+        .WithFillFactor(80)
+        .WithPadIndex()
+        .WithIgnoreDuplicateKeys()
+        .WithSortInTempDb()
+        .WithDropExisting();
+```
+
+#### Column Store Indexes (SQL Server 2012+)
+```csharp
+// Clustered column store index (for data warehousing)
+Create.Index("CIX_Sales_ColumnStore").OnTable("Sales")
+    .WithOptions().Clustered().ColumnStore();
+
+// Non-clustered column store with specific columns
+Create.Index("NCIX_Sales_Partial").OnTable("Sales")
+    .OnColumn("ProductId")
+    .OnColumn("SaleDate")
+    .OnColumn("Amount")
+    .WithOptions().NonClustered().ColumnStore();
 ```
 
 ### Sequences
@@ -153,6 +208,55 @@ Insert.IntoTable("Users").Row(new { Id = 1, Name = "Admin" });
 Execute.Sql("SET IDENTITY_INSERT Users OFF");
 ```
 
+### Temporal Tables (SQL Server 2016+)
+
+Temporal tables provide automatic versioning of data changes:
+
+```csharp
+[Migration(1)]
+public class CreateTemporalTable : Migration
+{
+    public override void Up()
+    {
+        Execute.Sql(@"
+CREATE TABLE Users (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Username NVARCHAR(50) NOT NULL,
+    Email NVARCHAR(255) NOT NULL,
+    ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START NOT NULL,
+    ValidTo DATETIME2 GENERATED ALWAYS AS ROW END NOT NULL,
+    PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo)
+) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.UsersHistory));
+        ");
+    }
+
+    public override void Down()
+    {
+        Execute.Sql("ALTER TABLE Users SET (SYSTEM_VERSIONING = OFF)");
+        Execute.Sql("DROP TABLE UsersHistory");
+        Delete.Table("Users");
+    }
+}
+```
+
+#### Working with Temporal Tables
+```csharp
+// Query temporal data
+Execute.Sql(@"
+-- Current data
+SELECT * FROM Users;
+
+-- Data as of specific time
+SELECT * FROM Users FOR SYSTEM_TIME AS OF '2023-01-01 00:00:00';
+
+-- Data between time periods
+SELECT * FROM Users FOR SYSTEM_TIME BETWEEN '2023-01-01' AND '2023-12-31';
+
+-- All historical data
+SELECT * FROM Users FOR SYSTEM_TIME ALL;
+");
+```
+
 ## Azure SQL Database Considerations
 
 ### Differences from On-Premises SQL Server
@@ -165,4 +269,4 @@ Execute.Sql("SET IDENTITY_INSERT Users OFF");
 
 - [PostgreSQL Provider](./postgresql.md) - Learn about PostgreSQL-specific features
 - [Database Provider Comparison](./others.md) - Compare features across providers
-- [Advanced Topics](../advanced/dbms-extensions.md) - Explore DBMS extensions
+- [Advanced Topics](../advanced/best-practices.md) - Explore migration best practices

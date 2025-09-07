@@ -130,3 +130,41 @@ public class OracleTroubleshooting : Migration
     }
 }
 ```
+
+## Best Practices for Oracle
+
+### Use Sequences for Primary Keys
+Oracle sequences provide better performance than identity columns for high-volume applications:
+
+```csharp
+// Create sequence first
+Create.Sequence("SEQ_ORDERS")
+    .StartWith(1000)
+    .IncrementBy(1)
+    .Cache(100);
+
+// Use sequence in table
+Create.Table("ORDERS")
+    .WithColumn("ORDER_ID").AsInt32().NotNullable().PrimaryKey()
+        .WithDefaultValue(RawSql.Insert("SEQ_ORDERS.NEXTVAL"))
+    .WithColumn("ORDER_DATE").AsDateTime().NotNullable();
+```
+
+### Handle Oracle Naming Conventions
+Oracle converts unquoted identifiers to uppercase:
+
+```csharp
+// Will be converted to USERS, USER_ID, USER_NAME
+Create.Table("Users")
+    .WithColumn("UserId").AsInt32().NotNullable().PrimaryKey()
+    .WithColumn("UserName").AsString(100).NotNullable();
+
+// Use quoted identifiers to preserve case (not recommended)
+Execute.Sql("CREATE TABLE \"Users\" (\"UserId\" NUMBER NOT NULL)");
+```
+
+## Next Steps
+
+- [SQL Server Provider](./sql-server.md) - Learn about SQL Server-specific features
+- [PostgreSQL Provider](./postgresql.md) - Explore PostgreSQL extensions
+- [Database Provider Comparison](./others.md) - Compare features across providers

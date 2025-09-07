@@ -126,3 +126,37 @@ public class MySqlStorageEngines : Migration
     }
 }
 ```
+
+## Common Issues and Solutions
+
+### Issue: Character Set and Collation
+Always specify UTF-8 character set for international applications:
+
+```csharp
+// Set table character set and collation
+Execute.Sql("ALTER TABLE Users CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+
+// Create table with specific character set
+Create.Table("LocalizedContent")
+    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+    .WithColumn("Title").AsString(255).NotNullable()
+    .WithColumn("Content").AsCustom("TEXT").NotNullable();
+
+Execute.Sql("ALTER TABLE LocalizedContent ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+```
+
+### Issue: Case Sensitivity
+MySQL column names are case-insensitive, but be consistent with naming:
+
+```csharp
+// Good - consistent naming
+Create.Table("users")
+    .WithColumn("user_id").AsInt32().NotNullable().PrimaryKey()
+    .WithColumn("username").AsString(50).NotNullable();
+```
+
+## Next Steps
+
+- [PostgreSQL Provider](./postgresql.md) - Learn about PostgreSQL-specific features
+- [SQL Server Provider](./sql-server.md) - Explore SQL Server extensions and features
+- [SQLite Provider](./sqlite.md) - Understand SQLite considerations

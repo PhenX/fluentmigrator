@@ -302,3 +302,41 @@ public class SQLiteTroubleshooting : Migration
     }
 }
 ```
+
+## SQLite Best Practices
+
+### Use Appropriate Data Types
+SQLite has flexible typing, but be explicit for better performance:
+
+```csharp
+// Good - explicit types
+Create.Table("OptimalUsers")
+    .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+    .WithColumn("Username").AsString(50).NotNullable()
+    .WithColumn("CreatedAt").AsDateTime().NotNullable().WithDefault(SystemMethods.CurrentDateTime);
+```
+
+### Consider WAL Mode for Better Concurrency
+```csharp
+[Migration(1)]
+public class EnableWalMode : Migration
+{
+    public override void Up()
+    {
+        Execute.Sql("PRAGMA journal_mode = WAL;");
+        Execute.Sql("PRAGMA synchronous = NORMAL;");
+    }
+
+    public override void Down()
+    {
+        Execute.Sql("PRAGMA journal_mode = DELETE;");
+        Execute.Sql("PRAGMA synchronous = FULL;");
+    }
+}
+```
+
+## Next Steps
+
+- [SQL Server Provider](./sql-server.md) - Learn about SQL Server-specific features
+- [PostgreSQL Provider](./postgresql.md) - Explore PostgreSQL extensions
+- [MySQL Provider](./mysql.md) - Understand MySQL storage engines and features

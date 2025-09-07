@@ -95,7 +95,6 @@ export default defineConfig({
                 {
                     text: 'Advanced Topics',
                     items: [
-                        {text: 'DBMS Extensions', link: '/advanced/dbms-extensions'},
                         {text: 'Best Practices', link: '/advanced/best-practices'},
                         {text: 'Migration Versioning', link: '/advanced/versioning'},
                         {text: 'Conditional Logic', link: '/advanced/conditional-logic'},
