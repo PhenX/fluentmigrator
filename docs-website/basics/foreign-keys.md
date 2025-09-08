@@ -659,3 +659,35 @@ public class CircularReferences : Migration
     }
 }
 ```
+
+## Database-Specific Foreign Key Features
+
+Different database providers offer specialized foreign key options and advanced referential integrity features:
+
+### SQL Server Specific
+- **Clustered Foreign Keys**: Performance optimization for large tables - [SQL Server Provider](../providers/sql-server.md)
+- **CHECK OPTION**: Cascading view constraints - [SQL Server Provider](../providers/sql-server.md)
+- **Temporal Table References**: Foreign keys in system-versioned tables - [SQL Server Provider](../providers/sql-server.md#temporal-tables-sql-server-2016)
+
+### PostgreSQL Specific
+- **Deferrable Foreign Keys**: Transaction-level constraint evaluation - [PostgreSQL Provider](../providers/postgresql.md)
+- **Match Types**: FULL vs PARTIAL matching for composite keys - [PostgreSQL Provider](../providers/postgresql.md)
+- **Inheritance Constraints**: Foreign keys across table inheritance hierarchies - [PostgreSQL Provider](../providers/postgresql.md#table-inheritance)
+
+### MySQL Specific
+- **Storage Engine Constraints**: InnoDB foreign key support vs MyISAM limitations - [MySQL Provider](../providers/mysql.md)
+- **Constraint Checking**: Foreign key check enabling/disabling - [MySQL Provider](../providers/mysql.md)
+
+### Oracle Specific
+- **Constraint States**: ENABLED/DISABLED and VALIDATED/NOT VALIDATED - [Oracle Provider](../providers/oracle.md)
+- **Deferred Constraints**: INITIALLY DEFERRED transaction behavior - [Oracle Provider](../providers/oracle.md)
+- **Self-Referencing Hierarchies**: Advanced hierarchical data patterns - [Oracle Provider](../providers/oracle.md)
+
+### SQLite Specific
+- **PRAGMA foreign_keys**: Runtime foreign key enforcement - [SQLite Provider](../providers/sqlite.md)
+- **Trigger-Based**: Manual foreign key implementation for older versions - [SQLite Provider](../providers/sqlite.md)
+
+## See Also
+- [Constraints](./constraints.md) - Other constraint types and validation
+- [Indexes](./indexes.md) - Foreign key index optimization
+- [Execute SQL](../operations/execute-sql.md) - Custom foreign key implementation

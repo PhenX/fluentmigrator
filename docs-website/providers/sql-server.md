@@ -200,8 +200,71 @@ Create.Table("Orders")
         .WithDefaultValue(RawSql.Insert("NEXT VALUE FOR OrderNumberSeq"));
 ```
 
-### Issue: Identity Insert Issues
-**Solution**: Use explicit identity management
+### Identity Insert Operations
+
+#### WithIdentityInsert Extension
+For inserting explicit values into identity columns, use the `WithIdentityInsert()` extension method:
+
+```csharp
+using FluentMigrator.SqlServer;
+
+[Migration(1)]
+public class InsertExplicitIdentityValues : Migration
+{
+    public override void Up()
+    {
+        Create.Table("Users")
+            .WithColumn("Id").AsInt32().NotNullable().PrimaryKey().Identity()
+            .WithColumn("Name").AsString(100).NotNullable();
+
+        // Insert explicit identity values using WithIdentityInsert()
+        Insert.IntoTable("Users")
+            .WithIdentityInsert()
+            .Row(new { Id = 100, Name = "Admin" })
+            .Row(new { Id = 200, Name = "Manager" });
+
+        // Regular insert without explicit identity values
+        Insert.IntoTable("Users")
+            .Row(new { Name = "Regular User" }); // Id will be auto-generated
+    }
+
+    public override void Down()
+    {
+        Delete.Table("Users");
+    }
+}
+```
+
+#### Batch Identity Inserts
+```csharp
+[Migration(2)]
+public class BatchIdentityInserts : Migration
+{
+    public override void Up()
+    {
+        // Insert multiple rows with explicit identity values
+        Insert.IntoTable("Users")
+            .WithIdentityInsert()
+            .Row(new { Id = 1, Name = "System Admin" })
+            .Row(new { Id = 2, Name = "Database Admin" })
+            .Row(new { Id = 1000, Name = "Special User" });
+    }
+
+    public override void Down()
+    {
+        Delete.FromTable("Users").AllRows();
+    }
+}
+```
+
+#### Important Notes
+- `WithIdentityInsert()` automatically handles the SQL Server `IDENTITY_INSERT` setting
+- You can mix explicit identity values with regular inserts in the same migration
+- The identity seed will continue from the highest inserted value
+- Use with caution in production environments to avoid primary key conflicts
+
+#### Manual Identity Insert (Alternative Approach)
+**Solution**: Use explicit SQL commands for complex scenarios
 ```csharp
 Execute.Sql("SET IDENTITY_INSERT Users ON");
 Insert.IntoTable("Users").Row(new { Id = 1, Name = "Admin" });

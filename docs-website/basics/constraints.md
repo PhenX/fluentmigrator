@@ -133,9 +133,41 @@ public class RemoveConstraints : Migration
 }
 ```
 
+## Database-Specific Constraint Features
+
+Different database providers offer specialized constraint options and advanced features:
+
+### SQL Server Specific
+- **Clustered vs Non-Clustered**: Primary key clustering options - [SQL Server Provider](../providers/sql-server.md#sql-server-specific-features)
+- **Filtered Unique Constraints**: Conditional unique constraints with WHERE clauses - [SQL Server Provider](../providers/sql-server.md)
+- **Include Columns**: Covering constraint optimizations - [SQL Server Provider](../providers/sql-server.md)
+
+### PostgreSQL Specific  
+- **Exclusion Constraints**: Advanced constraint types with operators - [PostgreSQL Provider](../providers/postgresql.md)
+- **Deferrable Constraints**: Transaction-level constraint deferment - [PostgreSQL Provider](../providers/postgresql.md)
+- **Custom Operators**: Domain-specific constraint validation - [PostgreSQL Provider](../providers/postgresql.md)
+
+### MySQL Specific
+- **Storage Engine Constraints**: InnoDB vs MyISAM constraint behavior - [MySQL Provider](../providers/mysql.md)
+- **Constraint Modes**: RESTRICT, CASCADE, SET NULL variations - [MySQL Provider](../providers/mysql.md)
+
+### Oracle Specific
+- **Constraint States**: ENABLED/DISABLED and VALIDATED/NOT VALIDATED - [Oracle Provider](../providers/oracle.md)
+- **Deferred Constraints**: Transaction-level constraint evaluation - [Oracle Provider](../providers/oracle.md)
+- **Function-Based Constraints**: Complex business rule validation - [Oracle Provider](../providers/oracle.md)
+
+### SQLite Specific
+- **WITHOUT ROWID Constraints**: Optimization for clustered tables - [SQLite Provider](../providers/sqlite.md)
+- **Collation Constraints**: Text comparison rules - [SQLite Provider](../providers/sqlite.md)
+
 ## Troubleshooting
 
 ### Common Issues
 1. **Constraint Violation Errors**: Review existing data before adding constraints
 2. **Performance Impact**: Monitor constraint evaluation performance
 3. **Cross-Database Syntax**: Use `IfDatabase()` for provider-specific syntax
+
+## See Also
+- [Foreign Keys](./foreign-keys.md) - Referential integrity constraints
+- [Indexes](./indexes.md) - Index-backed constraint performance
+- [Execute SQL](../operations/execute-sql.md) - Custom constraint implementation

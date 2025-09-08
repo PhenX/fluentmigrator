@@ -378,6 +378,39 @@ public class AddCalculatedField : Migration
 - The value provided must be compatible with the column's data type
 - Consider using database-specific logic when dealing with different database providers that have varying limitations
 
+## Database-Specific Column Features
+
+Different database providers offer specialized column features and extensions:
+
+### SQL Server Specific
+- **Identity Insert Operations**: Use `WithIdentityInsert()` for explicit identity values - [SQL Server Provider](../providers/sql-server.md#identity-insert-operations)
+- **SPARSE columns**: `Sparse()` modifier for optimized storage - [SQL Server Provider](../providers/sql-server.md#sql-server-specific-features)
+- **ROWGUID columns**: `RowGuid()` modifier for replication - [SQL Server Provider](../providers/sql-server.md#sql-server-specific-features)
+
+### PostgreSQL Specific
+- **Identity Column Overrides**: `WithOverridingSystemValue()` and `WithOverridingUserValue()` - [PostgreSQL Provider](../providers/postgresql.md#overriding-identity-values-extensions)
+- **JSONB Operations**: Advanced JSON column types and operations - [PostgreSQL Provider](../providers/postgresql.md#jsonb-operations)
+- **Array Columns**: Native array support with specialized indexing - [PostgreSQL Provider](../providers/postgresql.md#arrays)
+- **Custom Types**: ENUM, geometric, and network data types - [PostgreSQL Provider](../providers/postgresql.md#enums)
+
+### MySQL Specific
+- **Auto-increment Options**: Advanced auto-increment configuration - [MySQL Provider](../providers/mysql.md)
+- **Column Character Sets**: Per-column collation settings - [MySQL Provider](../providers/mysql.md)
+
+### Oracle Specific
+- **Sequences Integration**: Advanced sequence usage with columns - [Oracle Provider](../providers/oracle.md)
+- **Virtual Columns**: Computed column expressions - [Oracle Provider](../providers/oracle.md)
+
+### SQLite Specific
+- **AUTOINCREMENT Behavior**: SQLite-specific identity column behavior - [SQLite Provider](../providers/sqlite.md)
+- **Strict Tables**: Type enforcement in modern SQLite - [SQLite Provider](../providers/sqlite.md)
+
+## See Also
+- [Data Types Reference](../operations/create-tables.md#column-types)
+- [Constraints](./constraints.md) - Column constraints and validation
+- [Foreign Keys](./foreign-keys.md) - Referential integrity
+- [Indexes](./indexes.md) - Column indexing strategies
+
 ## Best Practices
 
 ### Data Type Selection
