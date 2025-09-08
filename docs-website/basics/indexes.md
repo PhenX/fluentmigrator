@@ -126,8 +126,40 @@ public class FilteredIndexes : Migration
 }
 ```
 
-## Advanced Index Types
+## Database-Specific Index Features
 
-* See [SQL Server Provider](/providers/sql-server.md) for SQL Server-specific index features like covering indexes and filtered indexes.
-* See [PostgreSQL Provider](/providers/postgresql.md) for PostgreSQL-specific index types like GIN, GiST, and partial indexes.
-* See [Execute SQL](/operations/execute-sql.md) when you need to create indexes with specific options not supported directly by FluentMigrator.
+Different database providers offer specialized indexing capabilities and advanced options:
+
+### SQL Server Specific
+- **Clustered vs Non-Clustered**: Advanced index clustering options - [SQL Server Provider](../providers/sql-server.md#clustered-and-non-clustered-indexes)
+- **Covering Indexes**: Include columns for covering index optimization - [SQL Server Provider](../providers/sql-server.md#included-columns-covering-indexes)
+- **Filtered Indexes**: WHERE clause conditions for selective indexing - [SQL Server Provider](../providers/sql-server.md#filtered-indexes)
+- **Column Store Indexes**: For analytical workloads - [SQL Server Provider](../providers/sql-server.md#column-store-indexes-sql-server-2012)
+- **Fill Factor & Pad Index**: Storage optimization options - [SQL Server Provider](../providers/sql-server.md#advanced-index-options)
+
+### PostgreSQL Specific
+- **Algorithm-Specific Indexes**: B-tree, Hash, GIN, GiST algorithms - [PostgreSQL Provider](../providers/postgresql.md#algorithm-specific-indexes)
+- **Partial Indexes**: WHERE clause filtering for selective indexing - [PostgreSQL Provider](../providers/postgresql.md#partial-indexes)
+- **Expression Indexes**: Functional and computed expressions - [PostgreSQL Provider](../providers/postgresql.md#expression-indexes)
+- **JSONB Indexes**: Specialized indexing for JSON operations - [PostgreSQL Provider](../providers/postgresql.md#jsonb-operations)
+- **Full-Text Search**: GiST and GIN indexes for text search - [PostgreSQL Provider](../providers/postgresql.md#full-text-search)
+
+### MySQL Specific
+- **Full-Text Indexes**: Built-in text search capabilities - [MySQL Provider](../providers/mysql.md)
+- **Spatial Indexes**: Geographic and geometric data indexing - [MySQL Provider](../providers/mysql.md)
+- **Prefix Indexes**: Partial column indexing for large text fields - [MySQL Provider](../providers/mysql.md)
+
+### Oracle Specific
+- **Bitmap Indexes**: For low-cardinality data in data warehouses - [Oracle Provider](../providers/oracle.md)
+- **Function-Based Indexes**: Expression and function-based indexing - [Oracle Provider](../providers/oracle.md)
+- **Reverse Key Indexes**: For high-insert scenarios - [Oracle Provider](../providers/oracle.md)
+
+### SQLite Specific
+- **Expression Indexes**: Computed expression indexing - [SQLite Provider](../providers/sqlite.md)
+- **Partial Indexes**: WHERE clause filtering - [SQLite Provider](../providers/sqlite.md)
+- **FTS Indexes**: Full-text search capabilities - [SQLite Provider](../providers/sqlite.md)
+
+## See Also
+- [Execute SQL](../operations/execute-sql.md) - When you need to create indexes with provider-specific SQL
+- [Columns](./columns.md) - Column indexing strategies and patterns
+- [Constraints](./constraints.md) - Index-backed constraint types
