@@ -115,9 +115,6 @@ public class SchemaStateConditionals : Migration
                 .FromTable("Orders").ForeignColumn("UserId")
                 .ToTable("Users").PrimaryColumn("Id");
         }
-
-        // Conditional data migration based on existing data
-        ConditionalDataMigration();
     }
 
     private void CreateUsersTable()
@@ -146,51 +143,6 @@ public class SchemaStateConditionals : Migration
         {
             Alter.Table("Users")
                 .AddColumn("IsActive").AsBoolean().NotNullable().WithDefaultValue(true);
-        }
-
-        // Check if we need to modify existing columns
-        ModifyExistingColumns();
-    }
-
-    private void ConditionalDataMigration()
-    {
-        // Check if there's existing data that needs migration
-        var userCount = Execute.Sql("SELECT COUNT(*) FROM Users").Returns<int>().FirstOrDefault();
-
-        if (userCount > 0)
-        {
-            Console.WriteLine($"Performing data migration for {userCount} existing users...");
-
-            // Check if any users are missing email addresses
-            var usersWithoutEmail = Execute.Sql("SELECT COUNT(*) FROM Users WHERE Email IS NULL OR Email = ''")
-                .Returns<int>().FirstOrDefault();
-
-            if (usersWithoutEmail > 0)
-            {
-                Console.WriteLine($"Found {usersWithoutEmail} users without email addresses");
-
-                // Generate placeholder emails for users without them
-                Execute.Sql(@"
-                    UPDATE Users
-                    SET Email = Username + '@placeholder.com'
-                    WHERE Email IS NULL OR Email = ''");
-            }
-
-            // Check if LastLoginAt needs to be initialized
-            var usersWithoutLastLogin = Execute.Sql("SELECT COUNT(*) FROM Users WHERE LastLoginAt IS NULL")
-                .Returns<int>().FirstOrDefault();
-
-            if (usersWithoutLastLogin > 0)
-            {
-                Console.WriteLine($"Initializing LastLoginAt for {usersWithoutLastLogin} users");
-
-                // Set LastLoginAt to creation date for existing users
-                Execute.Sql("UPDATE Users SET LastLoginAt = CreatedAt WHERE LastLoginAt IS NULL");
-            }
-        }
-        else
-        {
-            Console.WriteLine("No existing users found, skipping data migration");
         }
     }
 

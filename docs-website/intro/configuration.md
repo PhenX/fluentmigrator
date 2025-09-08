@@ -22,9 +22,9 @@ The `ConfigureRunner` method provides a fluent interface for all configuration o
 
 ```csharp
 .ConfigureRunner(rb => rb
-    .AddSqlServer()                                    // Database provider
-    .WithGlobalConnectionString(connectionString)      // Connection string
-    .ScanIn(typeof(MyMigration).Assembly).For.All()  // Assembly scanning
+    .AddSqlServer()                                   // Database provider
+    .WithGlobalConnectionString(connectionString)     // Connection string
+    .ScanIn(typeof(MyMigration).Assembly).For.All()   // Assembly scanning
     .WithVersionTable(new CustomVersionTable())       // Version table
     .ConfigureGlobalProcessorOptions(opts => { ... }) // Processor options
 )

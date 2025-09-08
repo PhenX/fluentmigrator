@@ -396,31 +396,9 @@ Different database providers offer specialized table creation features and exten
 
 ### SQL Server Specific
 - **Identity Columns**: Advanced identity seed and increment options - [SQL Server Provider](../providers/sql-server.md#identity-columns)
-- **Temporal Tables**: System-versioned tables for historical data - [SQL Server Provider](../providers/sql-server.md#temporal-tables-sql-server-2016)
-- **Column Store Indexes**: For data warehousing scenarios - [SQL Server Provider](../providers/sql-server.md#column-store-indexes-sql-server-2012)
-- **Table Descriptions**: `WithDescription()` for table documentation - [SQL Server Provider](../providers/sql-server.md)
 
 ### PostgreSQL Specific
-- **Identity Columns**: GENERATED ALWAYS and BY DEFAULT options - [PostgreSQL Provider](../providers/postgresql.md#identity-columns-postgresql-10)
-- **Table Inheritance**: Parent-child table relationships - [PostgreSQL Provider](../providers/postgresql.md#table-inheritance)
-- **JSONB Columns**: Native JSON support with indexing - [PostgreSQL Provider](../providers/postgresql.md#jsonb-operations)
-- **Array Columns**: Multi-value columns with specialized operations - [PostgreSQL Provider](../providers/postgresql.md#arrays)
-- **Custom Types**: ENUM, geometric, and network types - [PostgreSQL Provider](../providers/postgresql.md#enums)
-
-### MySQL Specific
-- **Storage Engines**: InnoDB, MyISAM engine selection - [MySQL Provider](../providers/mysql.md)
-- **Partitioning**: Table partitioning strategies - [MySQL Provider](../providers/mysql.md)
-- **Character Sets**: Table-level character set configuration - [MySQL Provider](../providers/mysql.md)
-
-### Oracle Specific
-- **Tablespaces**: Advanced storage management - [Oracle Provider](../providers/oracle.md)
-- **Partitioned Tables**: Range, hash, and list partitioning - [Oracle Provider](../providers/oracle.md)
-- **Virtual Columns**: Computed column expressions - [Oracle Provider](../providers/oracle.md)
-
-### SQLite Specific
-- **WITHOUT ROWID**: Optimized table structure - [SQLite Provider](../providers/sqlite.md)
-- **Strict Tables**: Type enforcement (SQLite 3.37+) - [SQLite Provider](../providers/sqlite.md)
-- **FTS Tables**: Full-text search capabilities - [SQLite Provider](../providers/sqlite.md)
+- **Identity Columns**: GENERATED ALWAYS and BY DEFAULT options - [PostgreSQL Provider](../providers/postgresql.md#overriding-identity-values-extensions)
 
 ## Next Steps
 

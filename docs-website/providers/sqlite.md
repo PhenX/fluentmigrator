@@ -334,9 +334,3 @@ public class EnableWalMode : Migration
     }
 }
 ```
-
-## Next Steps
-
-- [SQL Server Provider](./sql-server.md) - Learn about SQL Server-specific features
-- [PostgreSQL Provider](./postgresql.md) - Explore PostgreSQL extensions
-- [MySQL Provider](./mysql.md) - Understand MySQL storage engines and features

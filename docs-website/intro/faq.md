@@ -296,39 +296,10 @@ With pooling disabled, you can safely delete or move the database file after the
 
 **Solutions:**
 
-1. **Increase timeout**:
-```csharp
+* **Increase timeout**:
 .ConfigureGlobalProcessorOptions(opt => {
     opt.Timeout = TimeSpan.FromMinutes(30);
 })
-```
-
-2. **Batch operations**:
-```csharp
-public override void Up()
-{
-    // Process in batches to avoid memory issues
-    var batchSize = 1000;
-    var processed = 0;
-
-    do
-    {
-        var sql = $@"
-            UPDATE Users
-            SET ProcessedFlag = 1
-            WHERE ProcessedFlag = 0
-            AND Id IN (
-                SELECT TOP {batchSize} Id
-                FROM Users
-                WHERE ProcessedFlag = 0
-                ORDER BY Id
-            )";
-
-        var rowsAffected = Execute.Sql(sql);
-        processed += rowsAffected;
-
-    } while (processed > 0);
-}
 ```
 
 ### Index Creation on Large Tables

@@ -327,37 +327,6 @@ public class PostgreSQLSpecificMigration : Migration
 
 ## Advanced Tag Scenarios
 
-### Conditional Tag Logic
-```csharp
-[Migration(202401152400)]
-[Tags("Production")]
-public class ConditionalProductionMigration : Migration
-{
-    public override void Up()
-    {
-        // Only create performance indexes if table is large
-        var rowCount = Execute.Sql("SELECT COUNT(*) FROM Users")
-            .Returns<int>().Single();
-
-        if (rowCount > 100000)
-        {
-            Create.Index("IX_Users_Performance")
-                .OnTable("Users")
-                .OnColumn("CreatedAt")
-                .OnColumn("Status");
-        }
-    }
-
-    public override void Down()
-    {
-        if (Schema.Table("Users").Index("IX_Users_Performance").Exists())
-        {
-            Delete.Index("IX_Users_Performance").OnTable("Users");
-        }
-    }
-}
-```
-
 ### Tag Inheritance
 ```csharp
 // Base migration class with common tags

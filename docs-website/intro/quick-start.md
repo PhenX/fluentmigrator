@@ -8,8 +8,8 @@ FluentMigrator provides several ways to execute your migrations, from in-process
 
 ### Available Runners
 
-| Runner                                                 | Use Case                                  | Platform Support  |
-|--------------------------------------------------------|-------------------------------------------|-------------------|
+| Runner                                            | Use Case                                  | Platform Support  |
+|---------------------------------------------------|-------------------------------------------|-------------------|
 | [In-Process Runner](/runners/in-process.md)       | Application startup, integrated execution | .NET Core/.NET 5+ |
 | [Console Tool (Migrate.exe)](/runners/console.md) | Build scripts, deployment automation      | .NET Framework    |
 | [dotnet-fm](/runners/dotnet-fm.md)                | .NET Core CLI integration                 | .NET Core/.NET 5+ |

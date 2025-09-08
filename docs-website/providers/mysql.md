@@ -154,9 +154,3 @@ Create.Table("users")
     .WithColumn("user_id").AsInt32().NotNullable().PrimaryKey()
     .WithColumn("username").AsString(50).NotNullable();
 ```
-
-## Next Steps
-
-- [PostgreSQL Provider](./postgresql.md) - Learn about PostgreSQL-specific features
-- [SQL Server Provider](./sql-server.md) - Explore SQL Server extensions and features
-- [SQLite Provider](./sqlite.md) - Understand SQLite considerations

@@ -317,14 +317,14 @@ Create.Index("IX_UserPreferences_Theme").OnTable("UserPreferences")
 ```csharp
 // Insert JSONB data
 Insert.IntoTable("UserPreferences")
-    .Row(new { 
-        UserId = 1, 
-        Settings = RawSql.Insert("'{\"theme\": \"dark\", \"notifications\": true, \"language\": \"en\"}'") 
+    .Row(new {
+        UserId = 1,
+        Settings = RawSql.Insert("'{\"theme\": \"dark\", \"notifications\": true, \"language\": \"en\"}'")
     });
 
 // Query specific JSON keys
 Execute.Sql(@"
-SELECT * FROM UserPreferences 
+SELECT * FROM UserPreferences
 WHERE settings->>'theme' = 'dark'
   AND (settings->>'notifications')::boolean = true;
 ");
@@ -487,9 +487,3 @@ Create.Index("IX_Data_Gin").OnTable("MyTable")
     .OnColumn("Data")
     .UsingIndexAlgorithm(PostgresIndexAlgorithm.Gin);
 ```
-
-## Next Steps
-
-- [MySQL Provider](./mysql.md) - Learn about MySQL-specific features
-- [SQLite Provider](./sqlite.md) - Understand SQLite considerations
-- [SQL Server Provider](./sql-server.md) - Explore SQL Server extensions and features

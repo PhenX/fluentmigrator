@@ -115,13 +115,13 @@ public class OdbcMigration : Migration
 {
     public override void Up()
     {
-            IfDatabase("Generic").Execute.Sql(@"
-                CREATE TABLE generic_table (
-                    id INTEGER NOT NULL,
-                    name VARCHAR(100) NOT NULL,
-                    amount DECIMAL(10,2),
-                    created_date TIMESTAMP
-                )");
+        IfDatabase("Generic").Execute.Sql(@"
+            CREATE TABLE generic_table (
+                id INTEGER NOT NULL,
+                name VARCHAR(100) NOT NULL,
+                amount DECIMAL(10,2),
+                created_date TIMESTAMP
+            )");
     }
 
     public override void Down()
