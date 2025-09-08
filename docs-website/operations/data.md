@@ -44,6 +44,16 @@ public class BasicInsertOperations : Migration
 }
 ```
 
+## Database-Specific Column Features
+
+Different database providers offer specialized insert features and extensions:
+
+### SQL Server Specific
+- **Identity Insert Operations**: Use `WithIdentityInsert()` for explicit identity values - [SQL Server Provider](../providers/sql-server.md#identity-insert-operations)
+
+### PostgreSQL Specific
+- **Identity Column Overrides**: `WithOverridingSystemValue()` and `WithOverridingUserValue()` - [PostgreSQL Provider](../providers/postgresql.md#overriding-identity-values-extensions)
+
 ### Updating Data
 
 ```csharp

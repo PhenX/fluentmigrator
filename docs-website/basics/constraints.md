@@ -142,24 +142,6 @@ Different database providers offer specialized constraint options and advanced f
 - **Filtered Unique Constraints**: Conditional unique constraints with WHERE clauses - [SQL Server Provider](../providers/sql-server.md)
 - **Include Columns**: Covering constraint optimizations - [SQL Server Provider](../providers/sql-server.md)
 
-### PostgreSQL Specific  
-- **Exclusion Constraints**: Advanced constraint types with operators - [PostgreSQL Provider](../providers/postgresql.md)
-- **Deferrable Constraints**: Transaction-level constraint deferment - [PostgreSQL Provider](../providers/postgresql.md)
-- **Custom Operators**: Domain-specific constraint validation - [PostgreSQL Provider](../providers/postgresql.md)
-
-### MySQL Specific
-- **Storage Engine Constraints**: InnoDB vs MyISAM constraint behavior - [MySQL Provider](../providers/mysql.md)
-- **Constraint Modes**: RESTRICT, CASCADE, SET NULL variations - [MySQL Provider](../providers/mysql.md)
-
-### Oracle Specific
-- **Constraint States**: ENABLED/DISABLED and VALIDATED/NOT VALIDATED - [Oracle Provider](../providers/oracle.md)
-- **Deferred Constraints**: Transaction-level constraint evaluation - [Oracle Provider](../providers/oracle.md)
-- **Function-Based Constraints**: Complex business rule validation - [Oracle Provider](../providers/oracle.md)
-
-### SQLite Specific
-- **WITHOUT ROWID Constraints**: Optimization for clustered tables - [SQLite Provider](../providers/sqlite.md)
-- **Collation Constraints**: Text comparison rules - [SQLite Provider](../providers/sqlite.md)
-
 ## Troubleshooting
 
 ### Common Issues
