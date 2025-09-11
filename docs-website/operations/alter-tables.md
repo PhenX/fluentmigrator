@@ -434,29 +434,9 @@ Different database providers offer specialized table alteration capabilities and
 ### SQL Server Specific
 - **Identity Column Modifications**: Altering identity seed and increment - [SQL Server Provider](../providers/sql-server.md#identity-columns)
 - **Sparse Column Conversion**: Converting to/from SPARSE columns - [SQL Server Provider](../providers/sql-server.md#sql-server-specific-features)
-- **Temporal Table Alterations**: Modifying system-versioned tables - [SQL Server Provider](../providers/sql-server.md#temporal-tables-sql-server-2016)
-- **Column Store Modifications**: Altering column store indexes - [SQL Server Provider](../providers/sql-server.md#column-store-indexes-sql-server-2012)
 
 ### PostgreSQL Specific
 - **Identity Column Changes**: Modifying GENERATED ALWAYS/BY DEFAULT - [PostgreSQL Provider](../providers/postgresql.md#identity-columns-postgresql-10)
-- **JSONB Column Operations**: Specialized JSON column modifications - [PostgreSQL Provider](../providers/postgresql.md#jsonb-operations)
-- **Array Column Modifications**: Changing array dimensions and types - [PostgreSQL Provider](../providers/postgresql.md#arrays)
-- **Enum Type Changes**: Adding/removing enum values - [PostgreSQL Provider](../providers/postgresql.md#enums)
-
-### MySQL Specific
-- **Storage Engine Migration**: Converting between InnoDB/MyISAM - [MySQL Provider](../providers/mysql.md)
-- **Character Set Conversion**: Changing table/column character sets - [MySQL Provider](../providers/mysql.md)
-- **Partition Modifications**: Altering table partitioning - [MySQL Provider](../providers/mysql.md)
-
-### Oracle Specific
-- **Tablespace Moves**: Moving tables between tablespaces - [Oracle Provider](../providers/oracle.md)
-- **Parallel Operations**: High-performance DDL operations - [Oracle Provider](../providers/oracle.md)
-- **Virtual Column Changes**: Modifying computed columns - [Oracle Provider](../providers/oracle.md)
-
-### SQLite Specific
-- **Schema Modifications**: Working around SQLite ALTER limitations - [SQLite Provider](../providers/sqlite.md)
-- **Table Recreation**: Safe schema change patterns - [SQLite Provider](../providers/sqlite.md)
-- **PRAGMA Modifications**: Runtime table behavior changes - [SQLite Provider](../providers/sqlite.md)
 
 ## See Also
 - [Creating Tables](./create-tables.md) - Initial table creation patterns

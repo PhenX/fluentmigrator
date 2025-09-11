@@ -411,61 +411,6 @@ public class OptionalVsRequiredRelationships : Migration
 }
 ```
 
-## Database-Specific Foreign Key Features
-
-### SQL Server Specific Features
-
-```csharp
-public class SqlServerForeignKeys : Migration
-{
-    public override void Up()
-    {
-        IfDatabase(ProcessorIdConstants.SqlServer).Execute.Sql(@"
-            ALTER TABLE DetailTable
-            ADD CONSTRAINT FK_DetailTable_MasterTable
-            FOREIGN KEY (MasterId) REFERENCES MasterTable(Id)
-            ON DELETE CASCADE
-            ON UPDATE CASCADE");
-    }
-
-    public override void Down()
-    {
-        IfDatabase(ProcessorIdConstants.SqlServer).Delegate(() =>
-        {
-            Delete.ForeignKey("FK_DetailTable_MasterTable").OnTable("DetailTable");
-            Delete.Table("DetailTable");
-            Delete.Table("MasterTable");
-        });
-    }
-}
-```
-
-### PostgreSQL Specific Features
-
-```csharp
-public class PostgreSqlForeignKeys : Migration
-{
-    public override void Up()
-    {
-        IfDatabase(ProcessorIdConstants.Postgres).Execute.Sql(@"
-            ALTER TABLE Books
-            ADD CONSTRAINT FK_Books_Authors
-            FOREIGN KEY (AuthorId) REFERENCES Authors(Id)
-            DEFERRABLE INITIALLY DEFERRED");
-    }
-
-    public override void Down()
-    {
-        IfDatabase(ProcessorIdConstants.Postgres).Delegate(() =>
-        {
-            Delete.ForeignKey("FK_Books_Authors").OnTable("Books");
-            Delete.Table("Books");
-            Delete.Table("Authors");
-        });
-    }
-}
-```
-
 ### Conditional Foreign Key Creation
 
 ```csharp
