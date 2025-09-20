@@ -17,9 +17,11 @@
 #endregion
 
 using System;
+using System.Linq.Expressions;
 
 using FluentMigrator.Builders.Alter;
 using FluentMigrator.Builders.Create;
+using FluentMigrator.Builders.If;
 using FluentMigrator.Builders.IfDatabase;
 using FluentMigrator.Builders.Insert;
 using FluentMigrator.Builders.Rename;
@@ -128,6 +130,16 @@ namespace FluentMigrator
         public IIfDatabaseExpressionRoot IfDatabase(Predicate<string> databaseTypeFunc)
         {
             return new IfDatabaseExpressionRoot(Context, databaseTypeFunc);
+        }
+
+        /// <summary>
+        /// Gets the starting point for conditional schema-based expressions
+        /// </summary>
+        /// <param name="condition">The condition expression to evaluate based on schema queries</param>
+        /// <returns>The conditional expression</returns>
+        public IIfExpressionRoot If(Expression<Func<ISchemaExpressionRoot, bool>> condition)
+        {
+            return new IfExpressionRoot(Context, condition);
         }
     }
 }
