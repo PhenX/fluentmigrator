@@ -53,7 +53,6 @@ namespace FluentMigrator.Runner.Processors.Firebird
         protected readonly FirebirdTruncator truncator;
 
         private readonly Lazy<Version> _firebirdVersionFunc;
-        private readonly FirebirdQuoter _quoter;
 
         /// <summary>
         /// A list of table names that have been created during the execution of DDL (Data Definition Language) operations.
@@ -89,11 +88,10 @@ namespace FluentMigrator.Runner.Processors.Firebird
             [NotNull] IOptionsSnapshot<ProcessorOptions> options,
             [NotNull] IConnectionStringAccessor connectionStringAccessor,
             [NotNull] FirebirdOptions fbOptions)
-            : base(() => factory.Factory, generator, logger, options.Value, connectionStringAccessor)
+            : base(() => factory.Factory, generator, quoter, logger, options.Value, connectionStringAccessor)
         {
             FBOptions = fbOptions ?? throw new ArgumentNullException(nameof(fbOptions));
             _firebirdVersionFunc = new Lazy<Version>(GetFirebirdVersion);
-            _quoter = quoter;
 #pragma warning disable 618
             truncator = new FirebirdTruncator(FBOptions.TruncateLongNames, FBOptions.PackKeyNames);
 #pragma warning restore 618
@@ -106,6 +104,26 @@ namespace FluentMigrator.Runner.Processors.Firebird
 
         /// <inheritdoc />
         public override IList<string> DatabaseTypeAliases { get; } = new List<string>();
+
+        /// <inheritdoc />
+        protected override string TableExistsQuery =>
+            "select rdb$relation_name from rdb$relations where (rdb$flags IS NOT NULL) and (lower(rdb$relation_name) = lower('{1}'))";
+
+        /// <inheritdoc />
+        protected override string ColumnExistsQuery =>
+            "select rdb$field_name from rdb$relation_fields where (lower(rdb$relation_name) = lower('{1}')) and (lower(rdb$field_name) = lower('{2}'))";
+
+        /// <inheritdoc />
+        protected override string ConstraintExistsQuery =>
+            "select rdb$constraint_name from rdb$relation_constraints where (lower(rdb$relation_name) = lower('{1}')) and (lower(rdb$constraint_name) = lower('{2}'))";
+
+        /// <inheritdoc />
+        protected override string IndexExistsQuery =>
+            "select rdb$index_name from rdb$indices where (lower(rdb$relation_name) = lower('{1}')) and (lower(rdb$index_name) = lower('{2}')) and (rdb$system_flag <> 1 OR rdb$system_flag IS NULL) and (rdb$foreign_key IS NULL)";
+
+        /// <inheritdoc />
+        protected override string SequenceExistsQuery =>
+            "select rdb$generator_name from rdb$generators where lower(rdb$generator_name) = lower('{1}')";
 
         /// <summary>
         /// Gets the options specific to the Firebird database processor.
@@ -135,7 +153,7 @@ namespace FluentMigrator.Runner.Processors.Firebird
         /// Gets the announcer used for logging migration-related messages.
         /// </summary>
         /// <remarks>
-        /// This property is marked as <see cref="ObsoleteAttribute"/> and should not be used. 
+        /// This property is marked as <see cref="ObsoleteAttribute"/> and should not be used.
         /// Consider using alternative logging mechanisms or properties provided by the processor.
         /// </remarks>
         /// <returns>
@@ -194,6 +212,18 @@ namespace FluentMigrator.Runner.Processors.Firebird
         }
 
         /// <inheritdoc />
+        protected override string FormatSchemaName(string schemaName)
+        {
+            return base.FormatSchemaName(schemaName);
+        }
+
+        /// <inheritdoc />
+        protected override string FormatName(string name)
+        {
+            return FormatToSafeName(name);
+        }
+
+        /// <inheritdoc />
         public override bool SchemaExists(string schemaName)
         {
             //No schema support in firebird
@@ -204,7 +234,7 @@ namespace FluentMigrator.Runner.Processors.Firebird
         public override bool TableExists(string schemaName, string tableName)
         {
             CheckTable(schemaName);
-            return Exists("select rdb$relation_name from rdb$relations where (rdb$flags IS NOT NULL) and (lower(rdb$relation_name) = lower('{0}'))", FormatToSafeName(tableName));
+            return base.TableExists(schemaName, tableName);
         }
 
         /// <inheritdoc />
@@ -212,27 +242,27 @@ namespace FluentMigrator.Runner.Processors.Firebird
         {
             CheckTable(tableName);
             CheckColumn(tableName, columnName);
-            return Exists("select rdb$field_name from rdb$relation_fields where (lower(rdb$relation_name) = lower('{0}')) and (lower(rdb$field_name) = lower('{1}'))", FormatToSafeName(tableName), FormatToSafeName(columnName));
+            return base.ColumnExists(schemaName, tableName, columnName);
         }
 
         /// <inheritdoc />
         public override bool ConstraintExists(string schemaName, string tableName, string constraintName)
         {
             CheckTable(tableName);
-            return Exists("select rdb$constraint_name from rdb$relation_constraints where (lower(rdb$relation_name) = lower('{0}')) and (lower(rdb$constraint_name) = lower('{1}'))", FormatToSafeName(tableName), FormatToSafeName(constraintName));
+            return base.ConstraintExists(schemaName, tableName, constraintName);
         }
 
         /// <inheritdoc />
         public override bool IndexExists(string schemaName, string tableName, string indexName)
         {
             CheckTable(tableName);
-            return Exists("select rdb$index_name from rdb$indices where (lower(rdb$relation_name) = lower('{0}')) and (lower(rdb$index_name) = lower('{1}')) and (rdb$system_flag <> 1 OR rdb$system_flag IS NULL) and (rdb$foreign_key IS NULL)", FormatToSafeName(tableName), FormatToSafeName(indexName));
+            return base.IndexExists(schemaName, tableName, indexName);
         }
 
         /// <inheritdoc />
-        public override bool SequenceExists(string schemaName, string sequenceName)
+        public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
         {
-            return Exists("select rdb$generator_name from rdb$generators where lower(rdb$generator_name) = lower('{0}')", FormatToSafeName(sequenceName));
+            return false;
         }
 
         /// <summary>
@@ -256,37 +286,7 @@ namespace FluentMigrator.Runner.Processors.Firebird
         public override DataSet ReadTableData(string schemaName, string tableName)
         {
             CheckTable(tableName);
-            return Read("SELECT * FROM {0}", _quoter.QuoteTableName(tableName, schemaName));
-        }
-
-        /// <inheritdoc />
-        public override DataSet Read(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.ReadDataSet();
-            }
-        }
-
-        /// <inheritdoc />
-        public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
-        {
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override bool Exists(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.Read();
-            }
+            return base.ReadTableData(schemaName, tableName);
         }
 
         /// <inheritdoc />
@@ -317,8 +317,8 @@ namespace FluentMigrator.Runner.Processors.Firebird
         /// Commits the current transaction and immediately begins a new one, retaining the connection.
         /// </summary>
         /// <remarks>
-        /// This method is useful for scenarios where a transaction needs to be committed, but the connection 
-        /// should remain open and ready for further operations. It is typically used to ensure that changes 
+        /// This method is useful for scenarios where a transaction needs to be committed, but the connection
+        /// should remain open and ready for further operations. It is typically used to ensure that changes
         /// are saved while maintaining the transactional context.
         /// </remarks>
         /// <seealso cref="AutoCommit"/>
@@ -355,7 +355,7 @@ namespace FluentMigrator.Runner.Processors.Firebird
         /// Determines whether the current operation is being executed outside the scope of a migration.
         /// </summary>
         /// <returns>
-        /// <c>true</c> if the current operation is running outside a migration scope (i.e., when no active transaction exists); 
+        /// <c>true</c> if the current operation is running outside a migration scope (i.e., when no active transaction exists);
         /// otherwise, <c>false</c>.
         /// </returns>
         /// <remarks>
@@ -450,7 +450,7 @@ namespace FluentMigrator.Runner.Processors.Firebird
         /// Clears the locks by resetting the lists of touched tables and columns.
         /// </summary>
         /// <remarks>
-        /// This method initializes the <see cref="DDLTouchedTables"/> and <see cref="DDLTouchedColumns"/> 
+        /// This method initializes the <see cref="DDLTouchedTables"/> and <see cref="DDLTouchedColumns"/>
         /// to their default empty states, ensuring that no lingering locks remain from previous operations.
         /// </remarks>
         protected void ClearLocks()
@@ -522,8 +522,8 @@ namespace FluentMigrator.Runner.Processors.Firebird
         /// Thrown if the table is locked and the <see cref="FirebirdOptions.VirtualLock"/> property is set to <c>true</c>.
         /// </exception>
         /// <remarks>
-        /// If the table has been previously touched and the <see cref="FirebirdOptions.TransactionModel"/> is set to 
-        /// <see cref="FirebirdTransactionModel.AutoCommitOnCheckFail"/>, the method will commit the transaction 
+        /// If the table has been previously touched and the <see cref="FirebirdOptions.TransactionModel"/> is set to
+        /// <see cref="FirebirdTransactionModel.AutoCommitOnCheckFail"/>, the method will commit the transaction
         /// retaining its state.
         /// </remarks>
         public void CheckTable(string tableName)
@@ -612,9 +612,9 @@ namespace FluentMigrator.Runner.Processors.Firebird
         {
             Truncator.Truncate(expression);
             CheckColumn(expression.TableName, expression.Column.Name);
-            FirebirdSchemaProvider schema = new FirebirdSchemaProvider(this, _quoter);
+            FirebirdSchemaProvider schema = new FirebirdSchemaProvider(this, (FirebirdQuoter)Quoter);
             FirebirdTableSchema table = schema.GetTableSchema(expression.TableName);
-            ColumnDefinition colDef = table.Definition.Columns.FirstOrDefault(x => x.Name == _quoter.ToFbObjectName(expression.Column.Name));
+            ColumnDefinition colDef = table.Definition.Columns.FirstOrDefault(x => x.Name == ((FirebirdQuoter)Quoter).ToFbObjectName(expression.Column.Name));
 
             var generator = (FirebirdGenerator) Generator;
 
@@ -764,7 +764,7 @@ namespace FluentMigrator.Runner.Processors.Firebird
         public override void Process(RenameTableExpression expression)
         {
             Truncator.Truncate(expression);
-            FirebirdSchemaProvider schema = new FirebirdSchemaProvider(this, _quoter);
+            FirebirdSchemaProvider schema = new FirebirdSchemaProvider(this, Quoter as FirebirdQuoter);
             FirebirdTableDefinition firebirdTableDef = schema.GetTableDefinition(expression.OldName);
             firebirdTableDef.Name = expression.NewName;
             CreateTableExpression createNew = new CreateTableExpression()
@@ -991,8 +991,8 @@ namespace FluentMigrator.Runner.Processors.Firebird
         /// <inheritdoc />
         public override void Process(PerformDBOperationExpression expression)
         {
-            var message = string.IsNullOrEmpty(expression.Description) 
-                ? "Performing DB Operation" 
+            var message = string.IsNullOrEmpty(expression.Description)
+                ? "Performing DB Operation"
                 : $"Performing DB Operation: {expression.Description}";
             Logger.LogSay(message);
 
@@ -1019,7 +1019,7 @@ namespace FluentMigrator.Runner.Processors.Firebird
         /// Thrown when an error occurs during the execution of the SQL command. The exception is rethrown with the SQL command included in the message.
         /// </exception>
         /// <remarks>
-        /// If the <see cref="FirebirdOptions.TransactionModel"/> is set to <see cref="FirebirdTransactionModel.AutoCommit"/>, 
+        /// If the <see cref="FirebirdOptions.TransactionModel"/> is set to <see cref="FirebirdTransactionModel.AutoCommit"/>,
         /// the transaction will be committed after the command is executed.
         /// </remarks>
         protected void InternalProcess(string sql)
@@ -1059,19 +1059,19 @@ namespace FluentMigrator.Runner.Processors.Firebird
         /// </summary>
         /// <param name="sqlName">The SQL name to format.</param>
         /// <returns>
-        /// A safely formatted SQL name. If the name is quoted, it is unquoted and escaped. 
+        /// A safely formatted SQL name. If the name is quoted, it is unquoted and escaped.
         /// Otherwise, it is escaped and converted to uppercase.
         /// </returns>
         /// <remarks>
-        /// This method utilizes the <see cref="FluentMigrator.Runner.Generators.Generic.GenericQuoter.IsQuoted"/> 
-        /// and <see cref="FluentMigrator.Runner.Generators.Generic.GenericQuoter.UnQuote"/> methods 
-        /// to handle quoted names, and the <see cref="FluentMigrator.Runner.Helpers.FormatHelper.FormatSqlEscape"/> 
+        /// This method utilizes the <see cref="FluentMigrator.Runner.Generators.Generic.GenericQuoter.IsQuoted"/>
+        /// and <see cref="FluentMigrator.Runner.Generators.Generic.GenericQuoter.UnQuote"/> methods
+        /// to handle quoted names, and the <see cref="FluentMigrator.Runner.Helpers.FormatHelper.FormatSqlEscape"/>
         /// method to escape the SQL name.
         /// </remarks>
         private string FormatToSafeName(string sqlName)
         {
-            if (_quoter.IsQuoted(sqlName))
-                return FormatHelper.FormatSqlEscape(_quoter.UnQuote(sqlName));
+            if (Quoter.IsQuoted(sqlName))
+                return FormatHelper.FormatSqlEscape(Quoter.UnQuote(sqlName));
             else
                 return FormatHelper.FormatSqlEscape(sqlName).ToUpper();
         }
@@ -1129,9 +1129,9 @@ namespace FluentMigrator.Runner.Processors.Firebird
                 Process(sequence);
             }
             string triggerName = GetIdentityTriggerName(tableName, columnName);
-            string quotedColumn = _quoter.Quote(columnName);
+            string quotedColumn = Quoter.Quote(columnName);
             string trigger =
-                $"as begin if (NEW.{quotedColumn} is NULL) then NEW.{quotedColumn} = GEN_ID({_quoter.QuoteSequenceName(sequenceName, string.Empty)}, 1); end";
+                $"as begin if (NEW.{quotedColumn} is NULL) then NEW.{quotedColumn} = GEN_ID({Quoter.QuoteSequenceName(sequenceName, string.Empty)}, 1); end";
 
             PerformDBOperationExpression createTrigger = CreateTriggerExpression(tableName, triggerName, true, TriggerEvent.Insert, trigger);
             Process(createTrigger);
@@ -1212,7 +1212,7 @@ namespace FluentMigrator.Runner.Processors.Firebird
         /// A <see cref="PerformDBOperationExpression"/> that represents the operation to create the trigger.
         /// </returns>
         /// <remarks>
-        /// This method ensures that the table and trigger names are truncated if necessary, 
+        /// This method ensures that the table and trigger names are truncated if necessary,
         /// and locks the table before creating the trigger. The trigger is created with the specified
         /// event and execution timing.
         /// </remarks>
@@ -1233,7 +1233,7 @@ namespace FluentMigrator.Runner.Processors.Firebird
             {
                 string triggerSql = string.Format(@"CREATE TRIGGER {0} FOR {1} ACTIVE {2} {3} POSITION 0
                     {4}
-                    ", _quoter.Quote(triggerName), _quoter.Quote(tableName),
+                    ", Quoter.Quote(triggerName), Quoter.Quote(tableName),
                      onBefore ? "before" : "after",
                      onEvent.ToString().ToLower(),
                      triggerBody
@@ -1280,7 +1280,7 @@ namespace FluentMigrator.Runner.Processors.Firebird
             PerformDBOperationExpression deleteTrigger = new PerformDBOperationExpression();
             deleteTrigger.Operation = (connection, transaction) =>
             {
-                string triggerSql = string.Format("DROP TRIGGER {0}", _quoter.Quote(triggerName));
+                string triggerSql = string.Format("DROP TRIGGER {0}", Quoter.Quote(triggerName));
                 Logger.LogSql(triggerSql);
                 using (var cmd = CreateCommand(triggerSql, connection, transaction))
                 {

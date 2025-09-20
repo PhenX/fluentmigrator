@@ -18,10 +18,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 
-using FluentMigrator.Expressions;
 using FluentMigrator.Runner.BatchParser;
 using FluentMigrator.Runner.BatchParser.Sources;
 using FluentMigrator.Runner.Generators.Snowflake;
@@ -54,10 +52,9 @@ namespace FluentMigrator.Runner.Processors.Snowflake
             [NotNull] IOptionsSnapshot<ProcessorOptions> options,
             [NotNull] IConnectionStringAccessor connectionStringAccessor,
             [NotNull] SnowflakeOptions sfOptions,
-            [NotNull] IServiceProvider serviceProvider) : base(() => factory.Factory, generator, logger, options.Value, connectionStringAccessor)
+            [NotNull] IServiceProvider serviceProvider) : base(() => factory.Factory, generator, quoter, logger, options.Value, connectionStringAccessor)
         {
             _quoteIdentifiers = sfOptions.QuoteIdentifiers;
-            Quoter = quoter;
             _serviceProvider = serviceProvider;
         }
 
@@ -67,25 +64,47 @@ namespace FluentMigrator.Runner.Processors.Snowflake
         /// <inheritdoc />
         public override IList<string> DatabaseTypeAliases => new List<string>();
 
-        /// <summary>
-        /// Gets the quoter for Snowflake SQL.
-        /// </summary>
-        public SnowflakeQuoter Quoter { get; }
+        /// <inheritdoc />
+        protected override string SchemaExistsQuery =>
+            "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{0}')";
 
         /// <inheritdoc />
-        public override void Process(PerformDBOperationExpression expression)
-        {
-            var message = string.IsNullOrEmpty(expression.Description) 
-                ? "Performing DB Operation" 
-                : $"Performing DB Operation: {expression.Description}";
-            Logger.LogSay(message);
-            if (Options.PreviewOnly)
-            {
-                return;
-            }
+        protected override string TableExistsQuery =>
+            "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND TABLE_TYPE = 'BASE TABLE')";
 
-            EnsureConnectionIsOpen();
-            expression.Operation?.Invoke(Connection, Transaction);
+        /// <inheritdoc />
+        protected override string ColumnExistsQuery =>
+            "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}')";
+
+        /// <inheritdoc />
+        protected override string ConstraintExistsQuery =>
+            "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_CATALOG = CURRENT_DATABASE() AND TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND CONSTRAINT_NAME = '{2}')";
+
+        /// <inheritdoc />
+        protected override string SequenceExistsQuery =>
+            "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.SEQUENCES WHERE SEQUENCE_SCHEMA = '{0}' AND SEQUENCE_NAME = '{1}')";
+
+        /// <inheritdoc />
+        protected override string DefaultValueExistsQuery =>
+            "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}' AND COLUMN_DEFAULT LIKE '{3}')";
+
+        /// <inheritdoc />
+        protected override string FormatSchemaName(string schemaName)
+        {
+            var dbSchema = schemaName ?? ((SnowflakeQuoter)Quoter).DefaultSchemaName;
+            return FormatHelper.FormatSqlEscape(_quoteIdentifiers ? dbSchema : dbSchema.ToUpperInvariant());
+        }
+
+        /// <inheritdoc />
+        protected override string FormatName(string name)
+        {
+            return FormatHelper.FormatSqlEscape(_quoteIdentifiers ? name : name.ToUpperInvariant());
+        }
+
+        /// <inheritdoc />
+        public override bool IndexExists(string schemaName, string tableName, string indexName)
+        {
+            return false;
         }
 
         /// <summary>
@@ -185,27 +204,6 @@ namespace FluentMigrator.Runner.Processors.Snowflake
             }
         }
 
-        /// <summary>
-        /// Formats the schema name for Snowflake metadata queries.
-        /// </summary>
-        /// <param name="schema">The schema name.</param>
-        /// <returns>The formatted schema name.</returns>
-        private string FormatSnowflakeMetadataQuerySchemaName(string schema)
-        {
-            var dbSchema = schema ?? Quoter.DefaultSchemaName;
-            return FormatHelper.FormatSqlEscape(_quoteIdentifiers ? dbSchema : dbSchema.ToUpperInvariant());
-        }
-
-        /// <summary>
-        /// Formats the identifier for Snowflake metadata queries.
-        /// </summary>
-        /// <param name="identifier">The identifier.</param>
-        /// <returns>The formatted identifier.</returns>
-        private string FormatSnowflakeMetadataQueryIdentifier(string identifier)
-        {
-            return FormatHelper.FormatSqlEscape(_quoteIdentifiers ? identifier : identifier.ToUpperInvariant());
-        }
-
         /// <inheritdoc />
         protected override void Process(string sql)
         {
@@ -225,104 +223,6 @@ namespace FluentMigrator.Runner.Processors.Snowflake
             else
             {
                 ExecuteNonQuery(sql);
-            }
-        }
-
-        /// <inheritdoc />
-        public override void Execute(string template, params object[] args)
-        {
-            Process(string.Format(template, args));
-        }
-
-        /// <inheritdoc />
-        public override bool SchemaExists(string schemaName)
-        {
-            return Exists("SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{0}')", FormatSnowflakeMetadataQuerySchemaName(schemaName));
-        }
-
-        /// <inheritdoc />
-        public override bool TableExists(string schemaName, string tableName)
-        {
-            return Exists(
-                "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND TABLE_TYPE = 'BASE TABLE')",
-                FormatSnowflakeMetadataQuerySchemaName(schemaName),
-                FormatSnowflakeMetadataQueryIdentifier(tableName));
-        }
-
-        /// <inheritdoc />
-        public override bool ColumnExists(string schemaName, string tableName, string columnName)
-        {
-            return Exists(
-                "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}')",
-                FormatSnowflakeMetadataQuerySchemaName(schemaName),
-                FormatSnowflakeMetadataQueryIdentifier(tableName),
-                FormatSnowflakeMetadataQueryIdentifier(columnName));
-        }
-
-        /// <inheritdoc />
-        public override bool ConstraintExists(string schemaName, string tableName, string constraintName)
-        {
-            return Exists(
-                "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_CATALOG = CURRENT_DATABASE() AND TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND CONSTRAINT_NAME = '{2}')",
-                FormatSnowflakeMetadataQuerySchemaName(schemaName),
-                FormatSnowflakeMetadataQueryIdentifier(tableName),
-                FormatSnowflakeMetadataQueryIdentifier(constraintName));
-        }
-
-        /// <inheritdoc />
-        public override bool IndexExists(string schemaName, string tableName, string indexName)
-        {
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override bool SequenceExists(string schemaName, string sequenceName)
-        {
-            return Exists(
-                "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.SEQUENCES WHERE SEQUENCE_SCHEMA = '{0}' AND SEQUENCE_NAME = '{1}')",
-                FormatSnowflakeMetadataQuerySchemaName(schemaName),
-                FormatSnowflakeMetadataQueryIdentifier(sequenceName));
-        }
-
-        /// <inheritdoc />
-        public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
-        {
-            var defaultValueAsString = $"%{FormatHelper.FormatSqlEscape(defaultValue.ToString())}%";
-            return Exists(
-                "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}' AND COLUMN_DEFAULT LIKE '{3}')",
-                FormatSnowflakeMetadataQuerySchemaName(schemaName),
-                FormatSnowflakeMetadataQueryIdentifier(tableName),
-                FormatSnowflakeMetadataQueryIdentifier(columnName),
-                defaultValueAsString);
-        }
-
-        /// <inheritdoc />
-        public override DataSet ReadTableData(string schemaName, string tableName)
-        {
-            return Read($"SELECT * FROM {Quoter.QuoteTableName(tableName, schemaName)}");
-        }
-
-        /// <inheritdoc />
-        public override DataSet Read(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.ReadDataSet();
-            }
-        }
-
-        /// <inheritdoc />
-        public override bool Exists(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.Read();
             }
         }
     }

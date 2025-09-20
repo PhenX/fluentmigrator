@@ -21,6 +21,9 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 
+using FluentMigrator.Expressions;
+using FluentMigrator.Generation;
+using FluentMigrator.Runner.Helpers;
 using FluentMigrator.Runner.Initialization;
 
 using JetBrains.Annotations;
@@ -49,12 +52,15 @@ namespace FluentMigrator.Runner.Processors
         protected GenericProcessorBase(
             [NotNull] Func<DbProviderFactory> factoryAccessor,
             [NotNull] IMigrationGenerator generator,
+            [NotNull] IQuoter quoter,
             [NotNull] ILogger logger,
             [NotNull] ProcessorOptions options,
             [NotNull] IConnectionStringAccessor connectionStringAccessor)
             : base(generator, logger, options)
         {
             _dbProviderFactory = new Lazy<DbProviderFactory>(factoryAccessor.Invoke);
+
+            Quoter = quoter;
 
             var connectionString = connectionStringAccessor.ConnectionString;
 
@@ -91,6 +97,52 @@ namespace FluentMigrator.Runner.Processors
         /// </summary>
         [CanBeNull]
         protected DbProviderFactory DbProviderFactory => _dbProviderFactory.Value;
+
+        /// <summary>
+        /// Gets the quoter used to escape database object names.
+        /// </summary>
+        [NotNull]
+        public IQuoter Quoter { get; }
+
+        /// <summary>
+        /// Gets the query to check if a schema exists.
+        /// </summary>
+        protected virtual string SchemaExistsQuery => null;
+
+        /// <summary>
+        /// Gets the query to check if a table exists.
+        /// </summary>
+        protected virtual string TableExistsQuery => null;
+
+        /// <summary>
+        /// Gets the query to check if a column exists.
+        /// </summary>
+        protected virtual string ColumnExistsQuery => null;
+
+        /// <summary>
+        /// Gets the query to check if a constraint exists.
+        /// </summary>
+        protected virtual string ConstraintExistsQuery => null;
+
+        /// <summary>
+        /// Gets the query to check if an index exists.
+        /// </summary>
+        protected virtual string IndexExistsQuery => null;
+
+        /// <summary>
+        /// Gets the query to check if a sequence exists.
+        /// </summary>
+        protected virtual string SequenceExistsQuery => null;
+
+        /// <summary>
+        /// Gets the query to check if a default value exists.
+        /// </summary>
+        protected virtual string DefaultValueExistsQuery => null;
+
+        /// <summary>
+        /// Gets the query to read all data from a table.
+        /// </summary>
+        protected virtual string ReadTableDataQuery => "SELECT * FROM {0}";
 
         /// <summary>
         /// Ensures the database connection is open.
@@ -206,6 +258,152 @@ namespace FluentMigrator.Runner.Processors
             }
 
             return result;
+        }
+
+        /// <inheritdoc />
+        public override void Execute(string template, params object[] args)
+        {
+            Process(string.Format(template, args));
+        }
+
+        /// <summary>
+        /// Formats the schema name for use in SQL queries.
+        /// </summary>
+        protected virtual string FormatSchemaName(string schemaName)
+        {
+            return FormatHelper.FormatSqlEscape(schemaName);
+        }
+
+        /// <summary>
+        /// Formats a database object name for use in SQL queries.
+        /// </summary>
+        protected virtual string FormatName(string name)
+        {
+            return FormatHelper.FormatSqlEscape(name);
+        }
+
+        /// <inheritdoc />
+        public override bool SchemaExists(string schemaName)
+        {
+            return Exists(SchemaExistsQuery, FormatSchemaName(schemaName));
+        }
+
+        /// <inheritdoc />
+        public override bool TableExists(string schemaName, string tableName)
+        {
+            return Exists(TableExistsQuery, FormatSchemaName(schemaName), FormatName(tableName));
+        }
+
+        /// <inheritdoc />
+        public override bool ColumnExists(string schemaName, string tableName, string columnName)
+        {
+            return Exists(ColumnExistsQuery, FormatSchemaName(schemaName), FormatName(tableName), FormatName(columnName));
+        }
+
+        /// <inheritdoc />
+        public override bool ConstraintExists(string schemaName, string tableName, string constraintName)
+        {
+            return Exists(ConstraintExistsQuery, FormatSchemaName(schemaName), FormatName(tableName), FormatName(constraintName));
+        }
+
+        /// <inheritdoc />
+        public override bool IndexExists(string schemaName, string tableName, string indexName)
+        {
+            return Exists(IndexExistsQuery, FormatSchemaName(schemaName), FormatName(tableName), FormatName(indexName));
+        }
+
+        /// <inheritdoc />
+        public override bool SequenceExists(string schemaName, string sequenceName)
+        {
+            return Exists(SequenceExistsQuery, FormatSchemaName(schemaName), FormatName(sequenceName));
+        }
+
+        /// <inheritdoc />
+        public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
+        {
+            var defaultValueAsString = $"%{FormatHelper.FormatSqlEscape(defaultValue.ToString())}%";
+            return Exists(DefaultValueExistsQuery, FormatSchemaName(schemaName), FormatName(tableName), FormatName(columnName), defaultValueAsString);
+        }
+
+        /// <inheritdoc />
+        public override DataSet Read(string template, params object[] args)
+        {
+            EnsureConnectionIsOpen();
+
+            using (var command = CreateCommand(string.Format(template, args)))
+            using (var reader = command.ExecuteReader())
+            {
+                return reader.ReadDataSet();
+            }
+        }
+
+        /// <inheritdoc />
+        [StringFormatMethod("template")]
+        public override bool Exists(string template, params object[] args)
+        {
+            EnsureConnectionIsOpen();
+
+            using (var command = CreateCommand(string.Format(template, args)))
+            using (var reader = command.ExecuteReader())
+            {
+                try
+                {
+                    return reader.Read();
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override DataSet ReadTableData(string schemaName, string tableName)
+        {
+            return Read(ReadTableDataQuery, Quoter.QuoteTableName(tableName, schemaName));
+        }
+
+        /// <inheritdoc />
+        protected override void Process(string sql)
+        {
+            Logger.LogSql(sql);
+
+            if (Options.PreviewOnly || string.IsNullOrEmpty(sql))
+            {
+                return;
+            }
+
+            EnsureConnectionIsOpen();
+
+            using (var command = CreateCommand(sql))
+            {
+                try
+                {
+                    command.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    ReThrowWithSql(ex, sql);
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Process(PerformDBOperationExpression expression)
+        {
+            var message = string.IsNullOrEmpty(expression.Description)
+                ? "Performing DB Operation"
+                : $"Performing DB Operation: {expression.Description}";
+            Logger.LogSay(message);
+
+            if (Options.PreviewOnly)
+            {
+                return;
+            }
+
+            EnsureConnectionIsOpen();
+
+            expression.Operation?.Invoke(Connection, Transaction);
         }
     }
 }

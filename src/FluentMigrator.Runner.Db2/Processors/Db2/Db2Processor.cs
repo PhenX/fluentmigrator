@@ -45,9 +45,8 @@ namespace FluentMigrator.Runner.Processors.DB2
             [NotNull] ILogger<Db2Processor> logger,
             [NotNull] IOptionsSnapshot<ProcessorOptions> options,
             [NotNull] IConnectionStringAccessor connectionStringAccessor)
-            : base(() => factory.Factory, generator, logger, options.Value, connectionStringAccessor)
+            : base(() => factory.Factory, generator, quoter, logger, options.Value, connectionStringAccessor)
         {
-            Quoter = quoter;
         }
 
         /// <inheritdoc />
@@ -55,9 +54,6 @@ namespace FluentMigrator.Runner.Processors.DB2
 
         /// <inheritdoc />
         public override IList<string> DatabaseTypeAliases { get; } = new List<string> { ProcessorIdConstants.IbmDb2, ProcessorIdConstants.DB2 };
-
-        /// <inheritdoc />
-        public IQuoter Quoter { get; set; }
 
         /// <inheritdoc />
         public override bool ColumnExists(string schemaName, string tableName, string columnName)
@@ -121,18 +117,6 @@ namespace FluentMigrator.Runner.Processors.DB2
         }
 
         /// <inheritdoc />
-        public override bool Exists(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.Read();
-            }
-        }
-
-        /// <inheritdoc />
         public override bool IndexExists(string schemaName, string tableName, string indexName)
         {
             var conditions = new List<string>
@@ -149,42 +133,6 @@ namespace FluentMigrator.Runner.Processors.DB2
             var doesExist = Exists("SELECT INDNAME FROM SYSCAT.INDEXES WHERE {0}", condition);
 
             return doesExist;
-        }
-
-        /// <inheritdoc />
-        public override void Process(PerformDBOperationExpression expression)
-        {
-            var message = string.IsNullOrEmpty(expression.Description) 
-                ? "Performing DB Operation" 
-                : $"Performing DB Operation: {expression.Description}";
-            Logger.LogSay(message);
-
-            if (Options.PreviewOnly)
-            {
-                return;
-            }
-
-            EnsureConnectionIsOpen();
-
-            expression.Operation?.Invoke(Connection, Transaction);
-        }
-
-        /// <inheritdoc />
-        public override DataSet Read(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.ReadDataSet();
-            }
-        }
-
-        /// <inheritdoc />
-        public override DataSet ReadTableData(string schemaName, string tableName)
-        {
-            return Read("SELECT * FROM {0}", Quoter.QuoteTableName(tableName, schemaName));
         }
 
         /// <inheritdoc />
@@ -220,24 +168,6 @@ namespace FluentMigrator.Runner.Processors.DB2
             var condition = string.Join(" AND ", conditions);
 
             return Exists("SELECT TABNAME FROM SYSCAT.TABLES WHERE {0}", condition);
-        }
-
-        /// <inheritdoc />
-        protected override void Process(string sql)
-        {
-            Logger.LogSql(sql);
-
-            if (Options.PreviewOnly || string.IsNullOrEmpty(sql))
-            {
-                return;
-            }
-
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(sql))
-            {
-                command.ExecuteNonQuery();
-            }
         }
 
         /// <summary>

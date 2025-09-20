@@ -35,11 +35,13 @@ namespace FluentMigrator.Runner.Processors.MySql
         public MySql8Processor(
             [NotNull] MySqlDbFactory factory,
             [NotNull] MySql8Generator generator,
+            [NotNull] MySqlQuoter quoter,
             [NotNull] ILogger<MySql8Processor> logger,
             [NotNull] IOptionsSnapshot<ProcessorOptions> options,
             [NotNull] IConnectionStringAccessor connectionStringAccessor) : base(
             factory,
             generator,
+            quoter,
             logger,
             options,
             connectionStringAccessor)

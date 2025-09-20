@@ -17,11 +17,8 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 
-using FluentMigrator.Expressions;
-using FluentMigrator.Generation;
 using FluentMigrator.Runner.Generators.DB2.iSeries;
 using FluentMigrator.Runner.Helpers;
 using FluentMigrator.Runner.Initialization;
@@ -38,16 +35,36 @@ namespace FluentMigrator.Runner.Processors.DB2.iSeries
     /// </summary>
     public class Db2ISeriesProcessor : GenericProcessorBase
     {
-        /// <summary>
-        /// Gets or sets the quoter for iSeries SQL.
-        /// </summary>
-        public IQuoter Quoter { get; set; }
-
         /// <inheritdoc />
         public override string DatabaseType => ProcessorIdConstants.Db2ISeries;
 
         /// <inheritdoc />
         public override IList<string> DatabaseTypeAliases { get; } = new List<string> { ProcessorIdConstants.IbmDb2ISeries, ProcessorIdConstants.DB2 };
+
+        /// <inheritdoc />
+        protected override string SchemaExistsQuery =>
+            "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{0}'";
+
+        /// <inheritdoc />
+        protected override string TableExistsQuery =>
+            "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE {0}TABLE_NAME = '{1}'";
+
+        /// <inheritdoc />
+        protected override string ColumnExistsQuery =>
+            "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE {0}TABLE_NAME = '{1}' AND COLUMN_NAME='{2}'";
+
+        /// <inheritdoc />
+        protected override string ConstraintExistsQuery =>
+            "SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE {0}TABLE_NAME = '{1}' AND CONSTRAINT_NAME='{2}'";
+
+        /// <inheritdoc />
+        protected override string IndexExistsQuery =>
+            "SELECT NAME FROM INFORMATION_SCHEMA.SYSINDEXES WHERE {0}TABLE_NAME = '{1}' AND NAME = '{2}'";
+
+        /// <inheritdoc />
+        protected override string DefaultValueExistsQuery =>
+            "SELECT COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS WHERE {0}TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}' AND COLUMN_DEFAULT LIKE '{3}'";
+
 
         /// <inheritdoc />
         public Db2ISeriesProcessor(
@@ -57,109 +74,50 @@ namespace FluentMigrator.Runner.Processors.DB2.iSeries
             [NotNull] ILogger<Db2ISeriesProcessor> logger,
             [NotNull] IOptionsSnapshot<ProcessorOptions> options,
             [NotNull] IConnectionStringAccessor connectionStringAccessor)
-            : base(() => factory.Factory, generator, logger, options.Value, connectionStringAccessor)
+            : base(() => factory.Factory, generator, quoter, logger, options.Value, connectionStringAccessor)
         {
-            Quoter = quoter;
+        }
+
+        /// <inheritdoc />
+        protected override string FormatSchemaName(string schemaName)
+        {
+            return FormatToSafeName(schemaName);
+        }
+
+        /// <inheritdoc />
+        protected override string FormatName(string name)
+        {
+            return FormatToSafeName(name);
+        }
+
+        /// <inheritdoc />
+        public override bool TableExists(string schemaName, string tableName)
+        {
+            return base.TableExists(GetSchemaClause(schemaName, "TABLE_SCHEMA"), tableName);
         }
 
         /// <inheritdoc />
         public override bool ColumnExists(string schemaName, string tableName, string columnName)
         {
-            var schema = string.IsNullOrEmpty(schemaName) ? string.Empty : "TABLE_SCHEMA = '" + FormatToSafeName(schemaName) + "' AND ";
-
-            var doesExist = Exists("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE {0} TABLE_NAME = '{1}' AND COLUMN_NAME='{2}'", schema, FormatToSafeName(tableName), FormatToSafeName(columnName));
-            return doesExist;
+            return base.ColumnExists(GetSchemaClause(schemaName, "TABLE_SCHEMA"), tableName, columnName);
         }
 
         /// <inheritdoc />
         public override bool ConstraintExists(string schemaName, string tableName, string constraintName)
         {
-            var schema = string.IsNullOrEmpty(schemaName) ? string.Empty : "TABLE_SCHEMA = '" + FormatToSafeName(schemaName) + "' AND ";
-
-            return Exists("SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE {0} TABLE_NAME = '{1}' AND CONSTRAINT_NAME='{2}'", schema, FormatToSafeName(tableName), FormatToSafeName(constraintName));
-        }
-
-        /// <inheritdoc />
-        public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
-        {
-            var schema = string.IsNullOrEmpty(schemaName) ? string.Empty : "TABLE_SCHEMA = '" + FormatToSafeName(schemaName) + "' AND ";
-            var defaultValueAsString = string.Format("%{0}%", FormatHelper.FormatSqlEscape(defaultValue.ToString()));
-
-            return Exists("SELECT COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS WHERE {0} TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}' AND COLUMN_DEFAULT LIKE '{3}'", schema, FormatToSafeName(tableName), columnName.ToUpper(), defaultValueAsString);
-        }
-
-        /// <inheritdoc />
-        public override void Execute(string template, params object[] args)
-        {
-            Process(string.Format(template, args));
-        }
-
-        /// <inheritdoc />
-        public override bool Exists(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.Read();
-            }
+            return base.ConstraintExists(GetSchemaClause(schemaName, "TABLE_SCHEMA"), tableName, constraintName);
         }
 
         /// <inheritdoc />
         public override bool IndexExists(string schemaName, string tableName, string indexName)
         {
-            var schema = string.IsNullOrEmpty(schemaName) ? string.Empty : "INDEX_SCHEMA = '" + FormatToSafeName(schemaName) + "' AND ";
-
-            var doesExist = Exists(
-                "SELECT NAME FROM INFORMATION_SCHEMA.SYSINDEXES WHERE {0}TABLE_NAME = '{1}' AND NAME = '{2}'",
-                schema,
-                FormatToSafeName(tableName),
-                FormatToSafeName(indexName));
-
-            return doesExist;
+            return base.IndexExists(GetSchemaClause(schemaName, "INDEX_SCHEMA"), tableName, indexName);
         }
 
         /// <inheritdoc />
-        public override void Process(PerformDBOperationExpression expression)
+        public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
         {
-            var message = string.IsNullOrEmpty(expression.Description) 
-                ? "Performing DB Operation" 
-                : $"Performing DB Operation: {expression.Description}";
-            Logger.LogSay(message);
-
-            if (Options.PreviewOnly)
-            {
-                return;
-            }
-
-            EnsureConnectionIsOpen();
-
-            expression.Operation?.Invoke(Connection, Transaction);
-        }
-
-        /// <inheritdoc />
-        public override DataSet Read(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.ReadDataSet();
-            }
-        }
-
-        /// <inheritdoc />
-        public override DataSet ReadTableData(string schemaName, string tableName)
-        {
-            return Read("SELECT * FROM {0}", Quoter.QuoteTableName(tableName, schemaName));
-        }
-
-        /// <inheritdoc />
-        public override bool SchemaExists(string schemaName)
-        {
-            return Exists("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{0}'", FormatToSafeName(schemaName));
+            return base.DefaultValueExists(GetSchemaClause(schemaName, "TABLE_SCHEMA"), tableName, columnName, defaultValue);
         }
 
         /// <inheritdoc />
@@ -168,30 +126,9 @@ namespace FluentMigrator.Runner.Processors.DB2.iSeries
             return false;
         }
 
-        /// <inheritdoc />
-        public override bool TableExists(string schemaName, string tableName)
+        private string GetSchemaClause(string schemaName, string infoTableName)
         {
-            var schema = string.IsNullOrEmpty(schemaName) ? string.Empty : "TABLE_SCHEMA = '" + FormatToSafeName(schemaName) + "' AND ";
-
-            return Exists("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE {0}TABLE_NAME = '{1}'", schema, FormatToSafeName(tableName));
-        }
-
-        /// <inheritdoc />
-        protected override void Process(string sql)
-        {
-            Logger.LogSql(sql);
-
-            if (Options.PreviewOnly || string.IsNullOrEmpty(sql))
-            {
-                return;
-            }
-
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(sql))
-            {
-                command.ExecuteNonQuery();
-            }
+            return string.IsNullOrEmpty(schemaName) ? string.Empty : $"{infoTableName} = '{FormatSchemaName(schemaName)}' AND ";
         }
 
         /// <summary>

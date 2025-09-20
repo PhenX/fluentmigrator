@@ -18,9 +18,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
 
-using FluentMigrator.Expressions;
 using FluentMigrator.Runner.Generators.Postgres;
 using FluentMigrator.Runner.Helpers;
 using FluentMigrator.Runner.Initialization;
@@ -37,7 +35,7 @@ namespace FluentMigrator.Runner.Processors.Postgres
     /// </summary>
     public class PostgresProcessor : GenericProcessorBase
     {
-        private readonly PostgresQuoter _quoter;
+        private PostgresQuoter PgQuoter => (PostgresQuoter)Quoter;
 
         /// <inheritdoc />
         public override string DatabaseType => ProcessorIdConstants.Postgres;
@@ -53,164 +51,64 @@ namespace FluentMigrator.Runner.Processors.Postgres
             [NotNull] IOptionsSnapshot<ProcessorOptions> options,
             [NotNull] IConnectionStringAccessor connectionStringAccessor,
             [NotNull] PostgresOptions pgOptions)
-            : base(() => factory.Factory, generator, logger, options.Value, connectionStringAccessor)
+            : base(() => factory.Factory, generator, new PostgresQuoter(pgOptions), logger, options.Value, connectionStringAccessor)
         {
             if (pgOptions == null)
             {
                 throw new ArgumentNullException(nameof(pgOptions));
             }
-
-            _quoter = new PostgresQuoter(pgOptions);
         }
 
         /// <inheritdoc />
-        public override void Execute(string template, params object[] args)
-        {
-            Process(string.Format(template, args));
-        }
+        protected override string SchemaExistsQuery =>
+            "select * from information_schema.schemata where schema_name = '{0}'";
 
         /// <inheritdoc />
-        public override bool SchemaExists(string schemaName)
-        {
-            return Exists("select * from information_schema.schemata where schema_name = '{0}'", FormatToSafeSchemaName(schemaName));
-        }
+        protected override string TableExistsQuery =>
+            "select * from information_schema.tables where table_schema = '{0}' and table_name = '{1}'";
 
         /// <inheritdoc />
-        public override bool TableExists(string schemaName, string tableName)
-        {
-            return Exists("select * from information_schema.tables where table_schema = '{0}' and table_name = '{1}'", FormatToSafeSchemaName(schemaName), FormatToSafeName(tableName));
-        }
+        protected override string ColumnExistsQuery =>
+            "select * from information_schema.columns where table_schema = '{0}' and table_name = '{1}' and column_name = '{2}'";
 
         /// <inheritdoc />
-        public override bool ColumnExists(string schemaName, string tableName, string columnName)
-        {
-            return Exists("select * from information_schema.columns where table_schema = '{0}' and table_name = '{1}' and column_name = '{2}'", FormatToSafeSchemaName(schemaName), FormatToSafeName(tableName), FormatToSafeName(columnName));
-        }
+        protected override string ConstraintExistsQuery =>
+            "select * from information_schema.table_constraints where constraint_catalog = current_catalog and table_schema = '{0}' and table_name = '{1}' and constraint_name = '{2}'";
 
         /// <inheritdoc />
-        public override bool ConstraintExists(string schemaName, string tableName, string constraintName)
-        {
-            return Exists("select * from information_schema.table_constraints where constraint_catalog = current_catalog and table_schema = '{0}' and table_name = '{1}' and constraint_name = '{2}'", FormatToSafeSchemaName(schemaName), FormatToSafeName(tableName), FormatToSafeName(constraintName));
-        }
+        protected override string IndexExistsQuery =>
+            "select * from pg_catalog.pg_indexes where schemaname='{0}' and tablename = '{1}' and indexname = '{2}'";
 
         /// <inheritdoc />
-        public override bool IndexExists(string schemaName, string tableName, string indexName)
-        {
-            return Exists("select * from pg_catalog.pg_indexes where schemaname='{0}' and tablename = '{1}' and indexname = '{2}'", FormatToSafeSchemaName(schemaName), FormatToSafeName(tableName), FormatToSafeName(indexName));
-        }
+        protected override string SequenceExistsQuery =>
+            "select * from information_schema.sequences where sequence_catalog = current_catalog and sequence_schema ='{0}' and sequence_name = '{1}'";
 
         /// <inheritdoc />
-        public override bool SequenceExists(string schemaName, string sequenceName)
-        {
-            return Exists("select * from information_schema.sequences where sequence_catalog = current_catalog and sequence_schema ='{0}' and sequence_name = '{1}'", FormatToSafeSchemaName(schemaName), FormatToSafeName(sequenceName));
-        }
+        protected override string DefaultValueExistsQuery =>
+            "select * from information_schema.columns where table_schema = '{0}' and table_name = '{1}' and column_name = '{2}' and column_default like '{3}'";
 
         /// <inheritdoc />
-        public override DataSet ReadTableData(string schemaName, string tableName)
-        {
-            return Read("SELECT * FROM {0}", _quoter.QuoteTableName(tableName, schemaName));
-        }
-
-        /// <inheritdoc />
-        public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
-        {
-            string defaultValueAsString = string.Format("%{0}%", FormatHelper.FormatSqlEscape(defaultValue.ToString()));
-            return Exists("select * from information_schema.columns where table_schema = '{0}' and table_name = '{1}' and column_name = '{2}' and column_default like '{3}'", FormatToSafeSchemaName(schemaName), FormatToSafeName(tableName), FormatToSafeName(columnName), defaultValueAsString);
-        }
-
-        /// <inheritdoc />
-        public override DataSet Read(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.ReadDataSet();
-            }
-        }
-
-        /// <inheritdoc />
-        public override bool Exists(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.Read();
-            }
-        }
-
-        /// <inheritdoc />
-        protected override void Process(string sql)
-        {
-            Logger.LogSql(sql);
-
-            if (Options.PreviewOnly || string.IsNullOrEmpty(sql))
-                return;
-
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(sql))
-            {
-                try
-                {
-                    command.ExecuteNonQuery();
-                }
-                catch (Exception ex)
-                {
-                    ReThrowWithSql(ex, sql);
-                }
-            }
-        }
-
-        /// <inheritdoc />
-        public override void Process(PerformDBOperationExpression expression)
-        {
-            var message = string.IsNullOrEmpty(expression.Description) 
-                ? "Performing DB Operation" 
-                : $"Performing DB Operation: {expression.Description}";
-            Logger.LogSay(message);
-
-            if (Options.PreviewOnly)
-                return;
-
-            EnsureConnectionIsOpen();
-
-            expression.Operation?.Invoke(Connection, Transaction);
-        }
-
-        /// <summary>
-        /// Formats a schema name for safe SQL usage.
-        /// </summary>
-        /// <param name="schemaName">The schema name.</param>
-        /// <returns>The formatted schema name.</returns>
-        private string FormatToSafeSchemaName(string schemaName)
+        protected override string FormatSchemaName(string schemaName)
         {
             var schemaNameCased = schemaName;
-            if (!_quoter.Options.ForceQuote)
+            if (!PgQuoter.Options.ForceQuote)
             {
                 schemaNameCased = schemaName?.ToLowerInvariant();
             }
 
-            return FormatHelper.FormatSqlEscape(_quoter.UnQuoteSchemaName(schemaNameCased));
+            return FormatHelper.FormatSqlEscape(PgQuoter.UnQuoteSchemaName(schemaNameCased));
         }
 
-        /// <summary>
-        /// Formats a SQL identifier for safe SQL usage.
-        /// </summary>
-        /// <param name="sqlName">The identifier name.</param>
-        /// <returns>The formatted name.</returns>
-        private string FormatToSafeName(string sqlName)
+        /// <inheritdoc />
+        protected override string FormatName(string name)
         {
-            var sqlNameCased = sqlName;
-            if (!_quoter.Options.ForceQuote)
+            var sqlNameCased = name;
+            if (!PgQuoter.Options.ForceQuote)
             {
-                sqlNameCased = sqlName?.ToLowerInvariant();
+                sqlNameCased = name?.ToLowerInvariant();
             }
 
-            return FormatHelper.FormatSqlEscape(_quoter.UnQuote(sqlNameCased));
+            return FormatHelper.FormatSqlEscape(Quoter.UnQuote(sqlNameCased));
         }
     }
 }

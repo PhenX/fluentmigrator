@@ -19,11 +19,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.IO;
 
-using FluentMigrator.Expressions;
 using FluentMigrator.Runner.BatchParser;
 using FluentMigrator.Runner.BatchParser.Sources;
 using FluentMigrator.Runner.BatchParser.SpecialTokenSearchers;
@@ -46,11 +44,25 @@ namespace FluentMigrator.Runner.Processors.SQLite
     {
         [CanBeNull]
         private readonly IServiceProvider _serviceProvider;
-        [NotNull]
-        private readonly SQLiteQuoter _quoter;
 
         /// <inheritdoc />
         public override string DatabaseType => ProcessorIdConstants.SQLite;
+
+        /// <inheritdoc />
+        protected override string TableExistsQuery =>
+            "select 1 from {0}sqlite_master where name={1} and type='table'";
+
+        /// <inheritdoc />
+        protected override string ColumnExistsQuery =>
+            "select 1 from {0}sqlite_master AS t, {0}pragma_table_info(t.name) AS c where t.type = 'table' AND t.name = {1} AND c.name = {2}";
+
+        /// <inheritdoc />
+        protected override string ConstraintExistsQuery =>
+            "select 1 from {0}sqlite_master where name={2} and tbl_name={1} and type='index' and sql LIKE 'CREATE UNIQUE INDEX %'";
+
+        /// <inheritdoc />
+        protected override string IndexExistsQuery =>
+            "select 1 from {0}sqlite_master where name={2} and tbl_name={1} and type='index'";
 
         /// <inheritdoc />
         public override IList<string> DatabaseTypeAliases { get; } = new List<string>();
@@ -64,10 +76,21 @@ namespace FluentMigrator.Runner.Processors.SQLite
             [NotNull] IConnectionStringAccessor connectionStringAccessor,
             [NotNull] IServiceProvider serviceProvider,
             [NotNull] SQLiteQuoter quoter)
-            : base(() => factory.Factory, generator, logger, options.Value, connectionStringAccessor)
+            : base(() => factory.Factory, generator, quoter, logger, options.Value, connectionStringAccessor)
         {
             _serviceProvider = serviceProvider;
-            _quoter = quoter;
+        }
+
+        /// <inheritdoc />
+        protected override string FormatSchemaName(string schemaName)
+        {
+            return !string.IsNullOrWhiteSpace(schemaName) ? Quoter.QuoteValue(schemaName) + "." : string.Empty;
+        }
+
+        /// <inheritdoc />
+        protected override string FormatName(string name)
+        {
+            return Quoter.QuoteValue(name);
         }
 
         /// <inheritdoc />
@@ -77,50 +100,9 @@ namespace FluentMigrator.Runner.Processors.SQLite
         }
 
         /// <inheritdoc />
-        public override bool TableExists(string schemaName, string tableName)
-        {
-            return Exists("select count(*) from {1}sqlite_master where name={0} and type='table'",
-                _quoter.QuoteValue(tableName),
-                !string.IsNullOrWhiteSpace(schemaName) ? _quoter.QuoteValue(schemaName) + "." : string.Empty);
-        }
-
-        /// <inheritdoc />
-        public override bool ColumnExists(string schemaName, string tableName, string columnName)
-        {
-            return Exists("select count(*) from {2}sqlite_master AS t, {2}pragma_table_info(t.name) AS c where t.type = 'table' AND t.name = {0} AND c.name = {1}",
-                _quoter.QuoteValue(tableName),
-                _quoter.QuoteValue(columnName),
-                !string.IsNullOrWhiteSpace(schemaName) ? _quoter.QuoteValue(schemaName) + "." : string.Empty);
-        }
-
-        /// <inheritdoc />
-        public override bool ConstraintExists(string schemaName, string tableName, string constraintName)
-        {
-            return Exists("select count(*) from {2}sqlite_master where name={0} and tbl_name={1} and type='index' and sql LIKE 'CREATE UNIQUE INDEX %'",
-                   _quoter.QuoteValue(constraintName),
-                   _quoter.QuoteValue(tableName),
-                   !string.IsNullOrWhiteSpace(schemaName) ? _quoter.QuoteValue(schemaName) + "." : string.Empty);
-        }
-
-        /// <inheritdoc />
-        public override bool IndexExists(string schemaName, string tableName, string indexName)
-        {
-            return Exists("select count(*) from {2}sqlite_master where name={0} and tbl_name={1} and type='index'",
-                _quoter.QuoteValue(indexName),
-                _quoter.QuoteValue(tableName),
-                !string.IsNullOrWhiteSpace(schemaName) ? _quoter.QuoteValue(schemaName) + "." : string.Empty);
-        }
-
-        /// <inheritdoc />
         public override bool SequenceExists(string schemaName, string sequenceName)
         {
             return false;
-        }
-
-        /// <inheritdoc />
-        public override void Execute(string template, params object[] args)
-        {
-            Process(string.Format(template, args));
         }
 
         /// <inheritdoc />
@@ -145,31 +127,9 @@ namespace FluentMigrator.Runner.Processors.SQLite
         }
 
         /// <inheritdoc />
-        public override DataSet ReadTableData(string schemaName, string tableName)
-        {
-            return Read("select * from {0}", _quoter.QuoteTableName(tableName, schemaName));
-        }
-
-        /// <inheritdoc />
         public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
         {
             return false;
-        }
-
-        /// <inheritdoc />
-        public override void Process(PerformDBOperationExpression expression)
-        {
-            var message = string.IsNullOrEmpty(expression.Description) 
-                ? "Performing DB Operation" 
-                : $"Performing DB Operation: {expression.Description}";
-            Logger.LogSay(message);
-
-            if (Options.PreviewOnly)
-                return;
-
-            EnsureConnectionIsOpen();
-
-            expression.Operation?.Invoke(Connection, Transaction);
         }
 
         /// <inheritdoc />
@@ -288,18 +248,6 @@ namespace FluentMigrator.Runner.Processors.SQLite
             catch (DbException ex)
             {
                 throw new Exception(ex.Message + Environment.NewLine + "While Processing:" + Environment.NewLine + "\"" + sqlBatch + "\"", ex);
-            }
-        }
-
-        /// <inheritdoc />
-        public override DataSet Read(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.ReadDataSet();
             }
         }
     }

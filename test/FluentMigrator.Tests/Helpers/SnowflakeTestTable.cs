@@ -17,7 +17,7 @@ namespace FluentMigrator.Tests.Helpers
         public SnowflakeTestTable(string table, SnowflakeProcessor processor, string schema, params string[] columnDefinitions)
         {
             Processor = processor;
-            _quoter = Processor.Quoter;
+            _quoter = (SnowflakeQuoter)Processor.Quoter;
             _schema = schema;
 
             Name = _quoter.UnQuote(table) + "_" + Guid.NewGuid().GetHashCode().ToString("X8");

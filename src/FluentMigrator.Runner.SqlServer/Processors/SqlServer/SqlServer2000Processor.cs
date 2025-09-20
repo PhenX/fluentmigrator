@@ -67,21 +67,46 @@ namespace FluentMigrator.Runner.Processors.SqlServer
         [CanBeNull]
         private readonly IServiceProvider _serviceProvider;
 
+        /// <inheritdoc />
+        protected override string TableExistsQuery =>
+            "SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{1}'";
+
+        /// <inheritdoc />
+        protected override string ColumnExistsQuery =>
+            "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}'";
+
+        /// <inheritdoc />
+        protected override string ConstraintExistsQuery =>
+            "SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_CATALOG = DB_NAME() AND AND TABLE_NAME = '{1}' AND CONSTRAINT_NAME = '{2}'";
+
+        /// <inheritdoc />
+        protected override string IndexExistsQuery =>
+            "SELECT NULL FROM sysindexes WHERE name = '{0}'";
+
+        /// <inheritdoc />
+        protected override string SequenceExistsQuery =>
+            "SELECT * FROM INFORMATION_SCHEMA.SEQUENCES WHERE SEQUENCE_NAME = '{1}'";
+
+        /// <inheritdoc />
+        protected override string ReadTableDataQuery => "SELECT * FROM [{0}]";
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServer2000Processor"/> class.
         /// </summary>
         /// <param name="logger">The logger.</param>
         /// <param name="generator">The migration generator.</param>
+        /// <param name="quoter">The SQL Server 2000 quoter.</param>
         /// <param name="options">The processor options.</param>
         /// <param name="connectionStringAccessor">The connection string accessor.</param>
         /// <param name="serviceProvider">The service provider.</param>
         public SqlServer2000Processor(
             [NotNull] ILogger<SqlServer2000Processor> logger,
             [NotNull] SqlServer2000Generator generator,
+            [NotNull] SqlServer2000Quoter quoter,
             [NotNull] IOptionsSnapshot<ProcessorOptions> options,
             [NotNull] IConnectionStringAccessor connectionStringAccessor,
             [NotNull] IServiceProvider serviceProvider)
-            : this(SqlClientFactory.Instance, logger, generator, options, connectionStringAccessor, serviceProvider)
+            : this(SqlClientFactory.Instance, logger, generator, quoter, options, connectionStringAccessor, serviceProvider)
         {
         }
 
@@ -91,6 +116,7 @@ namespace FluentMigrator.Runner.Processors.SqlServer
         /// <param name="factory">The database provider factory.</param>
         /// <param name="logger">The logger.</param>
         /// <param name="generator">The migration generator.</param>
+        /// <param name="quoter">The SQL Server 2000 quoter.</param>
         /// <param name="options">The processor options.</param>
         /// <param name="connectionStringAccessor">The connection string accessor.</param>
         /// <param name="serviceProvider">The service provider.</param>
@@ -98,10 +124,11 @@ namespace FluentMigrator.Runner.Processors.SqlServer
             DbProviderFactory factory,
             [NotNull] ILogger logger,
             [NotNull] SqlServer2000Generator generator,
+            [NotNull] SqlServer2000Quoter quoter,
             [NotNull] IOptionsSnapshot<ProcessorOptions> options,
             [NotNull] IConnectionStringAccessor connectionStringAccessor,
             [NotNull] IServiceProvider serviceProvider)
-            : base(() => factory, generator, logger, options.Value, connectionStringAccessor)
+            : base(() => factory, generator, quoter, logger, options.Value, connectionStringAccessor)
         {
             _serviceProvider = serviceProvider;
         }
@@ -145,41 +172,6 @@ namespace FluentMigrator.Runner.Processors.SqlServer
         }
 
         /// <inheritdoc />
-        public override bool TableExists(string schemaName, string tableName)
-        {
-            try
-            {
-                return Exists("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{0}'", FormatHelper.FormatSqlEscape(tableName));
-            }
-            catch (Exception e)
-            {
-                Logger.LogError(e, "There was an exception checking if table {Table} in {Schema} exists", tableName, schemaName);
-            }
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override bool ColumnExists(string schemaName, string tableName, string columnName)
-        {
-            return Exists("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{0}' AND COLUMN_NAME = '{1}'",
-                FormatHelper.FormatSqlEscape(tableName),
-                FormatHelper.FormatSqlEscape(columnName));
-        }
-
-        /// <inheritdoc />
-        public override bool ConstraintExists(string schemaName, string tableName, string constraintName)
-        {
-            return Exists("SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_CATALOG = DB_NAME() AND TABLE_NAME = '{0}' AND CONSTRAINT_NAME = '{1}'",
-                FormatHelper.FormatSqlEscape(tableName), FormatHelper.FormatSqlEscape(constraintName));
-        }
-
-        /// <inheritdoc />
-        public override bool IndexExists(string schemaName, string tableName, string indexName)
-        {
-            return Exists("SELECT NULL FROM sysindexes WHERE name = '{0}'", FormatHelper.FormatSqlEscape(indexName));
-        }
-
-        /// <inheritdoc />
         public override bool SequenceExists(string schemaName, string sequenceName)
         {
             return false;
@@ -189,42 +181,6 @@ namespace FluentMigrator.Runner.Processors.SqlServer
         public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
         {
             return false;
-        }
-
-        /// <inheritdoc />
-        public override DataSet ReadTableData(string schemaName, string tableName)
-        {
-            return Read("SELECT * FROM [{0}]", tableName);
-        }
-
-        /// <inheritdoc />
-        public override DataSet Read(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.ReadDataSet();
-            }
-        }
-
-        /// <inheritdoc />
-        public override bool Exists(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.Read();
-            }
-        }
-
-        /// <inheritdoc />
-        public override void Execute(string template, params object[] args)
-        {
-            Process(string.Format(template, args));
         }
 
         /// <inheritdoc />
@@ -322,24 +278,6 @@ namespace FluentMigrator.Runner.Processors.SqlServer
                     ReThrowWithSql(ex, string.IsNullOrEmpty(sqlBatch) ? sql : sqlBatch);
                 }
             }
-        }
-
-        /// <inheritdoc />
-        public override void Process(PerformDBOperationExpression expression)
-        {
-            var message = string.IsNullOrEmpty(expression.Description) 
-                ? "Performing DB Operation" 
-                : $"Performing DB Operation: {expression.Description}";
-            Logger.LogSay(message);
-
-            if (Options.PreviewOnly)
-            {
-                return;
-            }
-
-            EnsureConnectionIsOpen();
-
-            expression.Operation?.Invoke(Connection, Transaction);
         }
     }
 }

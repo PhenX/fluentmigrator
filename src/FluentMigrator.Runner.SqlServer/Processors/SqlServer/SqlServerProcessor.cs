@@ -26,7 +26,6 @@ using FluentMigrator.Generation;
 using FluentMigrator.Runner.BatchParser;
 using FluentMigrator.Runner.BatchParser.Sources;
 using FluentMigrator.Runner.BatchParser.SpecialTokenSearchers;
-using FluentMigrator.Runner.Generators.Generic;
 using FluentMigrator.Runner.Helpers;
 using FluentMigrator.Runner.Initialization;
 
@@ -47,24 +46,39 @@ namespace FluentMigrator.Runner.Processors.SqlServer
         [CanBeNull]
         private readonly IServiceProvider _serviceProvider;
 
-        private const string SqlSchemaExists = "SELECT 1 WHERE EXISTS (SELECT * FROM sys.schemas WHERE NAME = '{0}') ";
-        private const string TABLE_EXISTS = "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}')";
-        private const string COLUMN_EXISTS = "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}')";
-        private const string CONSTRAINT_EXISTS = "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_CATALOG = DB_NAME() AND TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND CONSTRAINT_NAME = '{2}')";
-        private const string INDEX_EXISTS = "SELECT 1 WHERE EXISTS (SELECT * FROM sys.indexes WHERE name = '{0}' and object_id=OBJECT_ID('{1}.{2}'))";
-        private const string SEQUENCES_EXISTS = "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.SEQUENCES WHERE SEQUENCE_SCHEMA = '{0}' AND SEQUENCE_NAME = '{1}' )";
-        private const string DEFAULTVALUE_EXISTS = "SELECT 1 WHERE EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}' AND COLUMN_DEFAULT LIKE '{3}')";
+        /// <inheritdoc />
+        protected override string SchemaExistsQuery =>
+            "SELECT * FROM sys.schemas WHERE NAME = '{0}'";
+
+        /// <inheritdoc />
+        protected override string TableExistsQuery =>
+            "SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}'";
+
+        /// <inheritdoc />
+        protected override string ColumnExistsQuery =>
+            "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}'";
+
+        /// <inheritdoc />
+        protected override string ConstraintExistsQuery =>
+            "SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_CATALOG = DB_NAME() AND TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND CONSTRAINT_NAME = '{2}'";
+
+        /// <inheritdoc />
+        protected override string IndexExistsQuery =>
+            "SELECT * FROM sys.indexes WHERE name = '{2}' and object_id = OBJECT_ID('{0}.{1}')";
+
+        /// <inheritdoc />
+        protected override string SequenceExistsQuery =>
+            "SELECT * FROM INFORMATION_SCHEMA.SEQUENCES WHERE SEQUENCE_SCHEMA = '{0}' AND SEQUENCE_NAME = '{1}'";
+
+        /// <inheritdoc />
+        protected override string DefaultValueExistsQuery =>
+            "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}' AND COLUMN_DEFAULT LIKE '{3}'";
 
         /// <inheritdoc />
         public override string DatabaseType { get;}
 
         /// <inheritdoc />
         public override IList<string> DatabaseTypeAliases { get; }
-
-        /// <summary>
-        /// Gets the quoter for SQL Server.
-        /// </summary>
-        public IQuoter Quoter { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerProcessor"/> class.
@@ -108,13 +122,12 @@ namespace FluentMigrator.Runner.Processors.SqlServer
             [NotNull] IOptionsSnapshot<ProcessorOptions> options,
             [NotNull] IConnectionStringAccessor connectionStringAccessor,
             [NotNull] IServiceProvider serviceProvider)
-            : base(() => factory, generator, logger, options.Value, connectionStringAccessor)
+            : base(() => factory, generator, quoter, logger, options.Value, connectionStringAccessor)
         {
             _serviceProvider = serviceProvider;
             var dbTypes = databaseTypes.ToList();
             DatabaseType = dbTypes.First();
             DatabaseTypeAliases = dbTypes.Skip(1).ToList();
-            Quoter = quoter;
         }
 
         /// <summary>
@@ -154,97 +167,15 @@ namespace FluentMigrator.Runner.Processors.SqlServer
         }
 
         /// <inheritdoc />
-        public override bool SchemaExists(string schemaName)
+        protected override string FormatSchemaName(string schemaName)
         {
-            return Exists(SqlSchemaExists, SafeSchemaName(schemaName));
-        }
-
-        /// <inheritdoc />
-        public override bool TableExists(string schemaName, string tableName)
-        {
-            try
-            {
-                return Exists(TABLE_EXISTS, SafeSchemaName(schemaName),
-                    FormatHelper.FormatSqlEscape(tableName));
-            }
-            catch (Exception e)
-            {
-                Logger.LogError(e, "There was an exception checking if table {Table} in {Schema} exists", tableName, schemaName);
-            }
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override bool ColumnExists(string schemaName, string tableName, string columnName)
-        {
-            return Exists(COLUMN_EXISTS, SafeSchemaName(schemaName),
-                FormatHelper.FormatSqlEscape(tableName), FormatHelper.FormatSqlEscape(columnName));
-        }
-
-        /// <inheritdoc />
-        public override bool ConstraintExists(string schemaName, string tableName, string constraintName)
-        {
-            return Exists(CONSTRAINT_EXISTS, SafeSchemaName(schemaName),
-                FormatHelper.FormatSqlEscape(tableName), FormatHelper.FormatSqlEscape(constraintName));
-        }
-
-        /// <inheritdoc />
-        public override bool IndexExists(string schemaName, string tableName, string indexName)
-        {
-            return Exists(INDEX_EXISTS,
-                FormatHelper.FormatSqlEscape(indexName), SafeSchemaName(schemaName), FormatHelper.FormatSqlEscape(tableName));
-        }
-
-        /// <inheritdoc />
-        public override bool SequenceExists(string schemaName, string sequenceName)
-        {
-            return Exists(SEQUENCES_EXISTS, SafeSchemaName(schemaName),
-                FormatHelper.FormatSqlEscape(sequenceName));
-        }
-
-        /// <inheritdoc />
-        public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
-        {
-            var defaultValueAsString = string.Format("%{0}%", FormatHelper.FormatSqlEscape(defaultValue.ToString()));
-            return Exists(DEFAULTVALUE_EXISTS, SafeSchemaName(schemaName),
-                FormatHelper.FormatSqlEscape(tableName),
-                FormatHelper.FormatSqlEscape(columnName), defaultValueAsString);
-        }
-
-        /// <inheritdoc />
-        public override void Execute(string template, params object[] args)
-        {
-            Process(string.Format(template, args));
-        }
-
-        /// <inheritdoc />
-        public override bool Exists(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            {
-                var result = command.ExecuteScalar();
-                return DBNull.Value != result && Convert.ToInt32(result) == 1;
-            }
+            return string.IsNullOrEmpty(schemaName) ? "dbo" : FormatHelper.FormatSqlEscape(schemaName);
         }
 
         /// <inheritdoc />
         public override DataSet ReadTableData(string schemaName, string tableName)
         {
-            return Read("SELECT * FROM [{0}].[{1}]", SafeSchemaName(schemaName), tableName);
-        }
-
-        /// <inheritdoc />
-        public override DataSet Read(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.ReadDataSet();
-            }
+            return Read("SELECT * FROM [{0}].[{1}]", FormatSchemaName(schemaName), tableName);
         }
 
         /// <inheritdoc />
@@ -351,8 +282,8 @@ namespace FluentMigrator.Runner.Processors.SqlServer
         /// <inheritdoc />
         public override void Process(PerformDBOperationExpression expression)
         {
-            var message = string.IsNullOrEmpty(expression.Description) 
-                ? "Performing DB Operation" 
+            var message = string.IsNullOrEmpty(expression.Description)
+                ? "Performing DB Operation"
                 : $"Performing DB Operation: {expression.Description}";
             Logger.LogSay(message);
 

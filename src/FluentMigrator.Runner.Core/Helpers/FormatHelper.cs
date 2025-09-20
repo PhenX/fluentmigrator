@@ -21,7 +21,7 @@ namespace FluentMigrator.Runner.Helpers
         /// </remarks>
         public static string FormatSqlEscape(string sql)
         {
-            return sql.Replace("'", "''");
+            return sql?.Replace("'", "''");
         }
     }
 }

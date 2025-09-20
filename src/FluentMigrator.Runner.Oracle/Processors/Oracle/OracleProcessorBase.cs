@@ -21,7 +21,6 @@ using System.Text;
 
 using FluentMigrator.Expressions;
 using FluentMigrator.Runner.BatchParser;
-using FluentMigrator.Generation;
 using FluentMigrator.Runner.Generators.Oracle;
 using FluentMigrator.Runner.Helpers;
 using FluentMigrator.Runner.Initialization;
@@ -38,15 +37,7 @@ namespace FluentMigrator.Runner.Processors.Oracle
     /// </summary>
     public class OracleProcessorBase : GenericProcessorBase
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="OracleProcessorBase"/> class.
-        /// </summary>
-        /// <param name="databaseType">The database type name.</param>
-        /// <param name="factory">The Oracle database factory.</param>
-        /// <param name="generator">The migration generator.</param>
-        /// <param name="logger">The logger.</param>
-        /// <param name="options">The processor options.</param>
-        /// <param name="connectionStringAccessor">The connection string accessor.</param>
+        /// <inheritdoc />
         protected OracleProcessorBase(
             [NotNull] string databaseType,
             [NotNull] OracleBaseDbFactory factory,
@@ -54,7 +45,7 @@ namespace FluentMigrator.Runner.Processors.Oracle
             [NotNull] ILogger logger,
             [NotNull] IOptionsSnapshot<ProcessorOptions> options,
             [NotNull] IConnectionStringAccessor connectionStringAccessor)
-            : base(() => factory.Factory, generator, logger, options.Value, connectionStringAccessor)
+            : base(() => factory.Factory, generator, ((OracleGenerator) generator).Quoter, logger, options.Value, connectionStringAccessor)
         {
             DatabaseType = databaseType;
         }
@@ -65,10 +56,26 @@ namespace FluentMigrator.Runner.Processors.Oracle
         /// <inheritdoc />
         public override IList<string> DatabaseTypeAliases { get; } = new List<string>() { ProcessorIdConstants.Oracle };
 
-        /// <summary>
-        /// Gets the quoter for Oracle SQL.
-        /// </summary>
-        public IQuoter Quoter => ((OracleGenerator) Generator).Quoter;
+        /// <inheritdoc />
+        protected override string SchemaExistsQuery { get; }
+
+        /// <inheritdoc />
+        protected override string TableExistsQuery { get; }
+
+        /// <inheritdoc />
+        protected override string ColumnExistsQuery { get; }
+
+        /// <inheritdoc />
+        protected override string ConstraintExistsQuery { get; }
+
+        /// <inheritdoc />
+        protected override string IndexExistsQuery { get; }
+
+        /// <inheritdoc />
+        protected override string SequenceExistsQuery { get; }
+
+        /// <inheritdoc />
+        protected override string DefaultValueExistsQuery { get; }
 
         /// <inheritdoc />
         public override bool SchemaExists(string schemaName)
@@ -252,24 +259,6 @@ namespace FluentMigrator.Runner.Processors.Oracle
         public override void Execute([StructuredMessageTemplate] string template, params object[] args)
         {
             Process(string.Format(template, args));
-        }
-
-        /// <inheritdoc />
-        public override bool Exists([StructuredMessageTemplate] string template, params object[] args)
-        {
-            if (template == null)
-            {
-                throw new ArgumentNullException(nameof(template));
-            }
-
-            EnsureConnectionIsOpen();
-
-            Logger.LogSql(string.Format(template, args));
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.Read();
-            }
         }
 
         /// <inheritdoc />

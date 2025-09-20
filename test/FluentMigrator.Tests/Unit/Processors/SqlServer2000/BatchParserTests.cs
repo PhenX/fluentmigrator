@@ -61,6 +61,7 @@ namespace FluentMigrator.Tests.Unit.Processors.SqlServer2000
                 MockedDbProviderFactory.Object,
                 logger,
                 new SqlServer2000Generator(),
+                new SqlServer2000Quoter(),
                 opt,
                 MockedConnectionStringAccessor.Object,
                 serviceProvider);
@@ -69,8 +70,8 @@ namespace FluentMigrator.Tests.Unit.Processors.SqlServer2000
         private class Processor : SqlServer2000Processor
         {
             /// <inheritdoc />
-            public Processor(DbProviderFactory factory, [NotNull] ILogger logger, [NotNull] SqlServer2000Generator generator, [NotNull] IOptionsSnapshot<ProcessorOptions> options, [NotNull] IConnectionStringAccessor connectionStringAccessor, [NotNull] IServiceProvider serviceProvider)
-                : base(factory, logger, generator, options, connectionStringAccessor, serviceProvider)
+            public Processor(DbProviderFactory factory, [NotNull] ILogger logger, [NotNull] SqlServer2000Generator generator, [NotNull] SqlServer2000Quoter quoter, [NotNull] IOptionsSnapshot<ProcessorOptions> options, [NotNull] IConnectionStringAccessor connectionStringAccessor, [NotNull] IServiceProvider serviceProvider)
+                : base(factory, logger, generator, quoter, options, connectionStringAccessor, serviceProvider)
             {
             }
         }
