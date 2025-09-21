@@ -42,11 +42,11 @@ namespace FluentMigrator.Runner.Processors.Hana
 
         /// <inheritdoc />
         protected override string ConstraintExistsQuery =>
-            "SELECT 1 FROM CONSTRAINTS WHERE SCHEMA_NAME = CURRENT_SCHEMA and upper(CONSTRAINT_NAME) = '{1}'";
+            "SELECT 1 FROM CONSTRAINTS WHERE SCHEMA_NAME = CURRENT_SCHEMA and upper(CONSTRAINT_NAME) = '{2}'";
 
         /// <inheritdoc />
         protected override string IndexExistsQuery =>
-            "SELECT 1 FROM INDEXES WHERE SCHEMA_NAME = CURRENT_SCHEMA AND upper(INDEX_NAME) = '{1}'";
+            "SELECT 1 FROM INDEXES WHERE SCHEMA_NAME = CURRENT_SCHEMA AND upper(INDEX_NAME) = '{2}'";
 
         /// <inheritdoc />
         protected override string SequenceExistsQuery =>

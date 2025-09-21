@@ -111,12 +111,6 @@ namespace FluentMigrator.Runner.Processors.DB2
         }
 
         /// <inheritdoc />
-        public override void Execute(string template, params object[] args)
-        {
-            Process(string.Format(template, args));
-        }
-
-        /// <inheritdoc />
         public override bool IndexExists(string schemaName, string tableName, string indexName)
         {
             var conditions = new List<string>

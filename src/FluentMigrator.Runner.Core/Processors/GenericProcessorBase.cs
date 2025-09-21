@@ -115,9 +115,19 @@ namespace FluentMigrator.Runner.Processors
         protected virtual string TableExistsQuery => null;
 
         /// <summary>
+        /// Gets the query to check if a table exists without schema.
+        /// </summary>
+        protected virtual string TableWithoutSchemaExistsQuery => TableExistsQuery;
+
+        /// <summary>
         /// Gets the query to check if a column exists.
         /// </summary>
         protected virtual string ColumnExistsQuery => null;
+
+        /// <summary>
+        /// Gets the query to check if a column exists without schema.
+        /// </summary>
+        protected virtual string ColumnWithoutSchemaExistsQuery => ColumnExistsQuery;
 
         /// <summary>
         /// Gets the query to check if a constraint exists.
@@ -125,9 +135,19 @@ namespace FluentMigrator.Runner.Processors
         protected virtual string ConstraintExistsQuery => null;
 
         /// <summary>
+        /// Gets the query to check if a constraint exists without schema.
+        /// </summary>
+        protected virtual string ConstraintWithoutSchemaExistsQuery => ConstraintExistsQuery;
+
+        /// <summary>
         /// Gets the query to check if an index exists.
         /// </summary>
         protected virtual string IndexExistsQuery => null;
+
+        /// <summary>
+        /// Gets the query to check if an index exists without schema.
+        /// </summary>
+        protected virtual string IndexWithoutSchemaExistsQuery => IndexExistsQuery;
 
         /// <summary>
         /// Gets the query to check if a sequence exists.
@@ -135,9 +155,19 @@ namespace FluentMigrator.Runner.Processors
         protected virtual string SequenceExistsQuery => null;
 
         /// <summary>
+        /// Gets the query to check if a sequence exists without schema.
+        /// </summary>
+        protected virtual string SequenceWithoutSchemaExistsQuery => SequenceExistsQuery;
+
+        /// <summary>
         /// Gets the query to check if a default value exists.
         /// </summary>
         protected virtual string DefaultValueExistsQuery => null;
+
+        /// <summary>
+        /// Gets the query to check if a default value exists without schema.
+        /// </summary>
+        protected virtual string DefaultValueWithoutSchemaExistsQuery => DefaultValueExistsQuery;
 
         /// <summary>
         /// Gets the query to read all data from a table.
@@ -285,44 +315,111 @@ namespace FluentMigrator.Runner.Processors
         /// <inheritdoc />
         public override bool SchemaExists(string schemaName)
         {
+            if (schemaName == null)
+            {
+                throw new ArgumentNullException(nameof(schemaName));
+            }
+
             return Exists(SchemaExistsQuery, FormatSchemaName(schemaName));
         }
 
         /// <inheritdoc />
         public override bool TableExists(string schemaName, string tableName)
         {
-            return Exists(TableExistsQuery, FormatSchemaName(schemaName), FormatName(tableName));
+            if (tableName == null)
+            {
+                throw new ArgumentNullException(nameof(tableName));
+            }
+
+            var query = string.IsNullOrEmpty(schemaName) ? TableWithoutSchemaExistsQuery : TableExistsQuery;
+
+            return Exists(query, FormatSchemaName(schemaName), FormatName(tableName));
         }
 
         /// <inheritdoc />
         public override bool ColumnExists(string schemaName, string tableName, string columnName)
         {
-            return Exists(ColumnExistsQuery, FormatSchemaName(schemaName), FormatName(tableName), FormatName(columnName));
+            if (tableName == null)
+            {
+                throw new ArgumentNullException(nameof(tableName));
+            }
+
+            if (columnName == null)
+            {
+                throw new ArgumentNullException(nameof(columnName));
+            }
+
+            var query = string.IsNullOrEmpty(schemaName) ? ColumnWithoutSchemaExistsQuery : ColumnExistsQuery;
+
+            return Exists(query, FormatSchemaName(schemaName), FormatName(tableName), FormatName(columnName));
         }
 
         /// <inheritdoc />
         public override bool ConstraintExists(string schemaName, string tableName, string constraintName)
         {
-            return Exists(ConstraintExistsQuery, FormatSchemaName(schemaName), FormatName(tableName), FormatName(constraintName));
+            if (tableName == null)
+            {
+                throw new ArgumentNullException(nameof(tableName));
+            }
+
+            if (constraintName == null)
+            {
+                throw new ArgumentNullException(nameof(constraintName));
+            }
+
+            var query = string.IsNullOrEmpty(schemaName) ? ConstraintWithoutSchemaExistsQuery : ConstraintExistsQuery;
+
+            return Exists(query, FormatSchemaName(schemaName), FormatName(tableName), FormatName(constraintName));
         }
 
         /// <inheritdoc />
         public override bool IndexExists(string schemaName, string tableName, string indexName)
         {
-            return Exists(IndexExistsQuery, FormatSchemaName(schemaName), FormatName(tableName), FormatName(indexName));
+            if (tableName == null)
+            {
+                throw new ArgumentNullException(nameof(tableName));
+            }
+
+            if (indexName == null)
+            {
+                throw new ArgumentNullException(nameof(indexName));
+            }
+
+            var query = string.IsNullOrEmpty(schemaName) ? IndexWithoutSchemaExistsQuery : IndexExistsQuery;
+
+            return Exists(query, FormatSchemaName(schemaName), FormatName(tableName), FormatName(indexName));
         }
 
         /// <inheritdoc />
         public override bool SequenceExists(string schemaName, string sequenceName)
         {
-            return Exists(SequenceExistsQuery, FormatSchemaName(schemaName), FormatName(sequenceName));
+            if (sequenceName == null)
+            {
+                throw new ArgumentNullException(nameof(sequenceName));
+            }
+
+            var query = string.IsNullOrEmpty(schemaName) ? SequenceWithoutSchemaExistsQuery : SequenceExistsQuery;
+
+            return Exists(query, FormatSchemaName(schemaName), FormatName(sequenceName));
         }
 
         /// <inheritdoc />
         public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
         {
+            if (tableName == null)
+            {
+                throw new ArgumentNullException(nameof(tableName));
+            }
+
+            if (columnName == null)
+            {
+                throw new ArgumentNullException(nameof(columnName));
+            }
+
+            var query = string.IsNullOrEmpty(schemaName) ? DefaultValueWithoutSchemaExistsQuery : DefaultValueExistsQuery;
+
             var defaultValueAsString = $"%{FormatHelper.FormatSqlEscape(defaultValue.ToString())}%";
-            return Exists(DefaultValueExistsQuery, FormatSchemaName(schemaName), FormatName(tableName), FormatName(columnName), defaultValueAsString);
+            return Exists(query, FormatSchemaName(schemaName), FormatName(tableName), FormatName(columnName), defaultValueAsString);
         }
 
         /// <inheritdoc />

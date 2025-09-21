@@ -212,12 +212,6 @@ namespace FluentMigrator.Runner.Processors.Firebird
         }
 
         /// <inheritdoc />
-        protected override string FormatSchemaName(string schemaName)
-        {
-            return base.FormatSchemaName(schemaName);
-        }
-
-        /// <inheritdoc />
         protected override string FormatName(string name)
         {
             return FormatToSafeName(name);
@@ -980,12 +974,6 @@ namespace FluentMigrator.Runner.Processors.Firebird
             Truncator.Truncate(expression);
             CheckColumn(expression.TableName, expression.Set.Select(x => x.Key));
             InternalProcess(Generator.Generate(expression));
-        }
-
-        /// <inheritdoc />
-        public override void Execute(string template, params object[] args)
-        {
-            Process(string.Format(template, args));
         }
 
         /// <inheritdoc />

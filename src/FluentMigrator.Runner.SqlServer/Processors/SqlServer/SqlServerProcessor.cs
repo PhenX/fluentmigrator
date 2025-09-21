@@ -173,12 +173,6 @@ namespace FluentMigrator.Runner.Processors.SqlServer
         }
 
         /// <inheritdoc />
-        public override DataSet ReadTableData(string schemaName, string tableName)
-        {
-            return Read("SELECT * FROM [{0}].[{1}]", FormatSchemaName(schemaName), tableName);
-        }
-
-        /// <inheritdoc />
         protected override void Process(string sql)
         {
             Logger.LogSql(sql);

@@ -16,13 +16,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Text;
 
-using FluentMigrator.Expressions;
 using FluentMigrator.Runner.BatchParser;
 using FluentMigrator.Runner.Generators.Oracle;
-using FluentMigrator.Runner.Helpers;
 using FluentMigrator.Runner.Initialization;
 
 using JetBrains.Annotations;
@@ -35,7 +32,7 @@ namespace FluentMigrator.Runner.Processors.Oracle
     /// <summary>
     /// Base class for Oracle processors in FluentMigrator.
     /// </summary>
-    public class OracleProcessorBase : GenericProcessorBase
+    public abstract class OracleProcessorBase : GenericProcessorBase
     {
         /// <inheritdoc />
         protected OracleProcessorBase(
@@ -57,256 +54,66 @@ namespace FluentMigrator.Runner.Processors.Oracle
         public override IList<string> DatabaseTypeAliases { get; } = new List<string>() { ProcessorIdConstants.Oracle };
 
         /// <inheritdoc />
-        protected override string SchemaExistsQuery { get; }
+        protected override string SchemaExistsQuery => "SELECT 1 FROM ALL_USERS WHERE upper(USERNAME) = '{0}'";
 
         /// <inheritdoc />
-        protected override string TableExistsQuery { get; }
+        protected override string TableExistsQuery =>
+            "SELECT 1 FROM ALL_TABLES WHERE upper(OWNER) = '{0}' AND upper(TABLE_NAME) = '{1}'";
 
         /// <inheritdoc />
-        protected override string ColumnExistsQuery { get; }
+        protected override string TableWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_TABLES WHERE upper(TABLE_NAME) = '{1}'";
 
         /// <inheritdoc />
-        protected override string ConstraintExistsQuery { get; }
+        protected override string ColumnExistsQuery =>
+            "SELECT 1 FROM ALL_TAB_COLUMNS WHERE upper(OWNER) = '{0}' AND upper(TABLE_NAME) = '{1}' AND upper(COLUMN_NAME) = '{2}'";
 
         /// <inheritdoc />
-        protected override string IndexExistsQuery { get; }
+        protected override string ColumnWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_TAB_COLUMNS WHERE upper(TABLE_NAME) = '{1}' AND upper(COLUMN_NAME) = '{2}'";
 
         /// <inheritdoc />
-        protected override string SequenceExistsQuery { get; }
+        protected override string ConstraintExistsQuery =>
+            "SELECT 1 FROM ALL_CONSTRAINTS WHERE upper(OWNER) = '{0}' AND upper(CONSTRAINT_NAME) = '{2}'";
 
         /// <inheritdoc />
-        protected override string DefaultValueExistsQuery { get; }
+        protected override string ConstraintWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_CONSTRAINTS WHERE upper(CONSTRAINT_NAME) = '{2}'";
 
         /// <inheritdoc />
-        public override bool SchemaExists(string schemaName)
+        protected override string IndexExistsQuery =>
+            "SELECT 1 FROM ALL_INDEXES WHERE upper(OWNER) = '{0}' AND upper(INDEX_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string IndexWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_INDEXES WHERE upper(INDEX_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string SequenceExistsQuery =>
+            "SELECT 1 FROM ALL_SEQUENCES WHERE upper(SEQUENCE_OWNER) = '{0}' AND upper(SEQUENCE_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string SequenceWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_SEQUENCES WHERE upper(SEQUENCE_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string DefaultValueExistsQuery =>
+            "SELECT 1 FROM ALL_TAB_COLUMNS WHERE upper(OWNER) = '{0}' AND upper(TABLE_NAME) = '{1}' AND upper(COLUMN_NAME) = '{2}' AND DATA_DEFAULT IS NOT NULL";
+
+        /// <inheritdoc />
+        protected override string DefaultValueWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_TAB_COLUMNS WHERE upper(TABLE_NAME) = '{1}' AND upper(COLUMN_NAME) = '{2}' AND DATA_DEFAULT IS NOT NULL";
+
+        /// <inheritdoc />
+        protected override string FormatSchemaName(string schemaName)
         {
-            if (schemaName == null)
-            {
-                throw new ArgumentNullException(nameof(schemaName));
-            }
-
-            if (schemaName.Length == 0)
-            {
-                return false;
-            }
-
-            return Exists("SELECT 1 FROM ALL_USERS WHERE USERNAME = '{0}'", schemaName.ToUpper());
+            return base.FormatSchemaName(schemaName)?.ToUpper();
         }
 
         /// <inheritdoc />
-        public override bool TableExists(string schemaName, string tableName)
+        protected override string FormatName(string name)
         {
-            if (tableName == null)
-            {
-                throw new ArgumentNullException(nameof(tableName));
-            }
-
-            if (tableName.Length == 0)
-            {
-                return false;
-            }
-
-            if (string.IsNullOrEmpty(schemaName))
-            {
-                return Exists("SELECT 1 FROM USER_TABLES WHERE upper(TABLE_NAME) = '{0}'",
-                    FormatHelper.FormatSqlEscape(tableName.ToUpper()));
-            }
-
-            return Exists("SELECT 1 FROM ALL_TABLES WHERE upper(OWNER) = '{0}' AND upper(TABLE_NAME) = '{1}'",
-                schemaName.ToUpper(), FormatHelper.FormatSqlEscape(tableName.ToUpper()));
-        }
-
-        /// <inheritdoc />
-        public override bool ColumnExists(string schemaName, string tableName, string columnName)
-        {
-            if (tableName == null)
-            {
-                throw new ArgumentNullException(nameof(tableName));
-            }
-
-            if (columnName == null)
-            {
-                throw new ArgumentNullException(nameof(columnName));
-            }
-
-            if (columnName.Length == 0 || tableName.Length == 0)
-            {
-                return false;
-            }
-
-            if (string.IsNullOrEmpty(schemaName))
-            {
-                return Exists(
-                    "SELECT 1 FROM USER_TAB_COLUMNS WHERE upper(TABLE_NAME) = '{0}' AND upper(COLUMN_NAME) = '{1}'",
-                    FormatHelper.FormatSqlEscape(tableName.ToUpper()),
-                    FormatHelper.FormatSqlEscape(columnName.ToUpper()));
-            }
-
-            return Exists(
-                "SELECT 1 FROM ALL_TAB_COLUMNS WHERE upper(OWNER) = '{0}' AND upper(TABLE_NAME) = '{1}' AND upper(COLUMN_NAME) = '{2}'",
-                schemaName.ToUpper(), FormatHelper.FormatSqlEscape(tableName.ToUpper()),
-                FormatHelper.FormatSqlEscape(columnName.ToUpper()));
-        }
-
-        /// <inheritdoc />
-        public override bool ConstraintExists(string schemaName, string tableName, string constraintName)
-        {
-            if (tableName == null)
-            {
-                throw new ArgumentNullException(nameof(tableName));
-            }
-
-            if (constraintName == null)
-            {
-                throw new ArgumentNullException(nameof(constraintName));
-            }
-
-            //In Oracle DB constraint name is unique within the schema, so the table name is not used in the query
-
-            if (constraintName.Length == 0)
-            {
-                return false;
-            }
-
-            if (string.IsNullOrEmpty(schemaName))
-            {
-                return Exists("SELECT 1 FROM USER_CONSTRAINTS WHERE upper(CONSTRAINT_NAME) = '{0}'",
-                    FormatHelper.FormatSqlEscape(constraintName.ToUpper()));
-            }
-
-            return Exists("SELECT 1 FROM ALL_CONSTRAINTS WHERE upper(OWNER) = '{0}' AND upper(CONSTRAINT_NAME) = '{1}'",
-                schemaName.ToUpper(),
-                FormatHelper.FormatSqlEscape(constraintName.ToUpper()));
-        }
-
-        /// <inheritdoc />
-        public override bool IndexExists(string schemaName, string tableName, string indexName)
-        {
-            if (tableName == null)
-            {
-                throw new ArgumentNullException(nameof(tableName));
-            }
-
-            if (indexName == null)
-            {
-                throw new ArgumentNullException(nameof(indexName));
-            }
-
-            //In Oracle DB index name is unique within the schema, so the table name is not used in the query
-
-            if (indexName.Length == 0)
-            {
-                return false;
-            }
-
-            if (string.IsNullOrEmpty(schemaName))
-            {
-                return Exists("SELECT 1 FROM USER_INDEXES WHERE upper(INDEX_NAME) = '{0}'",
-                    FormatHelper.FormatSqlEscape(indexName.ToUpper()));
-            }
-
-            return Exists("SELECT 1 FROM ALL_INDEXES WHERE upper(OWNER) = '{0}' AND upper(INDEX_NAME) = '{1}'",
-                schemaName.ToUpper(), FormatHelper.FormatSqlEscape(indexName.ToUpper()));
-        }
-
-        /// <inheritdoc />
-        public override bool SequenceExists(string schemaName, string sequenceName)
-        {
-            if (string.IsNullOrEmpty(schemaName))
-            {
-                return Exists("SELECT 1 FROM USER_SEQUENCES WHERE upper(SEQUENCE_NAME) = '{0}'",
-                    FormatHelper.FormatSqlEscape(sequenceName.ToUpper()));
-            }
-
-            return Exists("SELECT 1 FROM ALL_SEQUENCES WHERE upper(SEQUENCE_OWNER) = '{0}' AND upper(SEQUENCE_NAME) = '{1}'",
-                schemaName.ToUpper(), FormatHelper.FormatSqlEscape(sequenceName.ToUpper()));
-        }
-
-        /// <inheritdoc />
-        public override bool DefaultValueExists(string schemaName, string tableName, string columnName,
-            object defaultValue)
-        {
-            if (tableName == null)
-            {
-                throw new ArgumentNullException(nameof(tableName));
-            }
-
-            if (columnName == null)
-            {
-                throw new ArgumentNullException(nameof(columnName));
-            }
-
-            if (columnName.Length == 0 || tableName.Length == 0)
-            {
-                return false;
-            }
-
-            if (string.IsNullOrEmpty(schemaName))
-            {
-                return Exists(
-                    "SELECT 1 FROM USER_TAB_COLUMNS WHERE upper(TABLE_NAME) = '{0}' AND upper(COLUMN_NAME) = '{1}' AND DATA_DEFAULT IS NOT NULL",
-                    FormatHelper.FormatSqlEscape(tableName.ToUpper()),
-                    FormatHelper.FormatSqlEscape(columnName.ToUpper()));
-            }
-
-            return Exists(
-                "SELECT 1 FROM ALL_TAB_COLUMNS WHERE upper(OWNER) = '{0}' AND upper(TABLE_NAME) = '{1}' AND upper(COLUMN_NAME) = '{2}' AND DATA_DEFAULT IS NOT NULL",
-                schemaName.ToUpper(), FormatHelper.FormatSqlEscape(tableName.ToUpper()),
-                FormatHelper.FormatSqlEscape(columnName.ToUpper()));
-        }
-
-        /// <inheritdoc />
-        public override void Execute([StructuredMessageTemplate] string template, params object[] args)
-        {
-            Process(string.Format(template, args));
-        }
-
-        /// <inheritdoc />
-        public override DataSet ReadTableData(string schemaName, string tableName)
-        {
-            if (tableName == null)
-            {
-                throw new ArgumentNullException(nameof(tableName));
-            }
-
-            if (string.IsNullOrEmpty(schemaName))
-            {
-                return Read("SELECT * FROM {0}", Quoter.QuoteTableName(tableName));
-            }
-
-            return Read("SELECT * FROM {0}.{1}", Quoter.QuoteSchemaName(schemaName), Quoter.QuoteTableName(tableName));
-        }
-
-        /// <inheritdoc />
-        public override DataSet Read([StructuredMessageTemplate] string template, params object[] args)
-        {
-            if (template == null)
-            {
-                throw new ArgumentNullException(nameof(template));
-            }
-
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                return reader.ReadDataSet();
-            }
-        }
-
-        /// <inheritdoc />
-        public override void Process(PerformDBOperationExpression expression)
-        {
-            Logger.LogSay("Performing DB Operation");
-
-            if (Options.PreviewOnly)
-            {
-                return;
-            }
-
-            EnsureConnectionIsOpen();
-
-            expression.Operation?.Invoke(Connection, Transaction);
+            return base.FormatName(name)?.ToUpper();
         }
 
         /// <summary>

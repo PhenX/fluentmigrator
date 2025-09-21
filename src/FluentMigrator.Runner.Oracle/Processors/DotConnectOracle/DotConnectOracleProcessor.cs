@@ -16,11 +16,8 @@
 //
 #endregion
 
-using System;
 using System.Collections.Generic;
-using System.Data;
 
-using FluentMigrator.Expressions;
 using FluentMigrator.Runner.Generators.Oracle;
 using FluentMigrator.Runner.Initialization;
 
@@ -54,109 +51,66 @@ namespace FluentMigrator.Runner.Processors.DotConnectOracle
         }
 
         /// <inheritdoc />
-        public override bool SchemaExists(string schemaName)
+        protected override string SchemaExistsQuery => "SELECT 1 FROM ALL_USERS WHERE upper(USERNAME) = '{0}'";
+
+        /// <inheritdoc />
+        protected override string TableExistsQuery =>
+            "SELECT 1 FROM ALL_TABLES WHERE upper(OWNER) = '{0}' AND upper(TABLE_NAME) = '{1}'";
+
+        /// <inheritdoc />
+        protected override string TableWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_TABLES WHERE upper(TABLE_NAME) = '{1}'";
+
+        /// <inheritdoc />
+        protected override string ColumnExistsQuery =>
+            "SELECT 1 FROM ALL_TAB_COLUMNS WHERE upper(OWNER) = '{0}' AND upper(TABLE_NAME) = '{1}' AND upper(COLUMN_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string ColumnWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_TAB_COLUMNS WHERE upper(TABLE_NAME) = '{1}' AND upper(COLUMN_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string ConstraintExistsQuery =>
+            "SELECT 1 FROM ALL_CONSTRAINTS WHERE upper(OWNER) = '{0}' AND upper(CONSTRAINT_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string ConstraintWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_CONSTRAINTS WHERE upper(CONSTRAINT_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string IndexExistsQuery =>
+            "SELECT 1 FROM ALL_INDEXES WHERE upper(OWNER) = '{0}' AND upper(INDEX_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string IndexWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_INDEXES WHERE upper(INDEX_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string SequenceExistsQuery =>
+            "SELECT 1 FROM ALL_SEQUENCES WHERE upper(SEQUENCE_OWNER) = '{0}' AND upper(SEQUENCE_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string SequenceWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_SEQUENCES WHERE upper(SEQUENCE_NAME) = '{2}'";
+
+        /// <inheritdoc />
+        protected override string DefaultValueExistsQuery =>
+            "SELECT 1 FROM ALL_TAB_COLUMNS WHERE upper(OWNER) = '{0}' AND upper(TABLE_NAME) = '{1}' AND upper(COLUMN_NAME) = '{2}' AND DATA_DEFAULT IS NOT NULL";
+
+        /// <inheritdoc />
+        protected override string DefaultValueWithoutSchemaExistsQuery =>
+            "SELECT 1 FROM USER_TAB_COLUMNS WHERE upper(TABLE_NAME) = '{1}' AND upper(COLUMN_NAME) = '{2}' AND DATA_DEFAULT IS NOT NULL";
+
+        /// <inheritdoc />
+        protected override string FormatSchemaName(string schemaName)
         {
-            if (schemaName == null)
-                throw new ArgumentNullException(nameof(schemaName));
-
-            if (schemaName.Length == 0)
-                return false;
-
-            return Exists("SELECT 1 FROM ALL_USERS WHERE USERNAME = '{0}'", schemaName.ToUpper());
+            return base.FormatSchemaName(schemaName)?.ToUpper();
         }
 
         /// <inheritdoc />
-        public override bool TableExists(string schemaName, string tableName)
+        protected override string FormatName(string name)
         {
-            if (tableName == null)
-                throw new ArgumentNullException(nameof(tableName));
-
-            if (tableName.Length == 0)
-                return false;
-
-            if (string.IsNullOrEmpty(schemaName))
-                return Exists("SELECT 1 FROM USER_TABLES WHERE TABLE_NAME = '{0}'", tableName.ToUpper());
-
-            return Exists("SELECT 1 FROM ALL_TABLES WHERE OWNER = '{0}' AND TABLE_NAME = '{1}'", schemaName.ToUpper(), tableName.ToUpper());
-        }
-
-        /// <inheritdoc />
-        public override bool ColumnExists(string schemaName, string tableName, string columnName)
-        {
-            if (tableName == null)
-                throw new ArgumentNullException(nameof(tableName));
-            if (columnName == null)
-                throw new ArgumentNullException(nameof(columnName));
-
-            if (columnName.Length == 0 || tableName.Length == 0)
-                return false;
-
-            if (string.IsNullOrEmpty(schemaName))
-                return Exists("SELECT 1 FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '{0}' AND COLUMN_NAME = '{1}'", tableName.ToUpper(), columnName.ToUpper());
-
-            return Exists("SELECT 1 FROM ALL_TAB_COLUMNS WHERE OWNER = '{0}' AND TABLE_NAME = '{1}' AND COLUMN_NAME = '{2}'", schemaName.ToUpper(), tableName.ToUpper(), columnName.ToUpper());
-        }
-
-        /// <inheritdoc />
-        public override bool ConstraintExists(string schemaName, string tableName, string constraintName)
-        {
-            if (tableName == null)
-                throw new ArgumentNullException(nameof(tableName));
-            if (constraintName == null)
-                throw new ArgumentNullException(nameof(constraintName));
-
-            //In Oracle DB constraint name is unique within the schema, so the table name is not used in the query
-
-            if (constraintName.Length == 0)
-                return false;
-
-            if (string.IsNullOrEmpty(schemaName))
-                return Exists("SELECT 1 FROM USER_CONSTRAINTS WHERE CONSTRAINT_NAME = '{0}'", constraintName.ToUpper());
-
-            return Exists("SELECT 1 FROM ALL_CONSTRAINTS WHERE OWNER = '{0}' AND CONSTRAINT_NAME = '{1}'", schemaName.ToUpper(), constraintName.ToUpper());
-        }
-
-        /// <inheritdoc />
-        public override bool IndexExists(string schemaName, string tableName, string indexName)
-        {
-            if (tableName == null)
-                throw new ArgumentNullException(nameof(tableName));
-            if (indexName == null)
-                throw new ArgumentNullException(nameof(indexName));
-
-            //In Oracle DB index name is unique within the schema, so the table name is not used in the query
-
-            if (indexName.Length == 0)
-                return false;
-
-            if (string.IsNullOrEmpty(schemaName))
-                return Exists("SELECT 1 FROM USER_INDEXES WHERE INDEX_NAME = '{0}'", indexName.ToUpper());
-
-            return Exists("SELECT 1 FROM ALL_INDEXES WHERE OWNER = '{0}' AND INDEX_NAME = '{1}'", schemaName.ToUpper(), indexName.ToUpper());
-        }
-
-        /// <inheritdoc />
-        public override bool SequenceExists(string schemaName, string sequenceName)
-        {
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
-        {
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override DataSet ReadTableData(string schemaName, string tableName)
-        {
-            if (tableName == null)
-                throw new ArgumentNullException(nameof(tableName));
-
-            if (string.IsNullOrEmpty(schemaName))
-                return Read("SELECT * FROM {0}", tableName.ToUpper());
-
-            return Read("SELECT * FROM {0}.{1}", schemaName.ToUpper(), tableName.ToUpper());
+            return base.FormatName(name)?.ToUpper();
         }
     }
 }

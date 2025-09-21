@@ -106,27 +106,6 @@ namespace FluentMigrator.Runner.Processors.SQLite
         }
 
         /// <inheritdoc />
-        public override bool Exists(string template, params object[] args)
-        {
-            EnsureConnectionIsOpen();
-
-            using (var command = CreateCommand(string.Format(template, args)))
-            using (var reader = command.ExecuteReader())
-            {
-                try
-                {
-                    if (!reader.Read()) return false;
-                    if (int.Parse(reader[0].ToString()) <= 0) return false;
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
-
-        /// <inheritdoc />
         public override bool DefaultValueExists(string schemaName, string tableName, string columnName, object defaultValue)
         {
             return false;
