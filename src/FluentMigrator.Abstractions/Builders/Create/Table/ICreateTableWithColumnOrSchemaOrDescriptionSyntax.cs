@@ -34,6 +34,6 @@ namespace FluentMigrator.Builders.Create.Table
         /// Specify that the table should only be created if it does not exist
         /// </summary>
         /// <returns>Define the table schema or a new column</returns>
-        ICreateTableWithColumnOrSchemaSyntax IfNotExists();
+        new ICreateTableWithColumnSyntax IfNotExists();
     }
 }

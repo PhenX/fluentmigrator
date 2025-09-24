@@ -62,14 +62,6 @@ namespace FluentMigrator.Builders.Create
         }
 
         /// <inheritdoc />
-        public ICreateTableWithColumnOrSchemaSyntax TableIfNotExists(string tableName)
-        {
-            var expression = new CreateTableExpression { TableName = tableName, IfNotExists = true };
-            _context.Expressions.Add(expression);
-            return new CreateTableExpressionBuilder(expression, _context);
-        }
-
-        /// <inheritdoc />
         public ICreateColumnOnTableSyntax Column(string columnName)
         {
             var expression = new CreateColumnExpression { Column = { Name = columnName } };

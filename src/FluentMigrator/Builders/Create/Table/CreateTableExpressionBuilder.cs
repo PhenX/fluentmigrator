@@ -66,7 +66,7 @@ namespace FluentMigrator.Builders.Create.Table
         public ColumnExpressionBuilderHelper ColumnHelper { get; set; }
 
         /// <inheritdoc />
-        public ICreateTableWithColumnSyntax InSchema(string schemaName)
+        public ICreateTableWithColumnOrSchemaSyntax InSchema(string schemaName)
         {
             Expression.SchemaName = schemaName;
             return this;
@@ -89,7 +89,7 @@ namespace FluentMigrator.Builders.Create.Table
         }
 
         /// <inheritdoc />
-        public ICreateTableWithColumnOrSchemaSyntax IfNotExists()
+        public ICreateTableWithColumnSyntax IfNotExists()
         {
             Expression.IfNotExists = true;
             return this;
