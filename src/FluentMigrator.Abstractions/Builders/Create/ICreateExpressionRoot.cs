@@ -47,6 +47,13 @@ namespace FluentMigrator.Builders.Create
         ICreateTableWithColumnOrSchemaOrDescriptionSyntax Table(string tableName);
 
         /// <summary>
+        /// Creates a table if it does not exist
+        /// </summary>
+        /// <param name="tableName">The table name</param>
+        /// <returns>Additional information about the table creation</returns>
+        ICreateTableWithColumnOrSchemaSyntax TableIfNotExists(string tableName);
+
+        /// <summary>
         /// Creates a column
         /// </summary>
         /// <param name="columnName">The column name</param>

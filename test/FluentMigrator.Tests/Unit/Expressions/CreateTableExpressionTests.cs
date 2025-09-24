@@ -88,5 +88,21 @@ namespace FluentMigrator.Tests.Unit.Expressions
 
             Assert.That(processed.SchemaName, Is.EqualTo("testdefault"));
         }
+
+        [Test]
+        public void IfNotExistsDefaultsToFalse()
+        {
+            var expression = new CreateTableExpression { TableName = "table1" };
+
+            Assert.That(expression.IfNotExists, Is.False);
+        }
+
+        [Test]
+        public void CanSetIfNotExistsToTrue()
+        {
+            var expression = new CreateTableExpression { TableName = "table1", IfNotExists = true };
+
+            Assert.That(expression.IfNotExists, Is.True);
+        }
     }
 }

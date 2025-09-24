@@ -49,6 +49,7 @@ namespace FluentMigrator.Tests.Unit.Generators
         public abstract void CanDropTableWithCustomSchema();
         public abstract void CanDropTableWithDefaultSchema();
         public abstract void CanDropTableIfExistsWithDefaultSchema();
+        public abstract void CanCreateTableIfNotExistsWithDefaultSchema();
         public abstract void CanRenameTableWithCustomSchema();
         public abstract void CanRenameTableWithDefaultSchema();
     }

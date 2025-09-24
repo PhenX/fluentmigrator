@@ -89,6 +89,13 @@ namespace FluentMigrator.Builders.Create.Table
         }
 
         /// <inheritdoc />
+        public ICreateTableWithColumnOrSchemaSyntax IfNotExists()
+        {
+            Expression.IfNotExists = true;
+            return this;
+        }
+
+        /// <inheritdoc />
         public ICreateTableColumnOptionOrWithColumnSyntax WithDefault(SystemMethods method)
         {
             CurrentColumn.DefaultValue = method;

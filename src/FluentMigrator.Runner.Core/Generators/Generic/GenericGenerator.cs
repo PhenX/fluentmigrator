@@ -55,6 +55,8 @@ namespace FluentMigrator.Runner.Generators.Generic
         /// <inheritdoc />
         public virtual string CreateTable => "CREATE TABLE {0} ({1})";
         /// <inheritdoc />
+        public virtual string CreateTableIfNotExists => "CREATE TABLE IF NOT EXISTS {0} ({1})";
+        /// <inheritdoc />
         public virtual string DropTable => "DROP TABLE {0}";
         /// <inheritdoc />
         public virtual string DropTableIfExists => "DROP TABLE IF EXISTS {0}";
@@ -141,7 +143,8 @@ namespace FluentMigrator.Runner.Generators.Generic
                 return errors;
             }
 
-            return FormatStatement(CreateTable, quotedTableName, Column.Generate(expression.Columns, quotedTableName));
+            var template = expression.IfNotExists ? CreateTableIfNotExists : CreateTable;
+            return FormatStatement(template, quotedTableName, Column.Generate(expression.Columns, quotedTableName));
         }
 
         /// <inheritdoc />
