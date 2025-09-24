@@ -300,6 +300,15 @@ namespace FluentMigrator.Tests.Unit.Generators.Snowflake
             result.ShouldBe("DROP TABLE IF EXISTS \"public\".\"TestTable1\";", _quotingEnabled);
         }
 
+        /// <inheritdoc />
+        public override void CanCreateTableIfNotExistsWithDefaultSchema()
+        {
+            var expression = GeneratorTestHelper.GetCreateTableIfNotExistsExpression();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("CREATE TABLE IF NOT EXISTS \"public\".\"TestTable1\" (\"TestColumn1\" TEXT NOT NULL, \"TestColumn2\" INTEGER NOT NULL);", _quotingEnabled);
+        }
+
         [Test]
         public override void CanRenameTableWithCustomSchema()
         {

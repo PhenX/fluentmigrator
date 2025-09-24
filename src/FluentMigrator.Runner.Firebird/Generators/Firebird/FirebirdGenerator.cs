@@ -223,6 +223,17 @@ namespace FluentMigrator.Runner.Generators.Firebird
             {
                 CompatibilityMode.HandleCompatibility("Stored computed columns are not supported");
             }
+
+            if (expression.IfNotExists)
+            {
+                var tableName = Quoter.QuoteTableName(expression.TableName, expression.SchemaName);
+                var createTableStatement = base.Generate(expression);
+                
+                return FormatStatement(
+                    "IF( NOT EXISTS( SELECT 1 FROM RDB$RELATIONS WHERE (rdb$flags IS NOT NULL) AND LOWER(RDB$RELATION_NAME) = LOWER('{0}'))) THEN EXECUTE STATEMENT '{1}');",
+                    expression.TableName, createTableStatement.Replace("'", "''"));
+            }
+
             return base.Generate(expression);
         }
 
