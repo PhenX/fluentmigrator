@@ -219,13 +219,29 @@ namespace FluentMigrator.Runner.Generators.SqlServer
         public override string Generate(CreateTableExpression expression)
         {
             var descriptionStatements = DescriptionGenerator.GenerateDescriptionStatements(expression);
-            var createTableStatement = base.Generate(expression);
+            var createTableStatement = InnerGenerate(expression);
             var descriptionStatementsArray = descriptionStatements as string[] ?? descriptionStatements.ToArray();
 
             if (!descriptionStatementsArray.Any())
                 return createTableStatement;
 
             return ComposeStatements(createTableStatement, descriptionStatementsArray);
+        }
+
+        /// <summary>
+        /// Generates the create table statement without descriptions
+        /// </summary>
+        /// <param name="expression">The create table expression</param>
+        /// <returns>The SQL statement</returns>
+        protected virtual string InnerGenerate(CreateTableExpression expression)
+        {
+            if (expression.IfNotExists)
+            {
+                return FormatStatement("IF OBJECT_ID('{0}','U') IS NULL " + base.Generate(expression), 
+                    Quoter.QuoteTableName(expression.TableName, expression.SchemaName));
+            }
+
+            return base.Generate(expression);
         }
 
         /// <inheritdoc />
