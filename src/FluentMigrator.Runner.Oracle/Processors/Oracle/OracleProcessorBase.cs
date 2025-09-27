@@ -17,7 +17,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Text;
 
 using FluentMigrator.Expressions;
 using FluentMigrator.Generation;
@@ -319,193 +318,6 @@ namespace FluentMigrator.Runner.Processors.Oracle
             expression.Operation?.Invoke(Connection, Transaction);
         }
 
-        /// <summary>
-        /// Splits a SQL script into individual statements, taking into account Oracle-specific syntax rules.
-        /// Properly handles PL/SQL blocks including BEGIN/END structures and control flow statements.
-        /// </summary>
-        /// <param name="sqlScript">The SQL script to split into statements</param>
-        /// <returns>A list of individual SQL statements</returns>
-        private static List<string> SplitOracleSqlStatements(string sqlScript)
-        {
-            return OracleSqlStatementSplitter.SplitStatements(sqlScript);
-            var statements = new List<string>();
-            var currentStatement = new StringBuilder();
-            var inString = false;
-            var inIdentifier = false;
-            var inSingleLineComment = false;
-            var inMultiLineComment = false;
-            var beginEndBlockLevel = 0;
-            var prevChar = '\0';
-
-            // We need to track PL/SQL keywords more accurately
-            var keyword = new StringBuilder(20);
-            var inKeyword = false;
-
-            // Special state tracking for PL/SQL constructs
-            var afterEndKeyword = false;
-
-            foreach (var c in sqlScript)
-            {
-                // Handle comment blocks, strings and identifiers
-                if (inSingleLineComment)
-                {
-                    currentStatement.Append(c);
-                    if (c == '\n')
-                    {
-                        inSingleLineComment = false;
-                    }
-                    prevChar = c;
-                    continue;
-                }
-
-                if (inMultiLineComment)
-                {
-                    currentStatement.Append(c);
-                    if (prevChar == '*' && c == '/')
-                    {
-                        inMultiLineComment = false;
-                    }
-                    prevChar = c;
-                    continue;
-                }
-
-                if (inString)
-                {
-                    currentStatement.Append(c);
-                    if (c == '\'' && prevChar != '\\')
-                    {
-                        inString = false;
-                    }
-                    prevChar = c;
-                    continue;
-                }
-
-                if (inIdentifier)
-                {
-                    currentStatement.Append(c);
-                    if (c == '"')
-                    {
-                        inIdentifier = false;
-                    }
-                    prevChar = c;
-                    continue;
-                }
-
-                // Track PL/SQL keywords for better block handling
-                if (char.IsLetterOrDigit(c) || c == '_')
-                {
-                    if (!inKeyword && char.IsLetter(c))
-                    {
-                        keyword.Clear();
-                        inKeyword = true;
-                    }
-
-                    if (inKeyword)
-                    {
-                        keyword.Append(char.ToUpperInvariant(c));
-                    }
-                }
-                else if (inKeyword)
-                {
-                    var word = keyword.ToString();
-
-                    // Check for BEGIN keyword
-                    if (word == "BEGIN")
-                    {
-                        beginEndBlockLevel++;
-                    }
-                    // Track END keyword but don't decrement yet - we need to check what follows
-                    else if (word == "END")
-                    {
-                        afterEndKeyword = true;
-
-                        // Check the next character immediately - if it's a non-space, non-semicolon,
-                        // then it's probably part of a control structure like END IF
-                        if (!char.IsWhiteSpace(c) && c != ';')
-                        {
-                            afterEndKeyword = false;
-                        }
-                    }
-                    // Clear "afterEndKeyword" if we detect a control structure keyword after END
-                    else if (afterEndKeyword &&
-                            (word == "IF" || word == "LOOP" || word == "CASE" ||
-                             word == "FOR" || word == "WHILE" || word == "FUNCTION" ||
-                             word == "PROCEDURE"))
-                    {
-                        afterEndKeyword = false;
-                    }
-
-                    inKeyword = false;
-                }
-
-                // Process special characters
-                switch (c)
-                {
-                    case '-' when prevChar == '-':
-                        inSingleLineComment = true;
-                        currentStatement.Append(c);
-                        break;
-                    case '*' when prevChar == '/':
-                        inMultiLineComment = true;
-                        currentStatement.Append(c);
-                        break;
-                    case '\'':
-                        inString = true;
-                        currentStatement.Append(c);
-                        break;
-                    case '"':
-                        inIdentifier = true;
-                        currentStatement.Append(c);
-                        break;
-                    case ';':
-                        currentStatement.Append(c);
-
-                        // If we're at a semicolon and have a pending END keyword,
-                        // it's a standalone END (like in "END;")
-                        if (afterEndKeyword)
-                        {
-                            if (beginEndBlockLevel > 0)
-                            {
-                                beginEndBlockLevel--;
-                            }
-                            afterEndKeyword = false;
-                        }
-
-                        // Only split statements when we're not inside a PL/SQL block
-                        if (beginEndBlockLevel == 0)
-                        {
-                            statements.Add(currentStatement.ToString().TrimEnd(';').Trim());
-                            currentStatement.Clear();
-                        }
-                        break;
-                    default:
-                        // If we have a pending END keyword and hit a non-whitespace character
-                        // that isn't the start of another keyword, it's probably a standalone END
-                        if (afterEndKeyword && !char.IsWhiteSpace(c) && !char.IsLetter(c))
-                        {
-                            if (beginEndBlockLevel > 0)
-                            {
-                                beginEndBlockLevel--;
-                            }
-                            afterEndKeyword = false;
-                        }
-
-                        currentStatement.Append(c);
-                        break;
-                }
-
-                prevChar = c;
-            }
-
-            // Handle any remaining text
-            if (currentStatement.Length > 0)
-            {
-                statements.Add(currentStatement.ToString().Trim());
-            }
-
-            return statements;
-        }
-
         /// <inheritdoc />
         protected override void Process(string sql)
         {
@@ -518,7 +330,7 @@ namespace FluentMigrator.Runner.Processors.Oracle
 
             EnsureConnectionIsOpen();
 
-            var batches = SplitOracleSqlStatements(sql);
+            var batches = OracleSqlStatementSplitter.SplitStatements(sql);
 
             foreach (var batch in batches)
             {
