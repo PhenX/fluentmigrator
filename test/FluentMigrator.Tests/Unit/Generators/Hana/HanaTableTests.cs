@@ -276,6 +276,15 @@ namespace FluentMigrator.Tests.Unit.Generators.Hana
         }
 
         [Test]
+        public override void CanCreateTableIfNotExistsWithDefaultSchema()
+        {
+            var expression = GeneratorTestHelper.GetCreateTableIfNotExistsExpression();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("DO BEGIN DECLARE CONTINUE HANDLER FOR SQL_ERROR_CODE 259 BEGIN END; CREATE COLUMN TABLE \"TestTable1\" (\"TestColumn1\" NVARCHAR(255), \"TestColumn2\" INTEGER); END;");
+        }
+
+        [Test]
         public void CantDropTableIfExistsWithDefaultSchemaInStrictCompatibilityMode()
         {
             Generator.CompatibilityMode = CompatibilityMode.STRICT;

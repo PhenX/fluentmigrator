@@ -227,9 +227,9 @@ namespace FluentMigrator.Runner.Generators.Oracle
 
             if (expression.IfNotExists)
             {
-                return FormatStatement(
-                    "BEGIN EXECUTE IMMEDIATE 'CREATE TABLE {0} ({1})'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF; END;",
-                    fullTableName, Column.Generate(expression.Columns, tableName));
+                return WrapInBlock(FormatStatement(
+                    "EXECUTE IMMEDIATE 'CREATE TABLE {0} ({1})'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF",
+                    fullTableName, Column.Generate(expression.Columns, tableName)));
             }
 
             return FormatStatement("CREATE TABLE {0} ({1})", fullTableName, Column.Generate(expression.Columns, tableName));

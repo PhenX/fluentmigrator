@@ -260,6 +260,15 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
         }
 
         [Test]
+        public override void CanCreateTableIfNotExistsWithDefaultSchema()
+        {
+            var expression = GeneratorTestHelper.GetCreateTableIfNotExistsExpression();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("CREATE TABLE IF NOT EXISTS TestTable1 (TestColumn1 DBCLOB(1048576) CCSID 1200 NOT NULL, TestColumn2 INTEGER NOT NULL);");
+        }
+
+        [Test]
         public override void CanRenameTableWithCustomSchema()
         {
             var expression = GeneratorTestHelper.GetRenameTableExpression();

@@ -29,11 +29,5 @@ namespace FluentMigrator.Builders.Create.Table
         /// <param name="schemaName">The schema name</param>
         /// <returns>Define the table schema or a new column</returns>
         ICreateTableWithColumnOrSchemaSyntax InSchema(string schemaName);
-
-        /// <summary>
-        /// Specify that the table should only be created if it does not exist
-        /// </summary>
-        /// <returns>Define a new column</returns>
-        ICreateTableWithColumnSyntax IfNotExists();
     }
 }

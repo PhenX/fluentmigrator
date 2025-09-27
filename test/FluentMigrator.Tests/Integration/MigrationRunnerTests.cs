@@ -1629,6 +1629,32 @@ namespace FluentMigrator.Tests.Integration
         }
 
         [Test]
+        [TestCaseSource(typeof(ProcessorTestCaseSource))]
+        public void CanCreateTableIfNotExists(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
+        {
+            ExecuteWithProcessor(
+                processorType,
+                services =>
+                {
+                    services.WithMigrationsIn(RootNamespace);
+                },
+                (serviceProvider, processor) =>
+                {
+                    var runner = (MigrationRunner)serviceProvider.GetRequiredService<IMigrationRunner>();
+
+                    runner.Up(new TestCreateSchema());
+                    runner.Up(new CreateTableIfNotExistsMigration());
+
+                    DataSet upDs = processor.ReadTableData("TestSchema", "Foo");
+                    upDs.Tables[0].Rows.Count.ShouldBe(0);
+
+                    runner.Down(new CreateTableIfNotExistsMigration());
+                    runner.Down(new TestCreateSchema());
+                },
+                serverOptions);
+        }
+
+        [Test]
         [TestCaseSource(typeof(ProcessorTestCaseSourceExcept<
             FirebirdProcessor
         >))]
@@ -2135,6 +2161,40 @@ namespace FluentMigrator.Tests.Integration
         public override void Down()
         {
             Delete.Table("Foo").InSchema("TestSchema");
+        }
+    }
+
+    public class CreateTableIfNotExistsMigration : Migration
+    {
+        public override void Up()
+        {
+            Create.Table("Foo")
+                .InSchema("TestSchema")
+                .WithColumn("baz").AsInt32().NotNullable();
+
+            // Create it again to test IfNotExists
+            Create.Table("Foo")
+                .InSchema("TestSchema")
+                .IfNotExists()
+                .WithColumn("baz_again").AsInt32().NotNullable();
+
+            // Create it again to test IfNotExists
+            Create.Table("Bar")
+                .WithColumn("baz").AsInt32().NotNullable();
+
+            // Create it again to test IfNotExists
+            Create.Table("Bar")
+                .IfNotExists()
+                .WithColumn("baz_again").AsInt32().NotNullable();
+        }
+
+        public override void Down()
+        {
+            Delete.Table("Bar");
+            Delete.Table("Bar").IfExists();
+
+            Delete.Table("Foo").InSchema("TestSchema");
+            Delete.Table("Foo").IfExists().InSchema("TestSchema");
         }
     }
 

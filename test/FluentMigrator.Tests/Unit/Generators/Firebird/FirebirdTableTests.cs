@@ -254,7 +254,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Firebird
             var expression = GeneratorTestHelper.GetCreateTableIfNotExistsExpression();
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("IF( NOT EXISTS( SELECT 1 FROM RDB$RELATIONS WHERE (rdb$flags IS NOT NULL) AND LOWER(RDB$RELATION_NAME) = LOWER('TestTable1'))) THEN EXECUTE STATEMENT 'CREATE TABLE TestTable1 (TestColumn1 VARCHAR(255) NOT NULL, TestColumn2 INTEGER NOT NULL);');");
+            result.ShouldBe("IF( NOT EXISTS( SELECT 1 FROM RDB$RELATIONS WHERE (rdb$flags IS NOT NULL) AND LOWER(RDB$RELATION_NAME) = LOWER('TestTable1'))) THEN EXECUTE STATEMENT 'CREATE TABLE IF NOT EXISTS TestTable1 (TestColumn1 VARCHAR(255) NOT NULL, TestColumn2 INTEGER NOT NULL);');");
         }
 
         [Test]
