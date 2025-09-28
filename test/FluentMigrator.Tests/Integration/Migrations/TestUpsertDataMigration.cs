@@ -127,6 +127,8 @@ namespace FluentMigrator.Tests.Integration.Migrations
             // - SQL Server 2008+: Uses MERGE statement with native expressions
             // - PostgreSQL 9.5+: Uses INSERT ... ON CONFLICT DO UPDATE with native expressions  
             // - MySQL 5.x+: Uses INSERT ... ON DUPLICATE KEY UPDATE with native expressions
+            // - Oracle: Uses MERGE statement with native expressions (similar to SQL Server)
+            // - SQLite 3.24+: Uses INSERT ... ON CONFLICT DO UPDATE with native expressions (similar to PostgreSQL)
             // - Generic databases: Uses IF EXISTS/UPDATE/ELSE/INSERT pattern
         }
 

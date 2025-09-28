@@ -19,6 +19,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 using FluentMigrator.Expressions;
 using FluentMigrator.Model;
@@ -208,6 +209,171 @@ namespace FluentMigrator.Runner.Generators.SQLite
             // SQLite prefixes the index name, rather than the table name with the schema
 
             return FormatStatement(DropIndex, Quoter.QuoteIndexName(expression.Index.Name, expression.Index.SchemaName));
+        }
+
+        /// <inheritdoc />
+        public override string Generate(UpsertDataExpression expression)
+        {
+            var tableName = GetTableName(expression.SchemaName, expression.TableName);
+            
+            if (expression.IgnoreInsertIfExists)
+            {
+                // SQLite INSERT ... ON CONFLICT DO NOTHING
+                return GenerateSQLiteInsertIgnore(expression, tableName);
+            }
+            
+            return GenerateSQLiteUpsert(expression, tableName);
+        }
+
+        private string GenerateSQLiteUpsert(UpsertDataExpression expression, string tableName)
+        {
+            var result = new StringBuilder();
+            
+            var allColumns = new List<string>();
+            var insertValues = new List<List<string>>();
+            var updatePairs = new List<string>();
+            var conflictColumns = new List<string>();
+            
+            // Get all columns from first row to establish structure
+            var firstRow = expression.Rows.First();
+            
+            foreach (var item in firstRow)
+            {
+                var quotedColumn = Quoter.QuoteColumnName(item.Key);
+                allColumns.Add(quotedColumn);
+                
+                if (expression.MatchColumns.Contains(item.Key))
+                {
+                    conflictColumns.Add(quotedColumn);
+                }
+                else
+                {
+                    // Determine if we should update this column
+                    bool shouldUpdate = true;
+                    if (expression.UpdateColumns?.Count > 0)
+                    {
+                        shouldUpdate = expression.UpdateColumns.Contains(item.Key);
+                    }
+                    else if (expression.UpdateValues?.Count > 0)
+                    {
+                        shouldUpdate = expression.UpdateValues.Any(kv => kv.Key == item.Key);
+                    }
+                    
+                    if (shouldUpdate)
+                    {
+                        if (expression.UpdateValues?.Count > 0)
+                        {
+                            var updateValue = expression.UpdateValues.FirstOrDefault(kv => kv.Key == item.Key);
+                            if (updateValue.Key != null)
+                            {
+                                updatePairs.Add($"{quotedColumn} = {Quoter.QuoteValue(updateValue.Value)}");
+                            }
+                            else
+                            {
+                                updatePairs.Add($"{quotedColumn} = excluded.{quotedColumn}");
+                            }
+                        }
+                        else
+                        {
+                            updatePairs.Add($"{quotedColumn} = excluded.{quotedColumn}");
+                        }
+                    }
+                }
+            }
+            
+            // Build insert values for all rows
+            foreach (var row in expression.Rows)
+            {
+                var rowValues = new List<string>();
+                foreach (var column in allColumns)
+                {
+                    var columnName = column.Trim('"');  // Remove quotes to match key
+                    var matchingItem = row.FirstOrDefault(kv => kv.Key == columnName);
+                    if (matchingItem.Key != null)
+                    {
+                        rowValues.Add(Quoter.QuoteValue(matchingItem.Value));
+                    }
+                    else
+                    {
+                        rowValues.Add("NULL");
+                    }
+                }
+                insertValues.Add(rowValues);
+            }
+            
+            result.AppendLine($"INSERT INTO {tableName}");
+            result.AppendLine($"({string.Join(", ", allColumns)})");
+            result.AppendLine("VALUES");
+            result.AppendLine(string.Join(",\n", insertValues.Select(values => $"({string.Join(", ", values)})")));
+            result.AppendLine($"ON CONFLICT ({string.Join(", ", conflictColumns)}) DO UPDATE SET");
+            result.Append($"    {string.Join(", ", updatePairs)};");
+            
+            return result.ToString();
+        }
+
+        private string GenerateSQLiteInsertIgnore(UpsertDataExpression expression, string tableName)
+        {
+            var result = new StringBuilder();
+            
+            var allColumns = new List<string>();
+            var insertValues = new List<List<string>>();
+            var conflictColumns = new List<string>();
+            
+            // Get all columns from first row to establish structure
+            var firstRow = expression.Rows.First();
+            
+            foreach (var item in firstRow)
+            {
+                var quotedColumn = Quoter.QuoteColumnName(item.Key);
+                allColumns.Add(quotedColumn);
+                
+                if (expression.MatchColumns.Contains(item.Key))
+                {
+                    conflictColumns.Add(quotedColumn);
+                }
+            }
+            
+            // Build insert values for all rows
+            foreach (var row in expression.Rows)
+            {
+                var rowValues = new List<string>();
+                foreach (var column in allColumns)
+                {
+                    var columnName = column.Trim('"');  // Remove quotes to match key
+                    var matchingItem = row.FirstOrDefault(kv => kv.Key == columnName);
+                    if (matchingItem.Key != null)
+                    {
+                        rowValues.Add(Quoter.QuoteValue(matchingItem.Value));
+                    }
+                    else
+                    {
+                        rowValues.Add("NULL");
+                    }
+                }
+                insertValues.Add(rowValues);
+            }
+            
+            result.AppendLine($"INSERT INTO {tableName}");
+            result.AppendLine($"({string.Join(", ", allColumns)})");
+            result.AppendLine("VALUES");
+            result.AppendLine(string.Join(",\n", insertValues.Select(values => $"({string.Join(", ", values)})")));
+            result.Append($"ON CONFLICT ({string.Join(", ", conflictColumns)}) DO NOTHING;");
+            
+            return result.ToString();
+        }
+
+        private string GetTableName(string schemaName, string tableName)
+        {
+            // SQLite doesn't really support schemas in the traditional sense
+            // but we can still handle schema-qualified names if provided
+            if (string.IsNullOrEmpty(schemaName))
+            {
+                return Quoter.QuoteTableName(tableName);
+            }
+            else
+            {
+                return $"{Quoter.QuoteSchemaName(schemaName)}.{Quoter.QuoteTableName(tableName)}";
+            }
         }
     }
 }

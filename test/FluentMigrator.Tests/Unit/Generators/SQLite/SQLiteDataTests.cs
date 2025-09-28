@@ -216,5 +216,59 @@ namespace FluentMigrator.Tests.Unit.Generators.SQLite
             var result = Generator.Generate(expression);
             result.ShouldBe("UPDATE \"TestTable1\" SET \"Name\" = 'Just''in', \"Age\" = 25 WHERE \"Id\" = 9 AND \"Homepage\" IS NULL;");
         }
+
+        #region UPSERT Tests
+
+        [Test]
+        public void CanUpsertDataWithSingleRow()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpression();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("INSERT INTO \"TestTable1\"\r\n(\"Name\", \"Website\")\r\nVALUES\r\n('Just''in', 'github.com')\r\nON CONFLICT (\"Name\") DO UPDATE SET\r\n    \"Website\" = excluded.\"Website\";");
+        }
+
+        [Test]
+        public void CanUpsertDataWithCustomSchema()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpression();
+            expression.SchemaName = "TestSchema";
+            var result = Generator.Generate(expression);
+            result.ShouldBe("INSERT INTO \"TestSchema\".\"TestTable1\"\r\n(\"Name\", \"Website\")\r\nVALUES\r\n('Just''in', 'github.com')\r\nON CONFLICT (\"Name\") DO UPDATE SET\r\n    \"Website\" = excluded.\"Website\";");
+        }
+
+        [Test]
+        public void CanUpsertDataWithSpecificUpdateColumns()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithUpdateColumns();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("INSERT INTO \"TestTable1\"\r\n(\"Name\", \"Website\")\r\nVALUES\r\n('Just''in', 'github.com')\r\nON CONFLICT (\"Name\") DO UPDATE SET\r\n    \"Website\" = excluded.\"Website\";");
+        }
+
+        [Test]
+        public void CanUpsertDataWithMultiColumnMatching()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithMultipleMatchColumns();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("INSERT INTO \"TestTable1\"\r\n(\"Category\", \"SKU\", \"Name\")\r\nVALUES\r\n('Electronics', 'SKU001', 'Product A')\r\nON CONFLICT (\"Category\", \"SKU\") DO UPDATE SET\r\n    \"Name\" = excluded.\"Name\";");
+        }
+
+        [Test]
+        public void CanUpsertDataWithIgnoreInsertIfExists()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpression();
+            expression.IgnoreInsertIfExists = true;
+            var result = Generator.Generate(expression);
+            result.ShouldBe("INSERT INTO \"TestTable1\"\r\n(\"Name\", \"Website\")\r\nVALUES\r\n('Just''in', 'github.com')\r\nON CONFLICT (\"Name\") DO NOTHING;");
+        }
+
+        [Test]
+        public void CanUpsertDataWithRawSqlUpdateValues()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithRawUpdateValues();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("INSERT INTO \"TestTable1\"\r\n(\"Name\", \"Website\")\r\nVALUES\r\n('Just''in', 'github.com')\r\nON CONFLICT (\"Name\") DO UPDATE SET\r\n    \"Name\" = 'Updated Name', \"UpdatedAt\" = datetime('now');");
+        }
+
+        #endregion UPSERT Tests
     }
 }
