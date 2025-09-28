@@ -1061,5 +1061,41 @@ namespace FluentMigrator.Tests.Unit.Generators
 
             return expression;
         }
+
+        public static UpsertDataExpression GetUpsertDataExpressionWithUpdateColumns()
+        {
+            var expression = new UpsertDataExpression
+            {
+                TableName = TestTableName1
+            };
+            expression.MatchColumns.Add("Name");
+            expression.UpdateColumns = new List<string> { "Website" }; // Only update Website, not Age
+
+            var row = new InsertionDataDefinition();
+            row.Add(new KeyValuePair<string, object>("Name", "Just'in"));
+            row.Add(new KeyValuePair<string, object>("Website", "github.com"));
+            row.Add(new KeyValuePair<string, object>("Age", 30));
+            expression.Rows.Add(row);
+
+            return expression;
+        }
+
+        public static UpsertDataExpression GetUpsertDataExpressionWithMultipleKeys()
+        {
+            var expression = new UpsertDataExpression
+            {
+                TableName = TestTableName1
+            };
+            expression.MatchColumns.Add("Name");
+            expression.MatchColumns.Add("Age");
+
+            var row = new InsertionDataDefinition();
+            row.Add(new KeyValuePair<string, object>("Name", "Just'in"));
+            row.Add(new KeyValuePair<string, object>("Age", 30));
+            row.Add(new KeyValuePair<string, object>("Website", "github.com"));
+            expression.Rows.Add(row);
+
+            return expression;
+        }
     }
 }
