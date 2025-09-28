@@ -947,5 +947,78 @@ namespace FluentMigrator.Tests.Unit.Generators
             };
             return expression;
         }
+
+        public static UpsertDataExpression GetUpsertDataExpression()
+        {
+            var expression = new UpsertDataExpression
+            {
+                TableName = TestTableName1
+            };
+            expression.MatchColumns.Add("Name");
+
+            var row = new InsertionDataDefinition();
+            row.Add(new KeyValuePair<string, object>("Name", "Just'in"));
+            row.Add(new KeyValuePair<string, object>("Website", "github.com"));
+            expression.Rows.Add(row);
+
+            return expression;
+        }
+
+        public static UpsertDataExpression GetUpsertDataExpressionWithMultipleMatchColumns()
+        {
+            var expression = new UpsertDataExpression
+            {
+                TableName = TestTableName1
+            };
+            expression.MatchColumns.Add("Name");
+            expression.MatchColumns.Add("Category");
+
+            var row = new InsertionDataDefinition();
+            row.Add(new KeyValuePair<string, object>("Name", "Just'in"));
+            row.Add(new KeyValuePair<string, object>("Category", "Developer"));
+            row.Add(new KeyValuePair<string, object>("Website", "github.com"));
+            expression.Rows.Add(row);
+
+            return expression;
+        }
+
+        public static UpsertDataExpression GetUpsertDataExpressionWithSpecificUpdateColumns()
+        {
+            var expression = new UpsertDataExpression
+            {
+                TableName = TestTableName1
+            };
+            expression.MatchColumns.Add("Name");
+            expression.UpdateColumns = new List<string> { "Website" };
+
+            var row = new InsertionDataDefinition();
+            row.Add(new KeyValuePair<string, object>("Name", "Just'in"));
+            row.Add(new KeyValuePair<string, object>("Website", "github.com"));
+            row.Add(new KeyValuePair<string, object>("Email", "test@example.com"));
+            expression.Rows.Add(row);
+
+            return expression;
+        }
+
+        public static UpsertDataExpression GetUpsertDataExpressionWithMultipleRows()
+        {
+            var expression = new UpsertDataExpression
+            {
+                TableName = TestTableName1
+            };
+            expression.MatchColumns.Add("Name");
+
+            var row1 = new InsertionDataDefinition();
+            row1.Add(new KeyValuePair<string, object>("Name", "Just'in"));
+            row1.Add(new KeyValuePair<string, object>("Website", "github.com"));
+            expression.Rows.Add(row1);
+
+            var row2 = new InsertionDataDefinition();
+            row2.Add(new KeyValuePair<string, object>("Name", "Jane"));
+            row2.Add(new KeyValuePair<string, object>("Website", "example.com"));
+            expression.Rows.Add(row2);
+
+            return expression;
+        }
     }
 }
