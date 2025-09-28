@@ -40,6 +40,7 @@ using FluentMigrator.Runner.Processors.Snowflake;
 using FluentMigrator.Runner.Processors.SQLite;
 using FluentMigrator.Runner.Processors.SqlServer;
 using FluentMigrator.Runner.VersionTableInfo;
+using FluentMigrator.Tests.Integration.Migrations.Computed;
 using FluentMigrator.Tests.Integration.Migrations.Issues;
 using FluentMigrator.Tests.Integration.Migrations.Tagged;
 using FluentMigrator.Tests.Integration.TestCases;
@@ -2033,12 +2034,14 @@ namespace FluentMigrator.Tests.Integration
     {
         public override void Up()
         {
-            Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsAnsiString(100).Nullable();
+            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle))
+                .Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsAnsiString(100).Nullable();
         }
 
         public override void Down()
         {
-            Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsString(10).Nullable();
+            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle))
+                .Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsString(10).Nullable();
         }
     }
 

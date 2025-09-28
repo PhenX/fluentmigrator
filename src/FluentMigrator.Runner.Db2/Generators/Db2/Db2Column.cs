@@ -21,20 +21,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using FluentMigrator.Generation;
 using FluentMigrator.Infrastructure.Extensions;
 using FluentMigrator.Model;
 using FluentMigrator.Runner.Generators.Base;
 
 namespace FluentMigrator.Runner.Generators.DB2
 {
-
     internal class Db2Column : ColumnBase<Db2TypeMap>
     {
         public Db2Column(IQuoter quoter)
             : base(new Db2TypeMap(), quoter)
         {
-            ClauseOrder = new List<Func<ColumnDefinition, string>> { FormatString, FormatType, FormatNullable, FormatDefaultValue, FormatIdentity };
-            AlterClauseOrder = new List<Func<ColumnDefinition, string>> { FormatType, FormatNullable, FormatDefaultValue, FormatIdentity };
+            ClauseOrder = new List<Func<ColumnDefinition, string>> { FormatString, FormatType, FormatExpression, FormatNullable, FormatDefaultValue, FormatIdentity };
+            AlterClauseOrder = new List<Func<ColumnDefinition, string>> { FormatType, FormatExpression, FormatNullable, FormatDefaultValue, FormatIdentity };
         }
 
         public List<Func<ColumnDefinition, string>> AlterClauseOrder { get; set; }
