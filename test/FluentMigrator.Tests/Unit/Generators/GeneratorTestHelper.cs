@@ -1020,5 +1020,22 @@ namespace FluentMigrator.Tests.Unit.Generators
 
             return expression;
         }
+
+        public static UpsertDataExpression GetUpsertDataExpressionWithIgnoreInsertIfExists()
+        {
+            var expression = new UpsertDataExpression
+            {
+                TableName = TestTableName1,
+                IgnoreInsertIfExists = true
+            };
+            expression.MatchColumns.Add("Name");
+
+            var row = new InsertionDataDefinition();
+            row.Add(new KeyValuePair<string, object>("Name", "Just'in"));
+            row.Add(new KeyValuePair<string, object>("Website", "github.com"));
+            expression.Rows.Add(row);
+
+            return expression;
+        }
     }
 }

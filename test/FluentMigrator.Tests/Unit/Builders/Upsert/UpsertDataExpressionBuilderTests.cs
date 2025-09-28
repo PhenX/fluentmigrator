@@ -159,5 +159,34 @@ namespace FluentMigrator.Tests.Unit.Builders.Upsert
             expression.MatchColumns.ShouldContain("Category");
             expression.MatchColumns.Count.ShouldBe(2);
         }
+
+        [Test]
+        public void ShouldSetIgnoreInsertIfExistsWhenIgnoreInsertIfExistsIsCalled()
+        {
+            var expression = new UpsertDataExpression();
+            var builder = new UpsertDataExpressionBuilder(expression);
+
+            builder.IgnoreInsertIfExists();
+
+            expression.IgnoreInsertIfExists.ShouldBeTrue();
+        }
+
+        [Test]
+        public void ShouldSupportIgnoreInsertIfExistsWithFluentChaining()
+        {
+            var expression = new UpsertDataExpression();
+            var builder = new UpsertDataExpressionBuilder(expression);
+
+            builder
+                .InSchema("TestSchema")
+                .MatchOn("Email")
+                .Row(new { Email = "test@example.com", Name = "Test User", IsActive = true })
+                .IgnoreInsertIfExists();
+
+            expression.SchemaName.ShouldBe("TestSchema");
+            expression.MatchColumns.ShouldContain("Email");
+            expression.Rows.Count.ShouldBe(1);
+            expression.IgnoreInsertIfExists.ShouldBeTrue();
+        }
     }
 }

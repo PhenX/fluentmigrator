@@ -81,6 +81,30 @@ namespace FluentMigrator.Tests.Integration.Migrations
                     new { Email = "bulk2@example.com", Name = "Bulk User 2", IsActive = true, Category = "Bulk" },
                     new { Email = "bulk3@example.com", Name = "Bulk User 3", IsActive = false, Category = "Bulk" }
                 );
+
+            // Test ignore insert if exists mode - only insert new rows, don't update existing
+            Upsert.IntoTable("UpsertTestTable")
+                .MatchOn("Email")
+                .Row(new 
+                { 
+                    Email = "ignore@example.com", 
+                    Name = "Ignore Insert User", 
+                    IsActive = true,
+                    Category = "Ignore"
+                })
+                .IgnoreInsertIfExists();
+
+            // Test ignore insert with existing record (should be ignored)
+            Upsert.IntoTable("UpsertTestTable")
+                .MatchOn("Email")
+                .Row(new 
+                { 
+                    Email = "existing@example.com", 
+                    Name = "This Should Be Ignored", 
+                    IsActive = false,
+                    Category = "ShouldNotUpdate"
+                })
+                .IgnoreInsertIfExists();
         }
 
         public override void Down()

@@ -31,5 +31,12 @@ namespace FluentMigrator.Builders.Upsert
         /// </summary>
         /// <param name="columnNames">The column names to update on match</param>
         void UpdateColumns(params string[] columnNames);
+
+        /// <summary>
+        /// Configure the upsert to ignore the insert if the row already exists (INSERT IGNORE mode).
+        /// When enabled, existing rows are not updated, only new rows are inserted.
+        /// Cannot be used together with UpdateColumns.
+        /// </summary>
+        void IgnoreInsertIfExists();
     }
 }

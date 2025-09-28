@@ -54,6 +54,12 @@ namespace FluentMigrator.Expressions
         /// </summary>
         public List<string> UpdateColumns { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether to ignore insert if the row already exists (INSERT IGNORE mode)
+        /// When true, existing rows are not updated, only new rows are inserted
+        /// </summary>
+        public bool IgnoreInsertIfExists { get; set; }
+
         /// <inheritdoc />
         public IDictionary<string, object> AdditionalFeatures { get; } = new Dictionary<string, object>();
 
@@ -123,6 +129,12 @@ namespace FluentMigrator.Expressions
                 var invalidUpdateColumns = UpdateColumns.Intersect(MatchColumns ?? Enumerable.Empty<string>()).ToList();
                 if (invalidUpdateColumns.Count > 0)
                     yield return new ValidationResult($"Update columns cannot include match columns: {string.Join(", ", invalidUpdateColumns)}");
+            }
+
+            // Validate that UpdateColumns and IgnoreInsertIfExists are not both specified
+            if (IgnoreInsertIfExists && UpdateColumns != null && UpdateColumns.Count > 0)
+            {
+                yield return new ValidationResult("UpdateColumns cannot be specified when IgnoreInsertIfExists is true");
             }
         }
     }

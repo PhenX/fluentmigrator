@@ -194,5 +194,30 @@ namespace FluentMigrator.Tests.Unit.Expressions
             _expression.UpdateColumns.ShouldContain("IsActive");
             _expression.UpdateColumns.ShouldNotContain("Email");
         }
+
+        [Test]
+        public void ShouldSupportIgnoreInsertIfExists()
+        {
+            _expression.IgnoreInsertIfExists = true;
+            
+            _expression.IgnoreInsertIfExists.ShouldBeTrue();
+            
+            var context = new ValidationContext(_expression);
+            var results = _expression.Validate(context);
+            results.ShouldBeEmpty();
+        }
+
+        [Test]
+        public void ValidationShouldFailWhenIgnoreInsertIfExistsAndUpdateColumnsAreBothSpecified()
+        {
+            _expression.IgnoreInsertIfExists = true;
+            _expression.UpdateColumns = new List<string> { "Name" };
+            
+            var context = new ValidationContext(_expression);
+            var results = _expression.Validate(context).ToList();
+            
+            results.ShouldNotBeEmpty();
+            results.ShouldContain(r => r.ErrorMessage.Contains("UpdateColumns cannot be specified when IgnoreInsertIfExists is true"));
+        }
     }
 }

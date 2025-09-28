@@ -297,5 +297,17 @@ namespace FluentMigrator.Tests.Unit.Generators.SqlServer2000
             result.ShouldContain("VALUES (N'Just''in', N'github.com')");
             result.ShouldContain("VALUES (N'Jane', N'example.com')");
         }
+
+        [Test]
+        public virtual void CanUpsertDataWithIgnoreInsertIfExists()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithIgnoreInsertIfExists();
+
+            var result = Generator.Generate(expression);
+            result.ShouldContain("IF NOT EXISTS (SELECT 1 FROM [TestTable1] WHERE [Name] = N'Just''in')");
+            result.ShouldNotContain("UPDATE"); // Should not contain any UPDATE statement
+            result.ShouldContain("INSERT INTO [TestTable1]");
+            result.ShouldContain("VALUES (N'Just''in', N'github.com')");
+        }
     }
 }

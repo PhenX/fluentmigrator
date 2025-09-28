@@ -135,5 +135,18 @@ namespace FluentMigrator.Tests.Unit.Generators.SqlServer2008
             var result = Generator.Generate(expression);
             result.ShouldContain("N'Just''in'"); // Should properly escape single quotes
         }
+
+        [Test]
+        public override void CanUpsertDataWithIgnoreInsertIfExists()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithIgnoreInsertIfExists();
+
+            var result = Generator.Generate(expression);
+            result.ShouldContain("MERGE [dbo].[TestTable1] AS target");
+            result.ShouldContain("WHEN NOT MATCHED THEN");
+            result.ShouldContain("INSERT ([Name], [Website])");
+            result.ShouldNotContain("WHEN MATCHED THEN"); // Should not contain any UPDATE clause
+            result.ShouldNotContain("UPDATE SET"); // Should not contain any UPDATE statement
+        }
     }
 }

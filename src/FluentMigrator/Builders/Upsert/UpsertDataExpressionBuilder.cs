@@ -76,5 +76,11 @@ namespace FluentMigrator.Builders.Upsert
         {
             Expression.UpdateColumns = columnNames?.ToList();
         }
+
+        /// <inheritdoc />
+        public void IgnoreInsertIfExists()
+        {
+            Expression.IgnoreInsertIfExists = true;
+        }
     }
 }
