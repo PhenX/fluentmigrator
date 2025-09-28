@@ -1,4 +1,19 @@
-using System.Collections.Generic;
+#region License
+// Copyright (c) 2018, Fluent Migrator Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+#endregion
+
 using FluentMigrator.Runner.Processors.Oracle;
 using NUnit.Framework;
 
@@ -38,6 +53,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithSingleSimpleStatement_ReturnsSingleStatement()
     {
+        // language=sql
         const string sql = "SELECT * FROM users;";
 
         var result = OracleSqlStatementSplitter.SplitStatements(sql);
@@ -49,6 +65,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithMultipleSimpleStatements_ReturnsCorrectStatements()
     {
+        // language=sql
         const string sql = """
             DELETE FROM temp_table;
             INSERT INTO users (name, email) VALUES ('John', 'john@example.com');
@@ -66,6 +83,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithSemicolonsOnSingleLine_SplitCorrectly()
     {
+        // language=sql
         const string sql = "DELETE FROM SameTableFK WHERE Id = 20 AND ParentId = 2;DELETE FROM SameTableFK WHERE Id = 10 AND ParentId = 1;DELETE FROM SameTableFK WHERE Id = 2;";
 
         var result = OracleSqlStatementSplitter.SplitStatements(sql);
@@ -79,6 +97,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithSlashTerminator_SplitsCorrectly()
     {
+        // language=sql
         const string sql = """
             CREATE TABLE test (id NUMBER)
             /
@@ -96,6 +115,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithSimpleBeginEndBlock_KeepsAsOneStatement()
     {
+        // language=sql
         const string sql = """
             BEGIN
                 INSERT INTO users VALUES (1, 'Test');
@@ -115,6 +135,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithComplexPlSqlBlockFromExample_KeepsAsOneStatement()
     {
+        // language=sql
         const string sql = "BEGIN EXECUTE IMMEDIATE 'CREATE TABLE {0} ({1})'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF; END;";
 
         var result = OracleSqlStatementSplitter.SplitStatements(sql);
@@ -129,6 +150,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithNestedBeginEndBlocks_KeepsAsOneStatement()
     {
+        // language=sql
         const string sql = """
             BEGIN
                 INSERT INTO log VALUES ('Start');
@@ -151,6 +173,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithIfElseEndIfStructure_DoesNotSplitOnEndIf()
     {
+        // language=sql
         const string sql = """
             BEGIN
                 IF user_count > 0 THEN
@@ -173,6 +196,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithProcedureCreation_KeepsAsOneStatement()
     {
+        // language=sql
         const string sql = """
             CREATE OR REPLACE PROCEDURE test_proc(p_id IN NUMBER) AS
             BEGIN
@@ -192,6 +216,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithMixedStatementsAndPlSqlBlocks_SplitsCorrectly()
     {
+        // language=sql
         const string sql = """
             CREATE TABLE test_table (id NUMBER, name VARCHAR2(50));
 
@@ -222,6 +247,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithStringLiteralsContainingSemicolons_DoesNotSplitInsideStrings()
     {
+        // language=sql
         const string sql = """
             INSERT INTO messages (content) VALUES ('Hello; World; Test');
             UPDATE users SET bio = 'Software Engineer; Team Lead; Manager';
@@ -237,6 +263,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithCommentsContainingSemicolons_IgnoresComments()
     {
+        // language=sql
         const string sql = """
             -- This is a comment with; semicolons; inside
             CREATE TABLE users (id NUMBER);
@@ -255,6 +282,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithDeclareBlock_KeepsAsOneStatement()
     {
+        // language=sql
         const string sql = """
             DECLARE
                 v_count NUMBER;
@@ -277,6 +305,7 @@ public class OracleSqlStatementSplitterTests
     [Test]
     public void SplitStatements_WithTriggerCreation_KeepsAsOneStatement()
     {
+        // language=sql
         const string sql = """
             CREATE OR REPLACE TRIGGER user_audit_trigger
             AFTER INSERT OR UPDATE ON users
