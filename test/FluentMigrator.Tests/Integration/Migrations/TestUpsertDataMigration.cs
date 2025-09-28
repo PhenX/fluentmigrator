@@ -129,6 +129,9 @@ namespace FluentMigrator.Tests.Integration.Migrations
             // - MySQL 5.x+: Uses INSERT ... ON DUPLICATE KEY UPDATE with native expressions
             // - Oracle: Uses MERGE statement with native expressions (similar to SQL Server)
             // - SQLite 3.24+: Uses INSERT ... ON CONFLICT DO UPDATE with native expressions (similar to PostgreSQL)
+            // - DB2: Uses MERGE statement with native expressions (similar to SQL Server)
+            // - Firebird 2.1+: Uses MERGE statement with native expressions (similar to SQL Server)  
+            // - Snowflake: Uses MERGE statement with native expressions (similar to SQL Server/Oracle)
             // - Generic databases: Uses IF EXISTS/UPDATE/ELSE/INSERT pattern
         }
 

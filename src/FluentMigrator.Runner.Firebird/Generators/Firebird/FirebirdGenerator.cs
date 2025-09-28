@@ -410,5 +410,194 @@ namespace FluentMigrator.Runner.Generators.Firebird
             string col2Value = column.GenerateForDefaultAlter(col2);
             return col1Value != col2Value;
         }
+
+        /// <inheritdoc />
+        public override string Generate(UpsertDataExpression expression)
+        {
+            // Truncate table name and column names for Firebird length restrictions
+            expression.TableName = Truncator.Truncate(expression.TableName);
+            
+            // Truncate column names in rows
+            var truncatedRows = new List<InsertionDataDefinition>();
+            foreach (var row in expression.Rows)
+            {
+                var newRow = new InsertionDataDefinition();
+                foreach (var kvp in row)
+                {
+                    newRow.Add(new KeyValuePair<string, object>(Truncator.Truncate(kvp.Key), kvp.Value));
+                }
+                truncatedRows.Add(newRow);
+            }
+            expression.Rows.Clear();
+            expression.Rows.AddRange(truncatedRows);
+            
+            // Truncate match column names
+            var truncatedMatchColumns = new List<string>();
+            foreach (var matchColumn in expression.MatchColumns)
+            {
+                truncatedMatchColumns.Add(Truncator.Truncate(matchColumn));
+            }
+            expression.MatchColumns.Clear();
+            expression.MatchColumns.AddRange(truncatedMatchColumns);
+            
+            // Truncate update column names if specified
+            if (expression.UpdateColumns?.Any() == true)
+            {
+                var truncatedUpdateColumns = new List<string>();
+                foreach (var updateColumn in expression.UpdateColumns)
+                {
+                    truncatedUpdateColumns.Add(Truncator.Truncate(updateColumn));
+                }
+                expression.UpdateColumns.Clear();
+                expression.UpdateColumns.AddRange(truncatedUpdateColumns);
+            }
+            
+            // Truncate update value column names if specified
+            if (expression.UpdateValues?.Any() == true)
+            {
+                var truncatedUpdateValues = new List<KeyValuePair<string, object>>();
+                foreach (var updateValue in expression.UpdateValues)
+                {
+                    truncatedUpdateValues.Add(new KeyValuePair<string, object>(Truncator.Truncate(updateValue.Key), updateValue.Value));
+                }
+                expression.UpdateValues.Clear();
+                expression.UpdateValues.AddRange(truncatedUpdateValues);
+            }
+
+            if (expression.IgnoreInsertIfExists)
+            {
+                // Firebird MERGE with INSERT only (no UPDATE clause for INSERT IGNORE mode)
+                return GenerateFirebirdMergeInsertOnly(expression);
+            }
+
+            // Firebird MERGE statement (version 2.1+)
+            return GenerateFirebirdMerge(expression);
+        }
+
+        /// <summary>
+        /// Generates a Firebird MERGE statement for full upsert functionality
+        /// </summary>
+        /// <param name="expression">The upsert expression</param>
+        /// <returns>The Firebird MERGE SQL statement</returns>
+        protected virtual string GenerateFirebirdMerge(UpsertDataExpression expression)
+        {
+            var sb = new StringBuilder();
+            var tableName = Quoter.QuoteTableName(expression.TableName, expression.SchemaName);
+
+            foreach (var row in expression.Rows)
+            {
+                if (sb.Length > 0)
+                    sb.AppendLine();
+
+                sb.AppendLine($"MERGE {tableName} AS target");
+
+                // Build source data using VALUES clause
+                var columns = row.Select(kvp => kvp.Key).ToList();
+                var values = row.Select(kvp => Quoter.QuoteValue(kvp.Value)).ToList();
+                var columnNames = string.Join(", ", columns.Select(c => Quoter.QuoteColumnName(c)));
+                var valuesList = string.Join(", ", values);
+
+                sb.AppendLine($"USING (SELECT {valuesList} FROM RDB$DATABASE) AS source ({columnNames})");
+
+                // Build ON clause for match columns
+                var matchConditions = expression.MatchColumns.Select(col =>
+                    $"target.{Quoter.QuoteColumnName(col)} = source.{Quoter.QuoteColumnName(col)}");
+                sb.AppendLine($"ON ({string.Join(" AND ", matchConditions)})");
+
+                // Build WHEN MATCHED clause (UPDATE)
+                var updateItems = new List<string>();
+                
+                if (expression.UpdateValues?.Any() == true)
+                {
+                    // Use specific update values (supports RawSql)
+                    foreach (var updateValue in expression.UpdateValues)
+                    {
+                        updateItems.Add($"{Quoter.QuoteColumnName(updateValue.Key)} = {Quoter.QuoteValue(updateValue.Value)}");
+                    }
+                }
+                else if (expression.UpdateColumns?.Any() == true)
+                {
+                    // Use specified update columns (exclude match columns)
+                    foreach (var column in expression.UpdateColumns)
+                    {
+                        if (!expression.MatchColumns.Contains(column))
+                        {
+                            var columnValue = row.FirstOrDefault(kvp => kvp.Key == column);
+                            if (!columnValue.Equals(default(KeyValuePair<string, object>)))
+                            {
+                                updateItems.Add($"{Quoter.QuoteColumnName(columnValue.Key)} = source.{Quoter.QuoteColumnName(columnValue.Key)}");
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Update all columns except match columns
+                    foreach (var kvp in row)
+                    {
+                        if (!expression.MatchColumns.Contains(kvp.Key))
+                        {
+                            updateItems.Add($"{Quoter.QuoteColumnName(kvp.Key)} = source.{Quoter.QuoteColumnName(kvp.Key)}");
+                        }
+                    }
+                }
+
+                if (updateItems.Any())
+                {
+                    sb.AppendLine($"WHEN MATCHED THEN");
+                    sb.AppendLine($"    UPDATE SET {string.Join(", ", updateItems)}");
+                }
+
+                // Build WHEN NOT MATCHED clause (INSERT)
+                sb.AppendLine($"WHEN NOT MATCHED THEN");
+                sb.AppendLine($"    INSERT ({columnNames})");
+                sb.Append($"    VALUES ({string.Join(", ", columns.Select(c => $"source.{Quoter.QuoteColumnName(c)}"))})");
+
+                AppendSqlStatementEndToken(sb);
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Generates a Firebird MERGE statement for INSERT IGNORE mode (insert only if not exists)
+        /// </summary>
+        /// <param name="expression">The upsert expression</param>
+        /// <returns>The Firebird MERGE SQL statement</returns>
+        protected virtual string GenerateFirebirdMergeInsertOnly(UpsertDataExpression expression)
+        {
+            var sb = new StringBuilder();
+            var tableName = Quoter.QuoteTableName(expression.TableName, expression.SchemaName);
+
+            foreach (var row in expression.Rows)
+            {
+                if (sb.Length > 0)
+                    sb.AppendLine();
+
+                sb.AppendLine($"MERGE {tableName} AS target");
+
+                // Build source data using RDB$DATABASE (Firebird's equivalent to DUAL)
+                var columns = row.Select(kvp => kvp.Key).ToList();
+                var values = row.Select(kvp => Quoter.QuoteValue(kvp.Value)).ToList();
+                var columnNames = string.Join(", ", columns.Select(c => Quoter.QuoteColumnName(c)));
+                var valuesList = string.Join(", ", values);
+
+                sb.AppendLine($"USING (SELECT {valuesList} FROM RDB$DATABASE) AS source ({columnNames})");
+
+                // Build ON clause for match columns
+                var matchConditions = expression.MatchColumns.Select(col =>
+                    $"target.{Quoter.QuoteColumnName(col)} = source.{Quoter.QuoteColumnName(col)}");
+                sb.AppendLine($"ON ({string.Join(" AND ", matchConditions)})");
+
+                // Only WHEN NOT MATCHED clause (INSERT IGNORE - no updates)
+                sb.AppendLine($"WHEN NOT MATCHED THEN");
+                sb.AppendLine($"    INSERT ({columnNames})");
+                sb.Append($"    VALUES ({string.Join(", ", columns.Select(c => $"source.{Quoter.QuoteColumnName(c)}"))})");
+
+                AppendSqlStatementEndToken(sb);
+            }
+
+            return sb.ToString();
+        }
     }
 }
