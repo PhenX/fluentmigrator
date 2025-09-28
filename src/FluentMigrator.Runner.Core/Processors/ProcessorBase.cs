@@ -221,6 +221,12 @@ namespace FluentMigrator.Runner.Processors
         }
 
         /// <inheritdoc />
+        public virtual void Process(UpsertDataExpression expression)
+        {
+            Process(Generator.Generate(expression));
+        }
+
+        /// <inheritdoc />
         public abstract void Process(PerformDBOperationExpression expression);
 
         /// <inheritdoc />
