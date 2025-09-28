@@ -300,7 +300,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Oracle
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpression();
             var result = Generator.Generate(expression);
-            result.ShouldBe("MERGE INTO TestTable1 target\r\nUSING (SELECT 'Just''in' AS Name, 'github.com' AS Website FROM dual) source\r\nON (target.Name = source.Name)\r\nWHEN MATCHED THEN\r\n    UPDATE SET Website = source.Website\r\nWHEN NOT MATCHED THEN\r\n    INSERT (Name, Website)\r\n    VALUES (source.Name, source.Website);");
+            result.ShouldBe("MERGE INTO TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'github.com' AS Website FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name)" + Environment.NewLine + "WHEN MATCHED THEN" + Environment.NewLine + "    UPDATE SET Website = source.Website" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Website)" + Environment.NewLine + "    VALUES (source.Name, source.Website);");
         }
 
         [Test]
@@ -309,7 +309,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Oracle
             var expression = GeneratorTestHelper.GetUpsertDataExpression();
             expression.SchemaName = "TestSchema";
             var result = Generator.Generate(expression);
-            result.ShouldBe("MERGE INTO TestSchema.TestTable1 target\r\nUSING (SELECT 'Just''in' AS Name, 'github.com' AS Website FROM dual) source\r\nON (target.Name = source.Name)\r\nWHEN MATCHED THEN\r\n    UPDATE SET Website = source.Website\r\nWHEN NOT MATCHED THEN\r\n    INSERT (Name, Website)\r\n    VALUES (source.Name, source.Website);");
+            result.ShouldBe("MERGE INTO TestSchema.TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'github.com' AS Website FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name)" + Environment.NewLine + "WHEN MATCHED THEN" + Environment.NewLine + "    UPDATE SET Website = source.Website" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Website)" + Environment.NewLine + "    VALUES (source.Name, source.Website);");
         }
 
         [Test]
@@ -317,7 +317,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Oracle
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithUpdateColumns();
             var result = Generator.Generate(expression);
-            result.ShouldBe("MERGE INTO TestTable1 target\r\nUSING (SELECT 'Just''in' AS Name, 'github.com' AS Website FROM dual) source\r\nON (target.Name = source.Name)\r\nWHEN MATCHED THEN\r\n    UPDATE SET Website = source.Website\r\nWHEN NOT MATCHED THEN\r\n    INSERT (Name, Website)\r\n    VALUES (source.Name, source.Website);");
+            result.ShouldBe("MERGE INTO TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'github.com' AS Website, 30 AS Age FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name)" + Environment.NewLine + "WHEN MATCHED THEN" + Environment.NewLine + "    UPDATE SET Website = source.Website" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Website, Age)" + Environment.NewLine + "    VALUES (source.Name, source.Website, source.Age);");
         }
 
         [Test]
@@ -325,7 +325,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Oracle
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithMultipleMatchColumns();
             var result = Generator.Generate(expression);
-            result.ShouldBe("MERGE INTO TestTable1 target\r\nUSING (SELECT 'Electronics' AS Category, 'SKU001' AS SKU, 'Product A' AS Name FROM dual) source\r\nON (target.Category = source.Category AND target.SKU = source.SKU)\r\nWHEN MATCHED THEN\r\n    UPDATE SET Name = source.Name\r\nWHEN NOT MATCHED THEN\r\n    INSERT (Category, SKU, Name)\r\n    VALUES (source.Category, source.SKU, source.Name);");
+            result.ShouldBe("MERGE INTO TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'Developer' AS Category, 'github.com' AS Website FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name AND target.Category = source.Category)" + Environment.NewLine + "WHEN MATCHED THEN" + Environment.NewLine + "    UPDATE SET Website = source.Website" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Category, Website)" + Environment.NewLine + "    VALUES (source.Name, source.Category, source.Website);");
         }
 
         [Test]
@@ -334,7 +334,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Oracle
             var expression = GeneratorTestHelper.GetUpsertDataExpression();
             expression.IgnoreInsertIfExists = true;
             var result = Generator.Generate(expression);
-            result.ShouldBe("MERGE INTO TestTable1 target\r\nUSING (SELECT 'Just''in' AS Name, 'github.com' AS Website FROM dual) source\r\nON (target.Name = source.Name)\r\nWHEN NOT MATCHED THEN\r\n    INSERT (Name, Website)\r\n    VALUES (source.Name, source.Website);");
+            result.ShouldBe("MERGE INTO TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'github.com' AS Website FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name)" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Website)" + Environment.NewLine + "    VALUES (source.Name, source.Website);");
         }
 
         [Test]
@@ -342,7 +342,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Oracle
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithRawUpdateValues();
             var result = Generator.Generate(expression);
-            result.ShouldBe("MERGE INTO TestTable1 target\r\nUSING (SELECT 'Just''in' AS Name, 'github.com' AS Website FROM dual) source\r\nON (target.Name = source.Name)\r\nWHEN MATCHED THEN\r\n    UPDATE SET Name = 'Updated Name', UpdatedAt = SYSDATE\r\nWHEN NOT MATCHED THEN\r\n    INSERT (Name, Website)\r\n    VALUES (source.Name, source.Website);");
+            result.ShouldBe("MERGE INTO TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'github.com' AS Website, 'test@example.com' AS Email FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name)" + Environment.NewLine + "WHEN MATCHED THEN" + Environment.NewLine + "    UPDATE SET Website = 'codethinked.com', Email = UPPER('admin@example.com')" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Website, Email)" + Environment.NewLine + "    VALUES (source.Name, source.Website, source.Email);");
         }
 
         #endregion UPSERT Tests

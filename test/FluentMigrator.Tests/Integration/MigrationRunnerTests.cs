@@ -42,6 +42,7 @@ using FluentMigrator.Runner.VersionTableInfo;
 using FluentMigrator.Tests.Integration.Migrations.Computed;
 using FluentMigrator.Tests.Integration.Migrations.Issues;
 using FluentMigrator.Tests.Integration.Migrations.Tagged;
+using FluentMigrator.Tests.Integration.Migrations.Upsert;
 using FluentMigrator.Tests.Integration.TestCases;
 using FluentMigrator.Tests.Unit;
 
@@ -1650,6 +1651,25 @@ namespace FluentMigrator.Tests.Integration
                     rows[0]["LargeUnicodeString"].ShouldBe(TestLargeTextInsertMigration_Issue1196.LargeString);
 
                     runner.Down(new TestLargeTextInsertMigration_Issue1196());
+                },
+                serverOptions,
+                true);
+        }
+
+        [Test]
+        [TestCaseSource(typeof(ProcessorTestCaseSource))]
+        public void CanUpsertData(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
+        {
+            ExecuteWithProcessor(
+                processorType,
+                services => services.WithMigrationsIn(RootNamespace),
+                (serviceProvider, processor) =>
+                {
+                    var runner = (MigrationRunner)serviceProvider.GetRequiredService<IMigrationRunner>();
+
+                    runner.Up(new TestUpsertDataMigration());
+
+                    runner.Down(new TestUpsertDataMigration());
                 },
                 serverOptions,
                 true);

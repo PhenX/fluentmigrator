@@ -48,7 +48,7 @@ public class ProcessorTestCaseSource : IEnumerable
         new ProcessorTestCase<SQLiteProcessor>(() => IntegrationTestOptions.SQLite, "SQLite"),
         new ProcessorTestCase<FirebirdProcessor>(() => IntegrationTestOptions.Firebird, "Firebird"),
         new ProcessorTestCase<PostgresProcessor>(() => IntegrationTestOptions.Postgres, "Postgres"),
-        new ProcessorTestCase<MySql4Processor>(() => IntegrationTestOptions.MySql, "MySql"),
+        new ProcessorTestCase<MySql5Processor>(() => IntegrationTestOptions.MySql, "MySql"),
         new ProcessorTestCase<SnowflakeProcessor>(() => IntegrationTestOptions.Snowflake, "Snowflake"),
         new ProcessorTestCase<Oracle12CManagedProcessor>(() => IntegrationTestOptions.Oracle, "Oracle", "OracleManaged"),
     ];

@@ -17,7 +17,7 @@
 #endregion
 
 using FluentMigrator.Runner.Generators.SqlServer;
-using FluentMigrator.Tests.Unit.Generators.SqlServer2000;
+using FluentMigrator.SqlServer;
 using NUnit.Framework;
 using Shouldly;
 
@@ -25,97 +25,307 @@ namespace FluentMigrator.Tests.Unit.Generators.SqlServer2008
 {
     [TestFixture]
     [Category("SqlServer2008")]
-    public class SqlServer2008DataTests : SqlServer2000DataTests
+    public class SqlServer2008DataTests : BaseDataTests
     {
+        protected SqlServer2008Generator Generator;
+
         [SetUp]
-        public new void Setup()
+        public void Setup()
         {
             Generator = new SqlServer2008Generator();
         }
 
         [Test]
-        public override void CanUpsertDataWithSingleMatchColumnAndCustomSchema()
+        public override void CanDeleteDataForAllRowsWithCustomSchema()
+        {
+            var expression = GeneratorTestHelper.GetDeleteDataAllRowsExpression();
+            expression.SchemaName = "TestSchema";
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("DELETE FROM [TestTable1] WHERE 1 = 1;");
+        }
+
+        [Test]
+        public override void CanDeleteDataForAllRowsWithDefaultSchema()
+        {
+            var expression = GeneratorTestHelper.GetDeleteDataAllRowsExpression();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("DELETE FROM [TestTable1] WHERE 1 = 1;");
+        }
+
+        [Test]
+        public override void CanDeleteDataForMultipleRowsWithCustomSchema()
+        {
+            var expression = GeneratorTestHelper.GetDeleteDataMultipleRowsExpression();
+            expression.SchemaName = "TestSchema";
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("DELETE FROM [TestTable1] WHERE [Name] = N'Just''in' AND [Website] IS NULL;DELETE FROM [TestTable1] WHERE [Website] = N'github.com';");
+        }
+
+        [Test]
+        public override void CanDeleteDataForMultipleRowsWithDefaultSchema()
+        {
+            var expression = GeneratorTestHelper.GetDeleteDataMultipleRowsExpression();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("DELETE FROM [TestTable1] WHERE [Name] = N'Just''in' AND [Website] IS NULL;DELETE FROM [TestTable1] WHERE [Website] = N'github.com';");
+        }
+
+        [Test]
+        public override void CanDeleteDataWithCustomSchema()
+        {
+            var expression = GeneratorTestHelper.GetDeleteDataExpression();
+            expression.SchemaName = "TestSchema";
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("DELETE FROM [TestTable1] WHERE [Name] = N'Just''in' AND [Website] IS NULL;");
+        }
+
+        [Test]
+        public override void CanDeleteDataWithDefaultSchema()
+        {
+            var expression = GeneratorTestHelper.GetDeleteDataExpression();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("DELETE FROM [TestTable1] WHERE [Name] = N'Just''in' AND [Website] IS NULL;");
+        }
+
+        [Test]
+        public override void CanDeleteDataWithDbNullCriteria()
+        {
+            var expression = GeneratorTestHelper.GetDeleteDataExpressionWithDbNullValue();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("DELETE FROM [TestTable1] WHERE [Name] = N'Just''in' AND [Website] IS NULL;");
+        }
+
+        [Test]
+        public override void CanInsertDataWithCustomSchema()
+        {
+            var expression = GeneratorTestHelper.GetInsertDataExpression();
+            expression.SchemaName = "TestSchema";
+
+            var expected = "INSERT INTO [TestTable1] ([Id], [Name], [Website]) VALUES (1, N'Just''in', N'codethinked.com');";
+            expected += @"INSERT INTO [TestTable1] ([Id], [Name], [Website]) VALUES (2, N'Na\te', N'kohari.org');";
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe(expected);
+        }
+
+        [Test]
+        public override void CanInsertDataWithDefaultSchema()
+        {
+            var expression = GeneratorTestHelper.GetInsertDataExpression();
+
+            var expected = "INSERT INTO [TestTable1] ([Id], [Name], [Website]) VALUES (1, N'Just''in', N'codethinked.com');";
+            expected += @"INSERT INTO [TestTable1] ([Id], [Name], [Website]) VALUES (2, N'Na\te', N'kohari.org');";
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe(expected);
+        }
+
+        [Test]
+        public override void CanInsertGuidDataWithCustomSchema()
+        {
+            var expression = GeneratorTestHelper.GetInsertGUIDExpression();
+            expression.SchemaName = "TestSchema";
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe(string.Format("INSERT INTO [TestTable1] ([guid]) VALUES ('{0}');", GeneratorTestHelper.TestGuid.ToString()));
+        }
+
+        [Test]
+        public override void CanInsertGuidDataWithDefaultSchema()
+        {
+            var expression = GeneratorTestHelper.GetInsertGUIDExpression();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe(string.Format("INSERT INTO [TestTable1] ([guid]) VALUES ('{0}');", GeneratorTestHelper.TestGuid.ToString()));
+        }
+
+        [Test]
+        public override void CanUpdateDataForAllDataWithCustomSchema()
+        {
+            var expression = GeneratorTestHelper.GetUpdateDataExpressionWithAllRows();
+            expression.SchemaName = "TestSchema";
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("UPDATE [TestTable1] SET [Name] = N'Just''in', [Age] = 25 WHERE 1 = 1;");
+        }
+
+        [Test]
+        public override void CanUpdateDataForAllDataWithDefaultSchema()
+        {
+            var expression = GeneratorTestHelper.GetUpdateDataExpressionWithAllRows();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("UPDATE [TestTable1] SET [Name] = N'Just''in', [Age] = 25 WHERE 1 = 1;");
+        }
+
+        [Test]
+        public override void CanUpdateDataWithCustomSchema()
+        {
+            var expression = GeneratorTestHelper.GetUpdateDataExpression();
+            expression.SchemaName = "TestSchema";
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("UPDATE [TestTable1] SET [Name] = N'Just''in', [Age] = 25 WHERE [Id] = 9 AND [Homepage] IS NULL;");
+        }
+
+        [Test]
+        public override void CanUpdateDataWithDefaultSchema()
+        {
+            var expression = GeneratorTestHelper.GetUpdateDataExpression();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("UPDATE [TestTable1] SET [Name] = N'Just''in', [Age] = 25 WHERE [Id] = 9 AND [Homepage] IS NULL;");
+        }
+
+        [Test]
+        public override void CanUpdateDataWithDbNullCriteria()
+        {
+            var expression = GeneratorTestHelper.GetUpdateDataExpressionWithDbNullValue();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("UPDATE [dbo].[TestTable1] SET [Name] = N'Just''in', [Age] = 25 WHERE [Id] = 9 AND [Homepage] IS NULL;");
+        }
+
+        [Test]
+        public void CanInsertDataWithIdentityInsert()
+        {
+            var expression = GeneratorTestHelper.GetInsertDataExpression();
+            expression.AdditionalFeatures.Add(SqlServerExtensions.IdentityInsert, true);
+
+            var expected = "SET IDENTITY_INSERT [TestTable1] ON;";
+            expected += "INSERT INTO [dbo].[TestTable1] ([Id], [Name], [Website]) VALUES (1, N'Just''in', N'codethinked.com');";
+            expected += @"INSERT INTO [dbo].[TestTable1] ([Id], [Name], [Website]) VALUES (2, N'Na\te', N'kohari.org');";
+            expected += "SET IDENTITY_INSERT [TestTable1] OFF;";
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe(expected);
+        }
+
+        [Test]
+        public void CanInsertDataWithIdentityInsertInStrictMode()
+        {
+            var expression = GeneratorTestHelper.GetInsertDataExpression();
+            expression.AdditionalFeatures.Add(SqlServerExtensions.IdentityInsert, true);
+            Generator.CompatibilityMode = Runner.CompatibilityMode.STRICT;
+
+            var expected = "SET IDENTITY_INSERT [TestTable1] ON;";
+            expected += "INSERT INTO [TestTable1] ([Id], [Name], [Website]) VALUES (1, N'Just''in', N'codethinked.com');";
+            expected += @"INSERT INTO [TestTable1] ([Id], [Name], [Website]) VALUES (2, N'Na\te', N'kohari.org');";
+            expected += "SET IDENTITY_INSERT [TestTable1] OFF;";
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe(expected);
+        }
+
+        [Test]
+        public void CanUpsertDataWithSingleMatchColumnAndCustomSchema()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpression();
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldContain("MERGE [TestSchema].[TestTable1] AS target");
-            result.ShouldContain("USING (VALUES (N'Just''in', N'github.com')) AS source ([Name], [Website])");
-            result.ShouldContain("ON (target.[Name] = source.[Name])");
-            result.ShouldContain("WHEN MATCHED THEN");
-            result.ShouldContain("UPDATE SET [Website] = source.[Website]");
-            result.ShouldContain("WHEN NOT MATCHED THEN");
-            result.ShouldContain("INSERT ([Name], [Website])");
-            result.ShouldContain("VALUES (source.[Name], source.[Website])");
+            result.ShouldBe("""
+                            MERGE [TestSchema].[TestTable1] AS target
+                            USING (VALUES (N'Just''in', N'github.com')) AS source ([Name], [Website])
+                            ON (target.[Name] = source.[Name])
+                            WHEN MATCHED THEN
+                                UPDATE SET [Website] = source.[Website]
+                            WHEN NOT MATCHED THEN
+                                INSERT ([Name], [Website])
+                                VALUES (source.[Name], source.[Website])
+                            ;
+                            """);
         }
 
         [Test]
-        public override void CanUpsertDataWithSingleMatchColumnAndDefaultSchema()
+        public void CanUpsertDataWithSingleMatchColumnAndDefaultSchema()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpression();
 
             var result = Generator.Generate(expression);
-            result.ShouldContain("MERGE [TestTable1] AS target");
-            result.ShouldContain("USING (VALUES (N'Just''in', N'github.com')) AS source ([Name], [Website])");
-            result.ShouldContain("ON (target.[Name] = source.[Name])");
-            result.ShouldContain("WHEN MATCHED THEN");
-            result.ShouldContain("UPDATE SET [Website] = source.[Website]");
-            result.ShouldContain("WHEN NOT MATCHED THEN");
-            result.ShouldContain("INSERT ([Name], [Website])");
-            result.ShouldContain("VALUES (source.[Name], source.[Website])");
+            result.ShouldBe("""
+                            MERGE [dbo].[TestTable1] AS target
+                            USING (VALUES (N'Just''in', N'github.com')) AS source ([Name], [Website])
+                            ON (target.[Name] = source.[Name])
+                            WHEN MATCHED THEN
+                                UPDATE SET [Website] = source.[Website]
+                            WHEN NOT MATCHED THEN
+                                INSERT ([Name], [Website])
+                                VALUES (source.[Name], source.[Website])
+                            ;
+                            """);
         }
 
         [Test]
-        public override void CanUpsertDataWithMultipleMatchColumnsAndCustomSchema()
+        public void CanUpsertDataWithMultipleMatchColumnsAndCustomSchema()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithMultipleMatchColumns();
             expression.SchemaName = "TestSchema";
 
             var result = Generator.Generate(expression);
-            result.ShouldContain("MERGE [TestSchema].[TestTable1] AS target");
-            result.ShouldContain("USING (VALUES (N'Just''in', N'Developer', N'github.com')) AS source ([Name], [Category], [Website])");
-            result.ShouldContain("ON (target.[Name] = source.[Name] AND target.[Category] = source.[Category])");
-            result.ShouldContain("WHEN MATCHED THEN");
-            result.ShouldContain("UPDATE SET [Website] = source.[Website]");
-            result.ShouldContain("WHEN NOT MATCHED THEN");
-            result.ShouldContain("INSERT ([Name], [Category], [Website])");
-            result.ShouldContain("VALUES (source.[Name], source.[Category], source.[Website])");
+            result.ShouldBe("""
+                            MERGE [TestSchema].[TestTable1] AS target
+                            USING (VALUES (N'Just''in', N'Developer', N'github.com')) AS source ([Name], [Category], [Website])
+                            ON (target.[Name] = source.[Name] AND target.[Category] = source.[Category])
+                            WHEN MATCHED THEN
+                                UPDATE SET [Website] = source.[Website]
+                            WHEN NOT MATCHED THEN
+                                INSERT ([Name], [Category], [Website])
+                                VALUES (source.[Name], source.[Category], source.[Website])
+                            ;
+                            """);
         }
 
         [Test]
-        public override void CanUpsertDataWithMultipleMatchColumnsAndDefaultSchema()
+        public void CanUpsertDataWithMultipleMatchColumnsAndDefaultSchema()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithMultipleMatchColumns();
 
             var result = Generator.Generate(expression);
-            result.ShouldContain("MERGE [TestTable1] AS target");
-            result.ShouldContain("ON (target.[Name] = source.[Name] AND target.[Category] = source.[Category])");
+            result.ShouldBe("""
+                            MERGE [dbo].[TestTable1] AS target
+                            USING (VALUES (N'Just''in', N'Developer', N'github.com')) AS source ([Name], [Category], [Website])
+                            ON (target.[Name] = source.[Name] AND target.[Category] = source.[Category])
+                            WHEN MATCHED THEN
+                                UPDATE SET [Website] = source.[Website]
+                            WHEN NOT MATCHED THEN
+                                INSERT ([Name], [Category], [Website])
+                                VALUES (source.[Name], source.[Category], source.[Website])
+                            ;
+                            """);
         }
 
         [Test]
-        public override void CanUpsertDataWithSpecificUpdateColumns()
+        public void CanUpsertDataWithSpecificUpdateColumns()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithSpecificUpdateColumns();
 
             var result = Generator.Generate(expression);
-            result.ShouldContain("MERGE [TestTable1] AS target");
-            result.ShouldContain("WHEN MATCHED THEN");
-            result.ShouldContain("UPDATE SET [Website] = source.[Website]");
-            result.ShouldNotContain("UPDATE SET [Email] = source.[Email]"); // Should not update non-specified columns
-            result.ShouldContain("INSERT ([Name], [Website], [Email])"); // But insert should include all columns
+            result.ShouldBe("""
+                            MERGE [dbo].[TestTable1] AS target
+                            USING (VALUES (N'Just''in', N'github.com', N'test@example.com')) AS source ([Name], [Website], [Email])
+                            ON (target.[Name] = source.[Name])
+                            WHEN MATCHED THEN
+                                UPDATE SET [Website] = source.[Website]
+                            WHEN NOT MATCHED THEN
+                                INSERT ([Name], [Website], [Email])
+                                VALUES (source.[Name], source.[Website], source.[Email])
+                            ;
+                            """);
         }
 
         [Test]
-        public override void CanUpsertMultipleRows()
+        public void CanUpsertMultipleRows()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithMultipleRows();
 
             var result = Generator.Generate(expression);
-            // Should generate separate MERGE statements for each row
-            result.ShouldContain("MERGE [TestTable1] AS target");
-            result.ShouldContain("USING (VALUES (N'Just''in', N'github.com')) AS source");
-            result.ShouldContain("USING (VALUES (N'Jane', N'example.com')) AS source");
+            result.ShouldBe("MERGE [TestTable1] AS target USING (VALUES (N'Just''in', N'github.com')) AS source ([Name], [Website]) ON (target.[Name] = source.[Name]) WHEN MATCHED THEN UPDATE SET [Website] = source.[Website] WHEN NOT MATCHED THEN INSERT ([Name], [Website]) VALUES (source.[Name], source.[Website]);\r\nMERGE [TestTable1] AS target USING (VALUES (N'Jane', N'example.com')) AS source ([Name], [Website]) ON (target.[Name] = source.[Name]) WHEN MATCHED THEN UPDATE SET [Website] = source.[Website] WHEN NOT MATCHED THEN INSERT ([Name], [Website]) VALUES (source.[Name], source.[Website]);");
         }
 
         [Test]
@@ -133,33 +343,53 @@ namespace FluentMigrator.Tests.Unit.Generators.SqlServer2008
             var expression = GeneratorTestHelper.GetUpsertDataExpression();
 
             var result = Generator.Generate(expression);
-            result.ShouldContain("N'Just''in'"); // Should properly escape single quotes
+            result.ShouldBe("""
+                            MERGE [dbo].[TestTable1] AS target
+                            USING (VALUES (N'Just''in', N'github.com')) AS source ([Name], [Website])
+                            ON (target.[Name] = source.[Name])
+                            WHEN MATCHED THEN
+                                UPDATE SET [Website] = source.[Website]
+                            WHEN NOT MATCHED THEN
+                                INSERT ([Name], [Website])
+                                VALUES (source.[Name], source.[Website])
+                            ;
+                            """);
         }
 
         [Test]
-        public override void CanUpsertDataWithIgnoreInsertIfExists()
+        public void CanUpsertDataWithIgnoreInsertIfExists()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithIgnoreInsertIfExists();
 
             var result = Generator.Generate(expression);
-            result.ShouldContain("MERGE [dbo].[TestTable1] AS target");
-            result.ShouldContain("WHEN NOT MATCHED THEN");
-            result.ShouldContain("INSERT ([Name], [Website])");
-            result.ShouldNotContain("WHEN MATCHED THEN"); // Should not contain any UPDATE clause
-            result.ShouldNotContain("UPDATE SET"); // Should not contain any UPDATE statement
+            result.ShouldBe("""
+                            MERGE [dbo].[TestTable1] AS target
+                            USING (VALUES (N'Just''in', N'github.com')) AS source ([Name], [Website])
+                            ON (target.[Name] = source.[Name])
+                            WHEN NOT MATCHED THEN
+                                INSERT ([Name], [Website])
+                                VALUES (source.[Name], source.[Website])
+                            ;
+                            """);
         }
 
         [Test]
-        public override void CanUpsertDataWithRawUpdateValues()
+        public void CanUpsertDataWithRawUpdateValues()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithRawUpdateValues();
 
             var result = Generator.Generate(expression);
-            result.ShouldContain("MERGE [dbo].[TestTable1] AS target");
-            result.ShouldContain("WHEN MATCHED THEN");
-            result.ShouldContain("UPDATE SET [Website] = N'codethinked.com', [Email] = UPPER('admin@example.com')");
-            result.ShouldContain("WHEN NOT MATCHED THEN");
-            result.ShouldContain("INSERT ([Name], [Website], [Email])");
+            result.ShouldBe("""
+                            MERGE [dbo].[TestTable1] AS target
+                            USING (VALUES (N'Just''in', N'github.com', N'test@example.com')) AS source ([Name], [Website], [Email])
+                            ON (target.[Name] = source.[Name])
+                            WHEN MATCHED THEN
+                                UPDATE SET [Website] = N'codethinked.com', [Email] = UPPER('admin@example.com')
+                            WHEN NOT MATCHED THEN
+                                INSERT ([Name], [Website], [Email])
+                                VALUES (source.[Name], source.[Website], source.[Email])
+                            ;
+                            """);
         }
     }
 }

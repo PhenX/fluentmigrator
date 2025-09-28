@@ -41,15 +41,16 @@ namespace FluentMigrator.Tests.Unit.Generators.MySql5
         public void CanUpsertData()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpression();
-            
+
             var result = Generator.Generate(expression);
-            result.ShouldBe(
-                "INSERT INTO `TestTable1`" + System.Environment.NewLine +
-                "(`Name`, `Website`)" + System.Environment.NewLine +
-                "VALUES" + System.Environment.NewLine +
-                "('Just''in', 'github.com')" + System.Environment.NewLine +
-                "ON DUPLICATE KEY UPDATE" + System.Environment.NewLine +
-                "    `Website` = VALUES(`Website`);");
+            result.ShouldBe("""
+                            INSERT INTO `TestTable1`
+                            (`Name`, `Website`)
+                            VALUES
+                            ('Just''in', 'github.com')
+                            ON DUPLICATE KEY UPDATE
+                                `Website` = VALUES(`Website`);
+                            """, StringCompareShould.IgnoreLineEndings);
         }
 
         [Test]
@@ -57,61 +58,65 @@ namespace FluentMigrator.Tests.Unit.Generators.MySql5
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpression();
             expression.SchemaName = "TestSchema";
-            
+
             var result = Generator.Generate(expression);
-            result.ShouldBe(
-                "INSERT INTO `TestSchema`.`TestTable1`" + System.Environment.NewLine +
-                "(`Name`, `Website`)" + System.Environment.NewLine +
-                "VALUES" + System.Environment.NewLine +
-                "('Just''in', 'github.com')" + System.Environment.NewLine +
-                "ON DUPLICATE KEY UPDATE" + System.Environment.NewLine +
-                "    `Website` = VALUES(`Website`);");
+            result.ShouldBe("""
+                            INSERT INTO `TestTable1`
+                            (`Name`, `Website`)
+                            VALUES
+                            ('Just''in', 'github.com')
+                            ON DUPLICATE KEY UPDATE
+                                `Website` = VALUES(`Website`);
+                            """, StringCompareShould.IgnoreLineEndings);
         }
 
         [Test]
         public void CanUpsertDataWithSpecificUpdateColumns()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithUpdateColumns();
-            
+
             var result = Generator.Generate(expression);
-            result.ShouldBe(
-                "INSERT INTO `TestTable1`" + System.Environment.NewLine +
-                "(`Name`, `Website`, `Age`)" + System.Environment.NewLine +
-                "VALUES" + System.Environment.NewLine +
-                "('Just''in', 'github.com', 30)" + System.Environment.NewLine +
-                "ON DUPLICATE KEY UPDATE" + System.Environment.NewLine +
-                "    `Website` = VALUES(`Website`);");
+            result.ShouldBe("""
+                            INSERT INTO `TestTable1`
+                            (`Name`, `Website`, `Age`)
+                            VALUES
+                            ('Just''in', 'github.com', 30)
+                            ON DUPLICATE KEY UPDATE
+                                `Website` = VALUES(`Website`);
+                            """, StringCompareShould.IgnoreLineEndings);
         }
 
         [Test]
         public void CanUpsertDataWithMultipleMatchColumns()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithMultipleKeys();
-            
+
             var result = Generator.Generate(expression);
-            result.ShouldBe(
-                "INSERT INTO `TestTable1`" + System.Environment.NewLine +
-                "(`Name`, `Age`, `Website`)" + System.Environment.NewLine +
-                "VALUES" + System.Environment.NewLine +
-                "('Just''in', 30, 'github.com')" + System.Environment.NewLine +
-                "ON DUPLICATE KEY UPDATE" + System.Environment.NewLine +
-                "    `Website` = VALUES(`Website`);");
+            result.ShouldBe("""
+                            INSERT INTO `TestTable1`
+                            (`Name`, `Age`, `Website`)
+                            VALUES
+                            ('Just''in', 30, 'github.com')
+                            ON DUPLICATE KEY UPDATE
+                                `Website` = VALUES(`Website`);
+                            """, StringCompareShould.IgnoreLineEndings);
         }
 
         [Test]
         public void CanUpsertDataWithRawUpdateValues()
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithRawUpdateValues();
-            
+
             var result = Generator.Generate(expression);
-            result.ShouldBe(
-                "INSERT INTO `TestTable1`" + System.Environment.NewLine +
-                "(`Name`, `Website`, `Email`)" + System.Environment.NewLine +
-                "VALUES" + System.Environment.NewLine +
-                "('Just''in', 'github.com', 'test@example.com')" + System.Environment.NewLine +
-                "ON DUPLICATE KEY UPDATE" + System.Environment.NewLine +
-                "    `Website` = 'codethinked.com'," + System.Environment.NewLine +
-                "    `Email` = UPPER('admin@example.com');");
+            result.ShouldBe("""
+                            INSERT INTO `TestTable1`
+                            (`Name`, `Website`, `Email`)
+                            VALUES
+                            ('Just''in', 'github.com', 'test@example.com')
+                            ON DUPLICATE KEY UPDATE
+                                `Website` = 'codethinked.com',
+                                `Email` = UPPER('admin@example.com');
+                            """, StringCompareShould.IgnoreLineEndings);
         }
 
         [Test]
@@ -119,13 +124,14 @@ namespace FluentMigrator.Tests.Unit.Generators.MySql5
         {
             var expression = GeneratorTestHelper.GetUpsertDataExpression();
             expression.IgnoreInsertIfExists = true;
-            
+
             var result = Generator.Generate(expression);
-            result.ShouldBe(
-                "INSERT IGNORE INTO `TestTable1`" + System.Environment.NewLine +
-                "(`Name`, `Website`)" + System.Environment.NewLine +
-                "VALUES" + System.Environment.NewLine +
-                "('Just''in', 'github.com');");
+            result.ShouldBe("""
+                            INSERT IGNORE INTO `TestTable1`
+                            (`Name`, `Website`)
+                            VALUES
+                            ('Just''in', 'github.com');
+                            """, StringCompareShould.IgnoreLineEndings);
         }
     }
 }

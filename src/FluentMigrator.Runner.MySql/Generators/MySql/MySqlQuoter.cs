@@ -70,17 +70,5 @@ namespace FluentMigrator.Runner.Generators.MySql
             // This database doesn't support schemata
             return string.Empty;
         }
-
-        /// <inheritdoc />
-        public override string QuoteTableName(string tableName, string schemaName = null)
-        {
-            if (string.IsNullOrEmpty(schemaName))
-                return IsQuoted(tableName) ? tableName : Quote(tableName);
-            
-            // In MySQL, schemas are databases, so we need to use database.table format
-            var quotedSchema = IsQuoted(schemaName) ? schemaName : Quote(schemaName);
-            var quotedTable = IsQuoted(tableName) ? tableName : Quote(tableName);
-            return $"{quotedSchema}.{quotedTable}";
-        }
     }
 }
