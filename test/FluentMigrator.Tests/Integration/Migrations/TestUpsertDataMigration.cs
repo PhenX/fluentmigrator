@@ -126,6 +126,7 @@ namespace FluentMigrator.Tests.Integration.Migrations
             // Note: The above example works with all supported databases:
             // - SQL Server 2008+: Uses MERGE statement with native expressions
             // - PostgreSQL 9.5+: Uses INSERT ... ON CONFLICT DO UPDATE with native expressions  
+            // - MySQL 5.x+: Uses INSERT ... ON DUPLICATE KEY UPDATE with native expressions
             // - Generic databases: Uses IF EXISTS/UPDATE/ELSE/INSERT pattern
         }
 
