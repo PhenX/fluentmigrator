@@ -108,23 +108,6 @@ namespace FluentMigrator.Tests.Integration.Migrations.Upsert
                 })
                 .IgnoreInsertIfExists();
 
-            // // Test UpdateColumns with RawSql support - specify exact update values including database functions
-            // Upsert.IntoTable("UpsertTestTable")
-            //     .MatchOn("Email")
-            //     .Row(new
-            //     {
-            //         Email = "rawsql@example.com",
-            //         Name = "RawSql Test User",
-            //         IsActive = true,
-            //         Category = "Test"
-            //     })
-            //     .UpdateColumns(new
-            //     {
-            //         Name = "Updated with RawSql",
-            //         LastModified = RawSql.Insert("GETDATE()"),  // Use database function for timestamp
-            //         Category = "UpdatedCategory"
-            //     });
-
             // Note: The above example works with all supported databases:
             // - SQL Server 2008+: Uses MERGE statement with native expressions
             // - PostgreSQL 9.5+: Uses INSERT ... ON CONFLICT DO UPDATE with native expressions

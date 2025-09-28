@@ -171,76 +171,103 @@ namespace FluentMigrator.Runner.Generators.SqlServer
             return string.Join(", ", items);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Generates a SQL Server MERGE statement that handles all rows in a single operation.
+        /// </summary>
+        /// <param name="expression">The upsert data expression containing rows to be inserted or updated.</param>
+        /// <returns>A SQL Server MERGE statement for all rows.</returns>
         public override string Generate(UpsertDataExpression expression)
         {
-            // Use SQL Server MERGE statement for optimal performance
+            if (!expression.Rows.Any())
+            {
+                return string.Empty;
+            }
+
             var output = new StringBuilder();
-            
+
+            // Get all unique column names from all rows
+            var allColumnNames = expression.Rows
+                .SelectMany(row => row.Select(r => r.Key))
+                .Distinct()
+                .OrderBy(name => name)
+                .ToList();
+
+            var quotedColumnNames = allColumnNames.Select(name => Quoter.QuoteColumnName(name)).ToList();
+
+            // Start the MERGE statement
+            output.AppendLine($"MERGE {Quoter.QuoteTableName(expression.TableName, expression.SchemaName)} AS target");
+
+            // Create the source with all row data using VALUES clause
+            output.AppendLine("USING (VALUES");
+
+            var rowValues = new List<string>();
             foreach (var row in expression.Rows)
             {
-                // Start the MERGE statement
-                output.AppendLine($"MERGE {Quoter.QuoteTableName(expression.TableName, expression.SchemaName)} AS target");
-                
-                // Create the source with the row data
-                var columnNames = row.Select(kvp => Quoter.QuoteColumnName(kvp.Key)).ToList();
-                var columnValues = row.Select(kvp => Quoter.QuoteValue(kvp.Value)).ToList();
-                
-                output.AppendLine($"USING (VALUES ({string.Join(", ", columnValues)})) AS source ({string.Join(", ", columnNames)})");
-                
-                // Create the ON condition using match columns
-                var matchConditions = expression.MatchColumns.Select(matchColumn =>
-                    $"target.{Quoter.QuoteColumnName(matchColumn)} = source.{Quoter.QuoteColumnName(matchColumn)}"
+                var values = allColumnNames.Select(columnName =>
+                    row.TryGetValue(columnName, out var value)
+                        ? Quoter.QuoteValue(value)
+                        : "NULL"
                 ).ToList();
-                
-                output.AppendLine($"ON ({string.Join(" AND ", matchConditions)})");
-                
-                if (expression.IgnoreInsertIfExists)
+
+                rowValues.Add($"    ({string.Join(", ", values)})");
+            }
+
+            output.AppendLine(string.Join(",\n", rowValues));
+            output.AppendLine($") AS source ({string.Join(", ", quotedColumnNames)})");
+
+            // Create the ON condition using match columns
+            var matchConditions = expression.MatchColumns.Select(matchColumn =>
+                $"target.{Quoter.QuoteColumnName(matchColumn)} = source.{Quoter.QuoteColumnName(matchColumn)}"
+            ).ToList();
+
+            output.AppendLine($"ON ({string.Join(" AND ", matchConditions)})");
+
+            if (expression.IgnoreInsertIfExists)
+            {
+                // INSERT IGNORE mode - only insert when not matched, no update
+                output.AppendLine("WHEN NOT MATCHED THEN");
+                output.AppendLine($"    INSERT ({string.Join(", ", quotedColumnNames)})");
+                output.AppendLine($"    VALUES ({string.Join(", ", quotedColumnNames.Select(name => $"source.{name}"))})");
+            }
+            else
+            {
+                // Standard UPSERT mode - UPDATE when matched, INSERT when not matched
+                if (expression.UpdateValues?.Any() == true)
                 {
-                    // INSERT IGNORE mode - only insert when not matched, no update
-                    output.AppendLine("WHEN NOT MATCHED THEN");
-                    output.AppendLine($"    INSERT ({string.Join(", ", columnNames)})");
-                    output.AppendLine($"    VALUES ({string.Join(", ", columnNames.Select(name => $"source.{name}"))})");
+                    // Use specific update values (supports RawSql)
+                    var updateAssignments = expression.UpdateValues.Select(updateValue =>
+                        $"target.{Quoter.QuoteColumnName(updateValue.Key)} = {Quoter.QuoteValue(updateValue.Value)}"
+                    ).ToList();
+
+                    output.AppendLine("WHEN MATCHED THEN");
+                    output.AppendLine($"    UPDATE SET {string.Join(", ", updateAssignments)}");
                 }
                 else
                 {
-                    // Standard UPSERT mode - UPDATE when matched, INSERT when not matched
-                    if (expression.UpdateValues?.Any() == true)
+                    // Use column-based update logic
+                    var columnsToUpdate = expression.UpdateColumns?.Any() == true
+                        ? expression.UpdateColumns
+                        : allColumnNames.Where(column => !expression.MatchColumns.Contains(column)).ToList();
+
+                    if (columnsToUpdate.Any())
                     {
-                        // Use specific update values (supports RawSql)
-                        var updateAssignments = expression.UpdateValues.Select(updateValue =>
-                            $"{Quoter.QuoteColumnName(updateValue.Key)} = {Quoter.QuoteValue(updateValue.Value)}"
+                        var updateAssignments = columnsToUpdate.Select(column =>
+                            $"target.{Quoter.QuoteColumnName(column)} = source.{Quoter.QuoteColumnName(column)}"
                         ).ToList();
-                        
+
                         output.AppendLine("WHEN MATCHED THEN");
                         output.AppendLine($"    UPDATE SET {string.Join(", ", updateAssignments)}");
                     }
-                    else
-                    {
-                        // Use column-based update logic
-                        var columnsToUpdate = expression.UpdateColumns?.Any() == true 
-                            ? expression.UpdateColumns 
-                            : row.Where(kvp => !expression.MatchColumns.Contains(kvp.Key)).Select(kvp => kvp.Key).ToList();
-                        
-                        if (columnsToUpdate.Any())
-                        {
-                            var updateAssignments = columnsToUpdate.Select(column =>
-                                $"{Quoter.QuoteColumnName(column)} = source.{Quoter.QuoteColumnName(column)}"
-                            ).ToList();
-                            
-                            output.AppendLine("WHEN MATCHED THEN");
-                            output.AppendLine($"    UPDATE SET {string.Join(", ", updateAssignments)}");
-                        }
-                    }
-                    
-                    // WHEN NOT MATCHED THEN INSERT
-                    output.AppendLine("WHEN NOT MATCHED THEN");
-                    output.AppendLine($"    INSERT ({string.Join(", ", columnNames)})");
-                    output.AppendLine($"    VALUES ({string.Join(", ", columnNames.Select(name => $"source.{name}"))})");
                 }
-                AppendSqlStatementEndToken(output);
+
+                // WHEN NOT MATCHED THEN INSERT
+                output.AppendLine("WHEN NOT MATCHED THEN");
+                output.AppendLine($"    INSERT ({string.Join(", ", quotedColumnNames)})");
+                output.AppendLine($"    VALUES ({string.Join(", ", quotedColumnNames.Select(name => $"source.{name}"))})");
             }
-            
+
+            AppendSqlStatementEndToken(output);
+
             return output.ToString();
         }
     }

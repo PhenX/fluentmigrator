@@ -325,7 +325,20 @@ namespace FluentMigrator.Tests.Unit.Generators.SqlServer2008
             var expression = GeneratorTestHelper.GetUpsertDataExpressionWithMultipleRows();
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("MERGE [TestTable1] AS target USING (VALUES (N'Just''in', N'github.com')) AS source ([Name], [Website]) ON (target.[Name] = source.[Name]) WHEN MATCHED THEN UPDATE SET [Website] = source.[Website] WHEN NOT MATCHED THEN INSERT ([Name], [Website]) VALUES (source.[Name], source.[Website]);\r\nMERGE [TestTable1] AS target USING (VALUES (N'Jane', N'example.com')) AS source ([Name], [Website]) ON (target.[Name] = source.[Name]) WHEN MATCHED THEN UPDATE SET [Website] = source.[Website] WHEN NOT MATCHED THEN INSERT ([Name], [Website]) VALUES (source.[Name], source.[Website]);");
+            result.ShouldBe("""
+                            MERGE [dbo].[TestTable1] AS target
+                            USING (VALUES
+                                (N'Just''in', N'github.com'),
+                                (N'Jane', N'example.com')
+                            ) AS source ([Name], [Website])
+                            ON (target.[Name] = source.[Name])
+                            WHEN MATCHED THEN
+                                UPDATE SET target.[Website] = source.[Website]
+                            WHEN NOT MATCHED THEN
+                                INSERT ([Name], [Website])
+                                VALUES (source.[Name], source.[Website])
+                            ;
+                            """, StringCompareShould.IgnoreLineEndings);
         }
 
         [Test]

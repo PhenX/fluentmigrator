@@ -25,5 +25,24 @@ namespace FluentMigrator.Model
     /// </summary>
     public class InsertionDataDefinition : List<KeyValuePair<string, object>>
     {
+        /// <summary>
+        /// Attempts to get a value by column name
+        /// </summary>
+        public bool TryGetValue(string columnName, out object value)
+        {
+            foreach (var kvp in this)
+            {
+                if (kvp.Key != columnName)
+                {
+                    continue;
+                }
+
+                value = kvp.Value;
+                return true;
+            }
+
+            value = null;
+            return false;
+        }
     }
 }
