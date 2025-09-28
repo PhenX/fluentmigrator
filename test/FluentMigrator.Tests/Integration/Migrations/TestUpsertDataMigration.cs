@@ -105,6 +105,23 @@ namespace FluentMigrator.Tests.Integration.Migrations
                     Category = "ShouldNotUpdate"
                 })
                 .IgnoreInsertIfExists();
+
+            // Test UpdateColumns with RawSql support - specify exact update values including database functions
+            Upsert.IntoTable("UpsertTestTable")
+                .MatchOn("Email")
+                .Row(new 
+                { 
+                    Email = "rawsql@example.com", 
+                    Name = "RawSql Test User", 
+                    IsActive = true,
+                    Category = "Test"
+                })
+                .UpdateColumns(new 
+                { 
+                    Name = "Updated with RawSql", 
+                    LastModified = RawSql.Insert("GETDATE()"),  // Use database function for timestamp
+                    Category = "UpdatedCategory" 
+                });
         }
 
         public override void Down()

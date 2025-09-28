@@ -1037,5 +1037,29 @@ namespace FluentMigrator.Tests.Unit.Generators
 
             return expression;
         }
+
+        public static UpsertDataExpression GetUpsertDataExpressionWithRawUpdateValues()
+        {
+            var expression = new UpsertDataExpression
+            {
+                TableName = TestTableName1
+            };
+            expression.MatchColumns.Add("Name");
+
+            var row = new InsertionDataDefinition();
+            row.Add(new KeyValuePair<string, object>("Name", "Just'in"));
+            row.Add(new KeyValuePair<string, object>("Website", "github.com"));
+            row.Add(new KeyValuePair<string, object>("Email", "test@example.com"));
+            expression.Rows.Add(row);
+
+            // Set update values with RawSql
+            expression.UpdateValues = new List<KeyValuePair<string, object>>
+            {
+                new KeyValuePair<string, object>("Website", "codethinked.com"),
+                new KeyValuePair<string, object>("Email", RawSql.Insert("UPPER('admin@example.com')"))
+            };
+
+            return expression;
+        }
     }
 }

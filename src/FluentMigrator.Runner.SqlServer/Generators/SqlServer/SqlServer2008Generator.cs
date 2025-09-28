@@ -205,18 +205,32 @@ namespace FluentMigrator.Runner.Generators.SqlServer
                 else
                 {
                     // Standard UPSERT mode - UPDATE when matched, INSERT when not matched
-                    var columnsToUpdate = expression.UpdateColumns?.Any() == true 
-                        ? expression.UpdateColumns 
-                        : row.Where(kvp => !expression.MatchColumns.Contains(kvp.Key)).Select(kvp => kvp.Key).ToList();
-                    
-                    if (columnsToUpdate.Any())
+                    if (expression.UpdateValues?.Any() == true)
                     {
-                        var updateAssignments = columnsToUpdate.Select(column =>
-                            $"{Quoter.QuoteColumnName(column)} = source.{Quoter.QuoteColumnName(column)}"
+                        // Use specific update values (supports RawSql)
+                        var updateAssignments = expression.UpdateValues.Select(updateValue =>
+                            $"{Quoter.QuoteColumnName(updateValue.Key)} = {Quoter.QuoteValue(updateValue.Value)}"
                         ).ToList();
                         
                         output.AppendLine("WHEN MATCHED THEN");
                         output.AppendLine($"    UPDATE SET {string.Join(", ", updateAssignments)}");
+                    }
+                    else
+                    {
+                        // Use column-based update logic
+                        var columnsToUpdate = expression.UpdateColumns?.Any() == true 
+                            ? expression.UpdateColumns 
+                            : row.Where(kvp => !expression.MatchColumns.Contains(kvp.Key)).Select(kvp => kvp.Key).ToList();
+                        
+                        if (columnsToUpdate.Any())
+                        {
+                            var updateAssignments = columnsToUpdate.Select(column =>
+                                $"{Quoter.QuoteColumnName(column)} = source.{Quoter.QuoteColumnName(column)}"
+                            ).ToList();
+                            
+                            output.AppendLine("WHEN MATCHED THEN");
+                            output.AppendLine($"    UPDATE SET {string.Join(", ", updateAssignments)}");
+                        }
                     }
                     
                     // WHEN NOT MATCHED THEN INSERT

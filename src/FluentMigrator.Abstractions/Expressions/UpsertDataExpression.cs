@@ -55,6 +55,13 @@ namespace FluentMigrator.Expressions
         public List<string> UpdateColumns { get; set; }
 
         /// <summary>
+        /// Gets or sets the specific values to use when updating matched rows.
+        /// When specified, these values override the values from the row data for update operations.
+        /// This supports RawSql expressions for database-specific functions.
+        /// </summary>
+        public List<KeyValuePair<string, object>> UpdateValues { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether to ignore insert if the row already exists (INSERT IGNORE mode)
         /// When true, existing rows are not updated, only new rows are inserted
         /// </summary>
@@ -135,6 +142,18 @@ namespace FluentMigrator.Expressions
             if (IgnoreInsertIfExists && UpdateColumns != null && UpdateColumns.Count > 0)
             {
                 yield return new ValidationResult("UpdateColumns cannot be specified when IgnoreInsertIfExists is true");
+            }
+
+            // Validate that UpdateColumns and UpdateValues are not both specified
+            if (UpdateColumns != null && UpdateColumns.Count > 0 && UpdateValues != null && UpdateValues.Count > 0)
+            {
+                yield return new ValidationResult("UpdateColumns and UpdateValues cannot both be specified. Use either UpdateColumns (column names) or UpdateValues (column name/value pairs)");
+            }
+
+            // Validate that UpdateValues and IgnoreInsertIfExists are not both specified
+            if (IgnoreInsertIfExists && UpdateValues != null && UpdateValues.Count > 0)
+            {
+                yield return new ValidationResult("UpdateValues cannot be specified when IgnoreInsertIfExists is true");
             }
         }
     }

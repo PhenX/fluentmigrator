@@ -219,5 +219,57 @@ namespace FluentMigrator.Tests.Unit.Expressions
             results.ShouldNotBeEmpty();
             results.ShouldContain(r => r.ErrorMessage.Contains("UpdateColumns cannot be specified when IgnoreInsertIfExists is true"));
         }
+
+        [Test]
+        public void ShouldSupportUpdateValues()
+        {
+            _expression.UpdateValues = new List<KeyValuePair<string, object>>
+            {
+                new KeyValuePair<string, object>("Name", "Updated Name"),
+                new KeyValuePair<string, object>("Email", RawSql.Insert("UPPER('test@example.com')"))
+            };
+            
+            _expression.UpdateValues.Count.ShouldBe(2);
+            _expression.UpdateValues[0].Key.ShouldBe("Name");
+            _expression.UpdateValues[0].Value.ShouldBe("Updated Name");
+            _expression.UpdateValues[1].Key.ShouldBe("Email");
+            _expression.UpdateValues[1].Value.ShouldBeOfType<RawSql>();
+            
+            var context = new ValidationContext(_expression);
+            var results = _expression.Validate(context);
+            results.ShouldBeEmpty();
+        }
+
+        [Test]
+        public void ValidationShouldFailWhenUpdateColumnsAndUpdateValuesAreBothSpecified()
+        {
+            _expression.UpdateColumns = new List<string> { "Name" };
+            _expression.UpdateValues = new List<KeyValuePair<string, object>>
+            {
+                new KeyValuePair<string, object>("Email", "test@example.com")
+            };
+            
+            var context = new ValidationContext(_expression);
+            var results = _expression.Validate(context).ToList();
+            
+            results.ShouldNotBeEmpty();
+            results.ShouldContain(r => r.ErrorMessage.Contains("UpdateColumns and UpdateValues cannot both be specified"));
+        }
+
+        [Test]
+        public void ValidationShouldFailWhenUpdateValuesAndIgnoreInsertIfExistsAreBothSpecified()
+        {
+            _expression.IgnoreInsertIfExists = true;
+            _expression.UpdateValues = new List<KeyValuePair<string, object>>
+            {
+                new KeyValuePair<string, object>("Email", "test@example.com")
+            };
+            
+            var context = new ValidationContext(_expression);
+            var results = _expression.Validate(context).ToList();
+            
+            results.ShouldNotBeEmpty();
+            results.ShouldContain(r => r.ErrorMessage.Contains("UpdateValues cannot be specified when IgnoreInsertIfExists is true"));
+        }
     }
 }

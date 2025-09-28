@@ -16,6 +16,7 @@
 //
 #endregion
 
+using System.Collections.Generic;
 using System.Linq;
 using FluentMigrator.Builders.Upsert;
 using FluentMigrator.Expressions;
@@ -75,6 +76,12 @@ namespace FluentMigrator.Builders.Upsert
         public void UpdateColumns(params string[] columnNames)
         {
             Expression.UpdateColumns = columnNames?.ToList();
+        }
+
+        /// <inheritdoc />
+        public void UpdateColumns(object updateValues)
+        {
+            Expression.UpdateValues = GetData<List<KeyValuePair<string, object>>>(updateValues);
         }
 
         /// <inheritdoc />

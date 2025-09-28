@@ -188,5 +188,41 @@ namespace FluentMigrator.Tests.Unit.Builders.Upsert
             expression.Rows.Count.ShouldBe(1);
             expression.IgnoreInsertIfExists.ShouldBeTrue();
         }
+
+        [Test]
+        public void ShouldSupportUpdateColumnsWithAnonymousObject()
+        {
+            var expression = new UpsertDataExpression();
+            var builder = new UpsertDataExpressionBuilder(expression);
+
+            builder.UpdateColumns(new { Name = "Updated Name", Email = RawSql.Insert("UPPER('admin@example.com')") });
+
+            expression.UpdateValues.ShouldNotBeNull();
+            expression.UpdateValues.Count.ShouldBe(2);
+            expression.UpdateValues[0].Key.ShouldBe("Name");
+            expression.UpdateValues[0].Value.ShouldBe("Updated Name");
+            expression.UpdateValues[1].Key.ShouldBe("Email");
+            expression.UpdateValues[1].Value.ShouldBeOfType<RawSql>();
+        }
+
+        [Test]
+        public void ShouldSupportUpdateColumnsWithRawSqlInFluentChaining()
+        {
+            var expression = new UpsertDataExpression();
+            var builder = new UpsertDataExpressionBuilder(expression);
+
+            builder
+                .InSchema("TestSchema")
+                .MatchOn("Email")
+                .Row(new { Email = "test@example.com", Name = "Test User", IsActive = true })
+                .UpdateColumns(new { Name = "Updated Name", UpdatedAt = RawSql.Insert("GETDATE()") });
+
+            expression.SchemaName.ShouldBe("TestSchema");
+            expression.MatchColumns.ShouldContain("Email");
+            expression.Rows.Count.ShouldBe(1);
+            expression.UpdateValues.ShouldNotBeNull();
+            expression.UpdateValues.Count.ShouldBe(2);
+            expression.UpdateValues[1].Value.ShouldBeOfType<RawSql>();
+        }
     }
 }

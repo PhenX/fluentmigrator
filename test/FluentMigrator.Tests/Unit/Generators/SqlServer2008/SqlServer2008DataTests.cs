@@ -148,5 +148,18 @@ namespace FluentMigrator.Tests.Unit.Generators.SqlServer2008
             result.ShouldNotContain("WHEN MATCHED THEN"); // Should not contain any UPDATE clause
             result.ShouldNotContain("UPDATE SET"); // Should not contain any UPDATE statement
         }
+
+        [Test]
+        public override void CanUpsertDataWithRawUpdateValues()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithRawUpdateValues();
+
+            var result = Generator.Generate(expression);
+            result.ShouldContain("MERGE [dbo].[TestTable1] AS target");
+            result.ShouldContain("WHEN MATCHED THEN");
+            result.ShouldContain("UPDATE SET [Website] = N'codethinked.com', [Email] = UPPER('admin@example.com')");
+            result.ShouldContain("WHEN NOT MATCHED THEN");
+            result.ShouldContain("INSERT ([Name], [Website], [Email])");
+        }
     }
 }

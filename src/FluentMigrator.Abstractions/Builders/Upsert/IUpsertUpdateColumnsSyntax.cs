@@ -33,6 +33,14 @@ namespace FluentMigrator.Builders.Upsert
         void UpdateColumns(params string[] columnNames);
 
         /// <summary>
+        /// Specify the exact values to use when updating matched rows.
+        /// This allows using RawSql expressions and overriding row data values for updates.
+        /// Cannot be used together with UpdateColumns (string array version) or IgnoreInsertIfExists.
+        /// </summary>
+        /// <param name="updateValues">Anonymous object containing column names and their update values, supports RawSql expressions</param>
+        void UpdateColumns(object updateValues);
+
+        /// <summary>
         /// Configure the upsert to ignore the insert if the row already exists (INSERT IGNORE mode).
         /// When enabled, existing rows are not updated, only new rows are inserted.
         /// Cannot be used together with UpdateColumns.

@@ -309,5 +309,18 @@ namespace FluentMigrator.Tests.Unit.Generators.SqlServer2000
             result.ShouldContain("INSERT INTO [TestTable1]");
             result.ShouldContain("VALUES (N'Just''in', N'github.com')");
         }
+
+        [Test]
+        public virtual void CanUpsertDataWithRawUpdateValues()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithRawUpdateValues();
+
+            var result = Generator.Generate(expression);
+            result.ShouldContain("IF EXISTS (SELECT 1 FROM [TestTable1] WHERE [Name] = N'Just''in')");
+            result.ShouldContain("UPDATE [TestTable1]");
+            result.ShouldContain("SET [Website] = N'codethinked.com', [Email] = UPPER('admin@example.com')");
+            result.ShouldContain("INSERT INTO [TestTable1]");
+            result.ShouldContain("VALUES (N'Just''in', N'github.com', N'test@example.com')");
+        }
     }
 }

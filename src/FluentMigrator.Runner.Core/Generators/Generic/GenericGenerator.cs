@@ -488,16 +488,29 @@ namespace FluentMigrator.Runner.Generators.Generic
                     
                     // UPDATE statement
                     var updateItems = new List<string>();
-                    var columnsToUpdate = expression.UpdateColumns?.Any() == true 
-                        ? expression.UpdateColumns 
-                        : row.Where(kvp => !expression.MatchColumns.Contains(kvp.Key)).Select(kvp => kvp.Key).ToList();
-                        
-                    foreach (var column in columnsToUpdate)
+                    
+                    if (expression.UpdateValues?.Any() == true)
                     {
-                        var value = row.FirstOrDefault(kvp => kvp.Key == column);
-                        if (!value.Equals(default(KeyValuePair<string, object>)))
+                        // Use specific update values (supports RawSql)
+                        foreach (var updateValue in expression.UpdateValues)
                         {
-                            updateItems.Add($"{Quoter.QuoteColumnName(value.Key)} = {Quoter.QuoteValue(value.Value)}");
+                            updateItems.Add($"{Quoter.QuoteColumnName(updateValue.Key)} = {Quoter.QuoteValue(updateValue.Value)}");
+                        }
+                    }
+                    else
+                    {
+                        // Use column-based update logic
+                        var columnsToUpdate = expression.UpdateColumns?.Any() == true 
+                            ? expression.UpdateColumns 
+                            : row.Where(kvp => !expression.MatchColumns.Contains(kvp.Key)).Select(kvp => kvp.Key).ToList();
+                            
+                        foreach (var column in columnsToUpdate)
+                        {
+                            var value = row.FirstOrDefault(kvp => kvp.Key == column);
+                            if (!value.Equals(default(KeyValuePair<string, object>)))
+                            {
+                                updateItems.Add($"{Quoter.QuoteColumnName(value.Key)} = {Quoter.QuoteValue(value.Value)}");
+                            }
                         }
                     }
                     
