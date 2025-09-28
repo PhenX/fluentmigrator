@@ -74,6 +74,11 @@ namespace FluentMigrator.Runner.Generators.DB2
 
         protected override string FormatDefaultValue(ColumnDefinition column)
         {
+            if (column.Expression != null)
+            {
+                return string.Empty;
+            }
+
             var isCreate = column.GetAdditionalFeature("IsCreateColumn", false);
 
             if (isCreate && (column.DefaultValue is ColumnDefinition.UndefinedDefaultValue))

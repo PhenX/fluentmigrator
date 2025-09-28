@@ -99,7 +99,7 @@ namespace FluentMigrator.Tests.Unit.Generators.Db2
             var expression = new CreateColumnExpression { Column = columnDefinition, TableName = tableName };
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("ALTER TABLE NewTable ADD COLUMN NewColumn VARGRAPHIC(5) NOT NULL DEFAULT (CURRENT_TIMESTAMP - CURRENT_TIMEZONE);");
+            result.ShouldBe("ALTER TABLE NewTable ADD COLUMN NewColumn NVARCHAR(5) NOT NULL DEFAULT (CURRENT_TIMESTAMP - CURRENT_TIMEZONE);");
         }
 
         [Test]
