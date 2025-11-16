@@ -286,6 +286,12 @@ namespace FluentMigrator.Runner.Processors
         }
 
         /// <inheritdoc />
+        public void Process(UpsertDataExpression expression)
+        {
+            Process(Generator.Generate(expression));
+        }
+
+        /// <inheritdoc />
         public void Process(AlterSchemaExpression expression)
         {
             Process(Generator.Generate(expression));

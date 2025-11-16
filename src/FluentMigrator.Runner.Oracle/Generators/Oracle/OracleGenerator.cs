@@ -393,5 +393,142 @@ namespace FluentMigrator.Runner.Generators.Oracle
             var indexName = string.IsNullOrEmpty(quotedSchema) ? quotedIndex : $"{quotedSchema}.{quotedIndex}";
             return FormatStatement("DROP INDEX {0}", indexName);
         }
+
+        /// <inheritdoc />
+        public override string Generate(UpsertDataExpression expression)
+        {
+            var tableName = ExpandTableName(Quoter.QuoteSchemaName(expression.SchemaName), Quoter.QuoteTableName(expression.TableName));
+            
+            if (expression.IgnoreInsertIfExists)
+            {
+                // Oracle INSERT IGNORE equivalent using MERGE with no UPDATE
+                return GenerateOracleMergeInsertOnly(expression, tableName);
+            }
+            
+            return GenerateOracleMerge(expression, tableName);
+        }
+
+        private string GenerateOracleMerge(UpsertDataExpression expression, string tableName)
+        {
+            var result = new StringBuilder();
+            
+            foreach (var row in expression.Rows)
+            {
+                var allColumns = new List<string>();
+                var allValues = new List<string>();
+                var matchConditions = new List<string>();
+                var updatePairs = new List<string>();
+                
+                // Build columns and values lists
+                foreach (var item in row)
+                {
+                    var quotedColumn = Quoter.QuoteColumnName(item.Key);
+                    var quotedValue = Quoter.QuoteValue(item.Value);
+                    
+                    allColumns.Add(quotedColumn);
+                    allValues.Add(quotedValue);
+                    
+                    if (expression.MatchColumns.Contains(item.Key))
+                    {
+                        matchConditions.Add($"target.{quotedColumn} = source.{quotedColumn}");
+                    }
+                    else
+                    {
+                        // Determine if we should update this column
+                        bool shouldUpdate = true;
+                        if (expression.UpdateColumns?.Count > 0)
+                        {
+                            shouldUpdate = expression.UpdateColumns.Contains(item.Key);
+                        }
+                        else if (expression.UpdateValues?.Count > 0)
+                        {
+                            shouldUpdate = expression.UpdateValues.Any(kv => kv.Key == item.Key);
+                        }
+                        
+                        if (shouldUpdate)
+                        {
+                            if (expression.UpdateValues?.Count > 0)
+                            {
+                                var updateValue = expression.UpdateValues.FirstOrDefault(kv => kv.Key == item.Key);
+                                if (updateValue.Key != null)
+                                {
+                                    updatePairs.Add($"{quotedColumn} = {Quoter.QuoteValue(updateValue.Value)}");
+                                }
+                                else
+                                {
+                                    updatePairs.Add($"{quotedColumn} = source.{quotedColumn}");
+                                }
+                            }
+                            else
+                            {
+                                updatePairs.Add($"{quotedColumn} = source.{quotedColumn}");
+                            }
+                        }
+                    }
+                }
+                
+                result.AppendLine($"MERGE INTO {tableName} target");
+                result.AppendLine($"USING (SELECT {string.Join(", ", allValues.Select((v, i) => $"{v} AS {allColumns[i]}"))} FROM dual) source");
+                result.AppendLine($"ON ({string.Join(" AND ", matchConditions)})");
+                
+                if (updatePairs.Count > 0)
+                {
+                    result.AppendLine("WHEN MATCHED THEN");
+                    result.AppendLine($"    UPDATE SET {string.Join(", ", updatePairs)}");
+                }
+                
+                result.AppendLine("WHEN NOT MATCHED THEN");
+                result.AppendLine($"    INSERT ({string.Join(", ", allColumns)})");
+                result.AppendLine($"    VALUES ({string.Join(", ", allColumns.Select(c => $"source.{c}"))});");
+                
+                if (expression.Rows.Count() > 1 && row != expression.Rows.Last())
+                {
+                    result.AppendLine();
+                }
+            }
+            
+            return result.ToString().TrimEnd();
+        }
+
+        private string GenerateOracleMergeInsertOnly(UpsertDataExpression expression, string tableName)
+        {
+            var result = new StringBuilder();
+            
+            foreach (var row in expression.Rows)
+            {
+                var allColumns = new List<string>();
+                var allValues = new List<string>();
+                var matchConditions = new List<string>();
+                
+                // Build columns and values lists
+                foreach (var item in row)
+                {
+                    var quotedColumn = Quoter.QuoteColumnName(item.Key);
+                    var quotedValue = Quoter.QuoteValue(item.Value);
+                    
+                    allColumns.Add(quotedColumn);
+                    allValues.Add(quotedValue);
+                    
+                    if (expression.MatchColumns.Contains(item.Key))
+                    {
+                        matchConditions.Add($"target.{quotedColumn} = source.{quotedColumn}");
+                    }
+                }
+                
+                result.AppendLine($"MERGE INTO {tableName} target");
+                result.AppendLine($"USING (SELECT {string.Join(", ", allValues.Select((v, i) => $"{v} AS {allColumns[i]}"))} FROM dual) source");
+                result.AppendLine($"ON ({string.Join(" AND ", matchConditions)})");
+                result.AppendLine("WHEN NOT MATCHED THEN");
+                result.AppendLine($"    INSERT ({string.Join(", ", allColumns)})");
+                result.AppendLine($"    VALUES ({string.Join(", ", allColumns.Select(c => $"source.{c}"))});");
+                
+                if (expression.Rows.Count() > 1 && row != expression.Rows.Last())
+                {
+                    result.AppendLine();
+                }
+            }
+            
+            return result.ToString().TrimEnd();
+        }
     }
 }

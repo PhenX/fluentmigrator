@@ -442,6 +442,107 @@ namespace FluentMigrator.Runner.Generators.Generic
         }
 
         /// <inheritdoc />
+        public override string Generate(UpsertDataExpression expression)
+        {
+            // For databases that don't support MERGE, fall back to separate INSERT/UPDATE operations
+            // This is a basic implementation - database-specific generators can override for better performance
+            var output = new StringBuilder();
+            
+            foreach (var row in expression.Rows)
+            {
+                // Generate the condition to check if the row exists
+                var matchConditions = new List<string>();
+                foreach (var matchColumn in expression.MatchColumns)
+                {
+                    var matchValue = row.FirstOrDefault(kvp => kvp.Key == matchColumn);
+                    if (!matchValue.Equals(default(KeyValuePair<string, object>)))
+                    {
+                        matchConditions.Add($"{Quoter.QuoteColumnName(matchValue.Key)} = {Quoter.QuoteValue(matchValue.Value)}");
+                    }
+                }
+                
+                var whereClause = string.Join(" AND ", matchConditions);
+                
+                if (expression.IgnoreInsertIfExists)
+                {
+                    // INSERT IGNORE mode - only insert if row doesn't exist
+                    output.AppendLine($"IF NOT EXISTS (SELECT 1 FROM {Quoter.QuoteTableName(expression.TableName, expression.SchemaName)} WHERE {whereClause})");
+                    output.AppendLine("BEGIN");
+                    
+                    // INSERT statement only
+                    var columnNames = row.Select(kvp => Quoter.QuoteColumnName(kvp.Key)).ToList();
+                    var columnValues = row.Select(kvp => Quoter.QuoteValue(kvp.Value)).ToList();
+                    
+                    output.AppendLine($"    INSERT INTO {Quoter.QuoteTableName(expression.TableName, expression.SchemaName)}");
+                    output.AppendLine($"    ({string.Join(", ", columnNames)})");
+                    output.AppendLine($"    VALUES ({string.Join(", ", columnValues)})");
+                    AppendSqlStatementEndToken(output);
+                    
+                    output.AppendLine("END");
+                }
+                else
+                {
+                    // Standard UPSERT mode - UPDATE if exists, INSERT if not
+                    output.AppendLine($"IF EXISTS (SELECT 1 FROM {Quoter.QuoteTableName(expression.TableName, expression.SchemaName)} WHERE {whereClause})");
+                    output.AppendLine("BEGIN");
+                    
+                    // UPDATE statement
+                    var updateItems = new List<string>();
+                    
+                    if (expression.UpdateValues?.Any() == true)
+                    {
+                        // Use specific update values (supports RawSql)
+                        foreach (var updateValue in expression.UpdateValues)
+                        {
+                            updateItems.Add($"{Quoter.QuoteColumnName(updateValue.Key)} = {Quoter.QuoteValue(updateValue.Value)}");
+                        }
+                    }
+                    else
+                    {
+                        // Use column-based update logic
+                        var columnsToUpdate = expression.UpdateColumns?.Any() == true 
+                            ? expression.UpdateColumns 
+                            : row.Where(kvp => !expression.MatchColumns.Contains(kvp.Key)).Select(kvp => kvp.Key).ToList();
+                            
+                        foreach (var column in columnsToUpdate)
+                        {
+                            var value = row.FirstOrDefault(kvp => kvp.Key == column);
+                            if (!value.Equals(default(KeyValuePair<string, object>)))
+                            {
+                                updateItems.Add($"{Quoter.QuoteColumnName(value.Key)} = {Quoter.QuoteValue(value.Value)}");
+                            }
+                        }
+                    }
+                    
+                    if (updateItems.Any())
+                    {
+                        output.AppendLine($"    UPDATE {Quoter.QuoteTableName(expression.TableName, expression.SchemaName)}");
+                        output.AppendLine($"    SET {string.Join(", ", updateItems)}");
+                        output.AppendLine($"    WHERE {whereClause}");
+                        AppendSqlStatementEndToken(output);
+                    }
+                    
+                    output.AppendLine("END");
+                    output.AppendLine("ELSE");
+                    output.AppendLine("BEGIN");
+                    
+                    // INSERT statement
+                    var columnNames = row.Select(kvp => Quoter.QuoteColumnName(kvp.Key)).ToList();
+                    var columnValues = row.Select(kvp => Quoter.QuoteValue(kvp.Value)).ToList();
+                    
+                    output.AppendLine($"    INSERT INTO {Quoter.QuoteTableName(expression.TableName, expression.SchemaName)}");
+                    output.AppendLine($"    ({string.Join(", ", columnNames)})");
+                    output.AppendLine($"    VALUES ({string.Join(", ", columnValues)})");
+                    AppendSqlStatementEndToken(output);
+                    
+                    output.AppendLine("END");
+                }
+            }
+            
+            return output.ToString();
+        }
+
+        /// <inheritdoc />
         public override string Generate(DeleteDataExpression expression)
         {
             var deleteItems = new List<string>();

@@ -170,6 +170,13 @@ namespace FluentMigrator
         string Generate(UpdateDataExpression expression);
 
         /// <summary>
+        /// Generates an SQL statement to UPSERT (insert or update) data using MERGE or equivalent
+        /// </summary>
+        /// <param name="expression">The expression to create the SQL for</param>
+        /// <returns>The generated SQL</returns>
+        string Generate(UpsertDataExpression expression);
+
+        /// <summary>
         /// Generates an SQL statement to move a table from one schema to another
         /// </summary>
         /// <param name="expression">The expression to create the SQL for</param>

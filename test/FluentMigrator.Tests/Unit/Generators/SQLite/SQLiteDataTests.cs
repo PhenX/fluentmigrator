@@ -214,7 +214,102 @@ namespace FluentMigrator.Tests.Unit.Generators.SQLite
             var expression = GeneratorTestHelper.GetUpdateDataExpressionWithDbNullValue();
 
             var result = Generator.Generate(expression);
-            result.ShouldBe("UPDATE \"TestTable1\" SET \"Name\" = 'Just''in', \"Age\" = 25 WHERE \"Id\" = 9 AND \"Homepage\" IS NULL;");
+            result.ShouldBe("""UPDATE "TestTable1" SET "Name" = 'Just''in', "Age" = 25 WHERE "Id" = 9 AND "Homepage" IS NULL;""");
         }
+
+        #region UPSERT Tests
+
+        [Test]
+        public void CanUpsertDataWithSingleRow()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpression();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("""
+                            INSERT INTO "TestTable1"
+                            ("Name", "Website")
+                            VALUES
+                            ('Just''in', 'github.com')
+                            ON CONFLICT ("Name") DO UPDATE SET
+                                "Website" = excluded."Website";
+                            """, StringCompareShould.IgnoreLineEndings);
+        }
+
+        [Test]
+        public void CanUpsertDataWithCustomSchema()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpression();
+            expression.SchemaName = "TestSchema";
+            var result = Generator.Generate(expression);
+            result.ShouldBe("""
+                            INSERT INTO "TestSchema"."TestTable1"
+                            ("Name", "Website")
+                            VALUES
+                            ('Just''in', 'github.com')
+                            ON CONFLICT ("Name") DO UPDATE SET
+                                "Website" = excluded."Website";
+                            """, StringCompareShould.IgnoreLineEndings);
+        }
+
+        [Test]
+        public void CanUpsertDataWithSpecificUpdateColumns()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithUpdateColumns();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("""
+                            INSERT INTO "TestTable1"
+                            ("Name", "Website", "Age")
+                            VALUES
+                            ('Just''in', 'github.com', 30)
+                            ON CONFLICT ("Name") DO UPDATE SET
+                                "Website" = excluded."Website";
+                            """, StringCompareShould.IgnoreLineEndings);
+        }
+
+        [Test]
+        public void CanUpsertDataWithMultiColumnMatching()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithMultipleMatchColumns();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("""
+                            INSERT INTO "TestTable1"
+                            ("Name", "Category", "Website")
+                            VALUES
+                            ('Just''in', 'Developer', 'github.com')
+                            ON CONFLICT ("Name", "Category") DO UPDATE SET
+                                "Website" = excluded."Website";
+                            """, StringCompareShould.IgnoreLineEndings);
+        }
+
+        [Test]
+        public void CanUpsertDataWithIgnoreInsertIfExists()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpression();
+            expression.IgnoreInsertIfExists = true;
+            var result = Generator.Generate(expression);
+            result.ShouldBe("""
+                            INSERT INTO "TestTable1"
+                            ("Name", "Website")
+                            VALUES
+                            ('Just''in', 'github.com')
+                            ON CONFLICT ("Name") DO NOTHING;
+                            """, StringCompareShould.IgnoreLineEndings);
+        }
+
+        [Test]
+        public void CanUpsertDataWithRawSqlUpdateValues()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithRawUpdateValues();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("""
+                            INSERT INTO "TestTable1"
+                            ("Name", "Website", "Email")
+                            VALUES
+                            ('Just''in', 'github.com', 'test@example.com')
+                            ON CONFLICT ("Name") DO UPDATE SET
+                                "Website" = 'codethinked.com', "Email" = UPPER('admin@example.com');
+                            """, StringCompareShould.IgnoreLineEndings);
+        }
+
+        #endregion UPSERT Tests
     }
 }

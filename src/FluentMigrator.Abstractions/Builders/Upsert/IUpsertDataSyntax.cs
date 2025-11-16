@@ -16,33 +16,20 @@
 //
 #endregion
 
-using System.Collections.Generic;
+using FluentMigrator.Infrastructure;
 
-namespace FluentMigrator.Model
+namespace FluentMigrator.Builders.Upsert
 {
     /// <summary>
-    /// A list of column name/value pairs used for INSERT data
+    /// Specify the match criteria and data for the upsert operation
     /// </summary>
-    public class InsertionDataDefinition : List<KeyValuePair<string, object>>
+    public interface IUpsertDataSyntax : IFluentSyntax
     {
         /// <summary>
-        /// Attempts to get a value by column name
+        /// Specify the columns to match on for determining if a row exists
         /// </summary>
-        public bool TryGetValue(string columnName, out object value)
-        {
-            foreach (var kvp in this)
-            {
-                if (kvp.Key != columnName)
-                {
-                    continue;
-                }
-
-                value = kvp.Value;
-                return true;
-            }
-
-            value = null;
-            return false;
-        }
+        /// <param name="columnNames">The column names to match on</param>
+        /// <returns>The next step</returns>
+        IUpsertRowSyntax MatchOn(params string[] columnNames);
     }
 }

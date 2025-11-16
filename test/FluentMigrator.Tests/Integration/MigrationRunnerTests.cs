@@ -42,6 +42,7 @@ using FluentMigrator.Runner.VersionTableInfo;
 using FluentMigrator.Tests.Integration.Migrations.Computed;
 using FluentMigrator.Tests.Integration.Migrations.Issues;
 using FluentMigrator.Tests.Integration.Migrations.Tagged;
+using FluentMigrator.Tests.Integration.Migrations.Upsert;
 using FluentMigrator.Tests.Integration.TestCases;
 using FluentMigrator.Tests.Unit;
 
@@ -1630,7 +1631,8 @@ namespace FluentMigrator.Tests.Integration
 
         [Test]
         [TestCaseSource(typeof(ProcessorTestCaseSourceExcept<
-            FirebirdProcessor
+            FirebirdProcessor,
+            MySql5Processor // utf8mb4_unicode issues
         >))]
         public void CanInsertLargeText(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
         {
@@ -1650,6 +1652,85 @@ namespace FluentMigrator.Tests.Integration
                     rows[0]["LargeUnicodeString"].ShouldBe(TestLargeTextInsertMigration_Issue1196.LargeString);
 
                     runner.Down(new TestLargeTextInsertMigration_Issue1196());
+                },
+                serverOptions,
+                true);
+        }
+
+        [Test]
+        [TestCaseSource(typeof(ProcessorTestCaseSource))]
+        public void CanUpsertData(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
+        {
+            ExecuteWithProcessor(
+                processorType,
+                services => services.WithMigrationsIn(RootNamespace),
+                (serviceProvider, processor) =>
+                {
+                    var runner = (MigrationRunner)serviceProvider.GetRequiredService<IMigrationRunner>();
+
+                    object trueValue = processor is OracleProcessorBase or SQLiteProcessor ? 1 : true;
+                    object falseValue = processor is OracleProcessorBase or SQLiteProcessor ? 0 : false;
+
+                    runner.Up(new TestUpsertDataMigration());
+
+                    // Validate the upsert operations worked correctly
+                    DataSet dataSet = processor.ReadTableData(null, "UpsertTestTable");
+                    var rows = dataSet.Tables[0].Rows;
+
+                    // Should have multiple rows from various upsert operations
+                    rows.Count.ShouldBeGreaterThanOrEqualTo(7);
+
+                    // Find the updated existing user record
+                    var existingUserRow = rows.Cast<DataRow>()
+                        .FirstOrDefault(r => r["Email"].ToString() == "existing@example.com");
+                    existingUserRow.ShouldNotBeNull();
+                    existingUserRow["Name"].ShouldBe("Updated Existing User");
+                    existingUserRow["IsActive"].ShouldBe(falseValue);
+                    existingUserRow["Category"].ShouldBe("Updated");
+
+                    // Find the new user record
+                    var newUserRow = rows.Cast<DataRow>()
+                        .FirstOrDefault(r => r["Email"].ToString() == "new@example.com");
+                    newUserRow.ShouldNotBeNull();
+                    newUserRow["Name"].ShouldBe("New User");
+                    newUserRow["IsActive"].ShouldBe(trueValue);
+                    newUserRow["Category"].ShouldBe("New");
+
+                    // Find the multi-key user record
+                    var multiKeyUserRow = rows.Cast<DataRow>()
+                        .FirstOrDefault(r => r["Email"].ToString() == "multikey@example.com");
+                    multiKeyUserRow.ShouldNotBeNull();
+                    multiKeyUserRow["Name"].ShouldBe("Multi Key User");
+                    multiKeyUserRow["Category"].ShouldBe("MultiKey");
+
+                    // Find the selective update user record
+                    var selectiveUserRow = rows.Cast<DataRow>()
+                        .FirstOrDefault(r => r["Email"].ToString() == "selective@example.com");
+                    selectiveUserRow.ShouldNotBeNull();
+                    selectiveUserRow["Name"].ShouldBe("Selective Update User");
+                    selectiveUserRow["Category"].ShouldBe("Selective");
+
+                    // Validate bulk insert records
+                    var bulkUsers = rows.Cast<DataRow>()
+                        .Where(r => r["Category"].ToString() == "Bulk")
+                        .ToList();
+                    bulkUsers.Count.ShouldBe(3);
+                    bulkUsers.Any(r => r["Email"].ToString() == "bulk1@example.com" && r["Name"].ToString() == "Bulk User 1").ShouldBeTrue();
+                    bulkUsers.Any(r => r["Email"].ToString() == "bulk2@example.com" && r["Name"].ToString() == "Bulk User 2").ShouldBeTrue();
+                    bulkUsers.Any(r => r["Email"].ToString() == "bulk3@example.com" && r["Name"].ToString() == "Bulk User 3").ShouldBeTrue();
+
+                    // Find the ignore insert user record
+                    var ignoreUserRow = rows.Cast<DataRow>()
+                        .FirstOrDefault(r => r["Email"].ToString() == "ignore@example.com");
+                    ignoreUserRow.ShouldNotBeNull();
+                    ignoreUserRow["Name"].ShouldBe("Ignore Insert User");
+                    ignoreUserRow["Category"].ShouldBe("Ignore");
+
+                    // Verify that the existing user was NOT updated by the ignore insert operation
+                    existingUserRow["Name"].ShouldBe("Updated Existing User"); // Should still be the updated name, not "This Should Be Ignored"
+                    existingUserRow["Category"].ShouldBe("Updated"); // Should still be "Updated", not "ShouldNotUpdate"
+
+                    runner.Down(new TestUpsertDataMigration());
                 },
                 serverOptions,
                 true);

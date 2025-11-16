@@ -750,6 +750,90 @@ namespace FluentMigrator.Runner.Generators.Postgres
             return result.ToString();
         }
 
+        /// <inheritdoc />
+        public override string Generate(UpsertDataExpression expression)
+        {
+            var output = new StringBuilder();
+            
+            foreach (var row in expression.Rows)
+            {
+                if (expression.IgnoreInsertIfExists)
+                {
+                    // PostgreSQL INSERT ... ON CONFLICT DO NOTHING for INSERT IGNORE mode
+                    GenerateInsertIgnore(output, expression, row);
+                }
+                else
+                {
+                    // PostgreSQL INSERT ... ON CONFLICT DO UPDATE for standard UPSERT
+                    GenerateUpsert(output, expression, row);
+                }
+            }
+            
+            return output.ToString();
+        }
+
+        private void GenerateInsertIgnore(StringBuilder output, UpsertDataExpression expression, InsertionDataDefinition row)
+        {
+            var columnNames = row.Select(x => Quoter.QuoteColumnName(x.Key)).ToList();
+            var columnValues = row.Select(x => Quoter.QuoteValue(x.Value)).ToList();
+
+            output.AppendLine($"INSERT INTO {Quoter.QuoteTableName(expression.TableName, expression.SchemaName)}");
+            output.AppendLine($"({string.Join(", ", columnNames)})");
+            output.AppendLine($"VALUES ({string.Join(", ", columnValues)})");
+            
+            // ON CONFLICT clause with match columns
+            var conflictTargets = expression.MatchColumns.Select(Quoter.QuoteColumnName);
+            output.AppendLine($"ON CONFLICT ({string.Join(", ", conflictTargets)}) DO NOTHING");
+            
+            AppendSqlStatementEndToken(output);
+        }
+
+        private void GenerateUpsert(StringBuilder output, UpsertDataExpression expression, InsertionDataDefinition row)
+        {
+            var columnNames = row.Select(x => Quoter.QuoteColumnName(x.Key)).ToList();
+            var columnValues = row.Select(x => Quoter.QuoteValue(x.Value)).ToList();
+
+            output.AppendLine($"INSERT INTO {Quoter.QuoteTableName(expression.TableName, expression.SchemaName)}");
+            output.AppendLine($"({string.Join(", ", columnNames)})");
+            output.AppendLine($"VALUES ({string.Join(", ", columnValues)})");
+            
+            // ON CONFLICT clause with match columns
+            var conflictTargets = expression.MatchColumns.Select(Quoter.QuoteColumnName);
+            output.AppendLine($"ON CONFLICT ({string.Join(", ", conflictTargets)}) DO UPDATE SET");
+            
+            // Generate UPDATE SET clause
+            var updateItems = new List<string>();
+            
+            if (expression.UpdateValues?.Any() == true)
+            {
+                // Use specific update values (supports RawSql)
+                foreach (var updateValue in expression.UpdateValues)
+                {
+                    updateItems.Add($"{Quoter.QuoteColumnName(updateValue.Key)} = {Quoter.QuoteValue(updateValue.Value)}");
+                }
+            }
+            else
+            {
+                // Use column-based update logic
+                var columnsToUpdate = expression.UpdateColumns?.Any() == true 
+                    ? expression.UpdateColumns 
+                    : row.Where(kvp => !expression.MatchColumns.Contains(kvp.Key)).Select(kvp => kvp.Key).ToList();
+                    
+                foreach (var column in columnsToUpdate)
+                {
+                    var columnName = Quoter.QuoteColumnName(column);
+                    updateItems.Add($"{columnName} = EXCLUDED.{columnName}");
+                }
+            }
+            
+            if (updateItems.Any())
+            {
+                output.AppendLine($"    {string.Join(", ", updateItems)}");
+            }
+            
+            AppendSqlStatementEndToken(output);
+        }
+
         /// <summary>
         /// Generates a string representing the "OVERRIDING {SYSTEM|USER} VALUE" clause for an INSERT statement
         /// in PostgreSQL, based on the provided <see cref="InsertDataExpression"/>.

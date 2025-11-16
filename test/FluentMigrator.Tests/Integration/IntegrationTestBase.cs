@@ -80,7 +80,7 @@ namespace FluentMigrator.Tests.Integration
                 .ConfigureRunner(
                     r => r
                         .AddFirebird()
-                        .AddMySql4()
+                        .AddMySql5()
                         .AddOracle12CManaged()
                         .AddPostgres()
                         .AddSnowflake()

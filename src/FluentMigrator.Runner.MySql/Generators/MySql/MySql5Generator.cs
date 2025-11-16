@@ -15,8 +15,12 @@
 #endregion
 
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
+using FluentMigrator.Expressions;
 using FluentMigrator.Generation;
+using FluentMigrator.Model;
 
 using JetBrains.Annotations;
 
@@ -85,5 +89,119 @@ namespace FluentMigrator.Runner.Generators.MySql
         [
             GeneratorIdConstants.MySql5, GeneratorIdConstants.MySql, GeneratorIdConstants.MariaDB
         ];
+
+        /// <inheritdoc />
+        public override string Generate(UpsertDataExpression expression)
+        {
+            if (expression.Rows.Count == 0)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+            var tableName = Quoter.QuoteTableName(expression.TableName, expression.SchemaName);
+
+            // Get all column names from the first row
+            var firstRow = expression.Rows.First();
+            var allColumns = firstRow.Select(kvp => kvp.Key).ToList();
+
+            // Handle different UPSERT modes
+            if (expression.IgnoreInsertIfExists)
+            {
+                sb.AppendLine($"INSERT IGNORE INTO {tableName}");
+            }
+            else
+            {
+                sb.AppendLine($"INSERT INTO {tableName}");
+            }
+            
+            sb.Append("(");
+            sb.Append(string.Join(", ", allColumns.Select(c => Quoter.QuoteColumnName(c))));
+            sb.AppendLine(")");
+            sb.Append("VALUES");
+
+            // Generate VALUES clause for all rows
+            for (var i = 0; i < expression.Rows.Count; i++)
+            {
+                if (i > 0)
+                    sb.Append(",");
+                
+                sb.AppendLine();
+                sb.Append("(");
+                
+                var row = expression.Rows[i];
+                var values = new List<string>();
+                
+                foreach (var column in allColumns)
+                {
+                    var kvp = row.FirstOrDefault(r => r.Key == column);
+                    values.Add(Quoter.QuoteValue(kvp.Value));
+                }
+                
+                sb.Append(string.Join(", ", values));
+                sb.Append(")");
+            }
+
+            // Add ON DUPLICATE KEY UPDATE clause if not in ignore mode
+            if (!expression.IgnoreInsertIfExists)
+            {
+                sb.AppendLine();
+                sb.Append("ON DUPLICATE KEY UPDATE");
+
+                // Determine which columns to update
+                var updateColumns = GetUpdateColumns(expression, allColumns);
+                
+                var updateClauses = new List<string>();
+                foreach (var column in updateColumns)
+                {
+                    var quotedColumn = Quoter.QuoteColumnName(column);
+                    
+                    // Check if this column has a specific update value
+                    if (expression.UpdateValues != null)
+                    {
+                        var updateValue = expression.UpdateValues.FirstOrDefault(uv => uv.Key == column);
+                        if (updateValue.Key != null)
+                        {
+                            updateClauses.Add($"{quotedColumn} = {Quoter.QuoteValue(updateValue.Value)}");
+                            continue;
+                        }
+                    }
+                    
+                    // Default: use VALUES() function to reference the new value
+                    updateClauses.Add($"{quotedColumn} = VALUES({quotedColumn})");
+                }
+
+                if (updateClauses.Any())
+                {
+                    sb.AppendLine();
+                    sb.Append("    ");
+                    sb.Append(string.Join($",{System.Environment.NewLine}    ", updateClauses));
+                }
+            }
+
+            return FormatStatement(sb.ToString());
+        }
+
+        /// <summary>
+        /// Gets the columns to update in the ON DUPLICATE KEY UPDATE clause
+        /// </summary>
+        /// <param name="expression">The upsert expression</param>
+        /// <param name="allColumns">All columns from the data</param>
+        /// <returns>List of columns to update</returns>
+        private List<string> GetUpdateColumns(UpsertDataExpression expression, List<string> allColumns)
+        {
+            // If specific update columns are specified, use those
+            if (expression.UpdateColumns != null && expression.UpdateColumns.Any())
+            {
+                return expression.UpdateColumns.ToList();
+            }
+
+            // If UpdateValues are specified, use those column names
+            if (expression.UpdateValues != null && expression.UpdateValues.Any())
+            {
+                return expression.UpdateValues.Select(uv => uv.Key).ToList();
+            }
+
+            // Default: update all columns except the match columns
+            return allColumns.Except(expression.MatchColumns).ToList();
+        }
     }
 }
