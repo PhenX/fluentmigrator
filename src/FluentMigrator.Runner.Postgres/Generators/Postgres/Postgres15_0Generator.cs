@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 
 using FluentMigrator.Infrastructure.Extensions;
@@ -9,23 +10,28 @@ using Microsoft.Extensions.Options;
 
 namespace FluentMigrator.Runner.Generators.Postgres
 {
+    /// <inheritdoc />
     public class Postgres15_0Generator : Postgres11_0Generator
     {
+        /// <inheritdoc />
         public Postgres15_0Generator([NotNull] PostgresQuoter quoter)
             : this(quoter, new OptionsWrapper<GeneratorOptions>(new GeneratorOptions()))
         {
         }
 
+        /// <inheritdoc />
         public Postgres15_0Generator([NotNull] PostgresQuoter quoter, [NotNull] IOptions<GeneratorOptions> generatorOptions)
             : base(new Postgres10_0Column(quoter, new Postgres92.Postgres92TypeMap()), quoter, generatorOptions)
         {
         }
 
+        /// <inheritdoc />
         protected Postgres15_0Generator([NotNull] PostgresQuoter quoter, [NotNull] IOptions<GeneratorOptions> generatorOptions, [NotNull] IPostgresTypeMap typeMap)
             : base(new Postgres10_0Column(quoter, typeMap), quoter, generatorOptions)
         {
         }
 
+        /// <inheritdoc />
         protected Postgres15_0Generator(
             [NotNull] IColumn column,
             [NotNull] PostgresQuoter quoter,
@@ -34,11 +40,20 @@ namespace FluentMigrator.Runner.Generators.Postgres
         {
         }
 
+        /// <inheritdoc />
+        public override string GeneratorId => GeneratorIdConstants.PostgreSQL15_0;
+
+        /// <inheritdoc />
+        public override List<string> GeneratorIdAliases =>
+            [GeneratorIdConstants.PostgreSQL15_0, GeneratorIdConstants.PostgreSQL];
+
+        /// <inheritdoc />
         protected override string GetWithNullsDistinctStringInWhere(IndexDefinition index)
         {
             return string.Empty;
         }
 
+        /// <inheritdoc />
         protected override string GetWithNullsDistinctString(IndexDefinition index)
         {
             bool? GetNullsDistinct(IndexColumnDefinition column)

@@ -33,11 +33,14 @@ using FluentMigrator.Runner.Logging;
 using FluentMigrator.Runner.Processors;
 using FluentMigrator.Runner.Processors.Firebird;
 using FluentMigrator.Runner.Processors.MySql;
+using FluentMigrator.Runner.Processors.Oracle;
 using FluentMigrator.Runner.Processors.Postgres;
 using FluentMigrator.Runner.Processors.Snowflake;
 using FluentMigrator.Runner.Processors.SQLite;
 using FluentMigrator.Runner.Processors.SqlServer;
 using FluentMigrator.Runner.VersionTableInfo;
+using FluentMigrator.Tests.Integration.Migrations.Computed;
+using FluentMigrator.Tests.Integration.Migrations.Issues;
 using FluentMigrator.Tests.Integration.Migrations.Tagged;
 using FluentMigrator.Tests.Integration.TestCases;
 using FluentMigrator.Tests.Unit;
@@ -1149,7 +1152,8 @@ namespace FluentMigrator.Tests.Integration
         [Test]
         [TestCaseSource(typeof(ProcessorTestCaseSourceExcept<
             SQLiteProcessor,
-            FirebirdProcessor
+            FirebirdProcessor,
+            OracleProcessorBase /* Oracle does not support schemas in the same way as other DBMSs */
         >))]
         public void CanAlterTablesSchema(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
         {
@@ -1624,6 +1628,33 @@ namespace FluentMigrator.Tests.Integration
                 serverOptions);
         }
 
+        [Test]
+        [TestCaseSource(typeof(ProcessorTestCaseSourceExcept<
+            FirebirdProcessor
+        >))]
+        public void CanInsertLargeText(Type processorType, Func<IntegrationTestOptions.DatabaseServerOptions> serverOptions)
+        {
+            ExecuteWithProcessor(
+                processorType,
+                services => services.WithMigrationsIn(RootNamespace),
+                (serviceProvider, processor) =>
+                {
+                    var runner = (MigrationRunner)serviceProvider.GetRequiredService<IMigrationRunner>();
+
+                    runner.Up(new TestLargeTextInsertMigration_Issue1196());
+
+                    DataSet upDs = processor.ReadTableData(null, "SimpleTable");
+
+                    var rows = upDs.Tables[0].Rows;
+                    rows.Count.ShouldBe(1);
+                    rows[0]["LargeUnicodeString"].ShouldBe(TestLargeTextInsertMigration_Issue1196.LargeString);
+
+                    runner.Down(new TestLargeTextInsertMigration_Issue1196());
+                },
+                serverOptions,
+                true);
+        }
+
         private void RemoveMigration1(ProcessorBase processor)
         {
             foreach (var tableName in new[] { "Users", "Groups" })
@@ -1770,9 +1801,9 @@ namespace FluentMigrator.Tests.Integration
                 .WithColumn("Name").AsString(255).Nullable()
                 .WithColumn("TestTableId").AsInt32().NotNullable();
 
-            IfDatabase(ProcessorId.SQLite)
+            IfDatabase(ProcessorIdConstants.SQLite)
                 .Delegate(() => testTable2.ForeignKey("fk_TestTable2_TestTableId_TestTable_Id", "TestTable", "Id"));
-            IfDatabase(t => t != ProcessorId.SQLite)
+            IfDatabase(t => t != ProcessorIdConstants.SQLite)
                 .Create.ForeignKey("fk_TestTable2_TestTableId_TestTable_Id")
                     .FromTable("TestTable2").ForeignColumn("TestTableId")
                     .ToTable("TestTable").PrimaryColumn("Id");
@@ -1856,9 +1887,9 @@ namespace FluentMigrator.Tests.Integration
         {
             // SQLite doesn't support creating schemas so for non SQLite DB's we'll create
             // the schema, but for SQLite we'll attach a temp DB with the schema alias
-            _ = IfDatabase(t => t != ProcessorId.SQLite).Create.Schema("TestSchema");
+            _ = IfDatabase(t => t != ProcessorIdConstants.SQLite).Create.Schema("TestSchema");
 
-            IfDatabase(ProcessorId.SQLite).Execute.Sql("ATTACH DATABASE '' AS \"TestSchema\"");
+            IfDatabase(ProcessorIdConstants.SQLite).Execute.Sql("ATTACH DATABASE '' AS \"TestSchema\"");
 
             Create.Table("Users")
                 .InSchema("TestSchema")
@@ -1874,7 +1905,7 @@ namespace FluentMigrator.Tests.Integration
         {
             Delete.Index("IX_Users_GroupId").OnTable("Users").InSchema("TestSchema").OnColumn("GroupId");
             Delete.Table("Users").InSchema("TestSchema");
-            IfDatabase(t => t != ProcessorId.SQLite).Delete.Schema("TestSchema");
+            IfDatabase(t => t != ProcessorIdConstants.SQLite).Delete.Schema("TestSchema");
 
             // Can't actually detatch SQLite DB here as migrations run in a transaction
             // and you can't detach a database whilst in a transaction
@@ -1952,14 +1983,14 @@ namespace FluentMigrator.Tests.Integration
         {
             // SQLite doesn't support creating schemas so for non SQLite DB's we'll create
             // the schema, but for SQLite we'll attach a temp DB with the schema alias
-            _ = IfDatabase(t => t != ProcessorId.SQLite).Create.Schema("TestSchema");
+            _ = IfDatabase(t => t != ProcessorIdConstants.SQLite).Create.Schema("TestSchema");
 
-            IfDatabase(ProcessorId.SQLite).Execute.Sql("ATTACH DATABASE '' AS \"TestSchema\"");
+            IfDatabase(ProcessorIdConstants.SQLite).Execute.Sql("ATTACH DATABASE '' AS \"TestSchema\"");
         }
 
         public override void Down()
         {
-            IfDatabase(t => t != ProcessorId.SQLite).Delete.Schema("TestSchema");
+            IfDatabase(t => t != ProcessorIdConstants.SQLite).Delete.Schema("TestSchema");
 
             // Can't actually detatch SQLite DB here as migrations run in a transaction
             // and you can't detach a database whilst in a transaction
@@ -1997,12 +2028,14 @@ namespace FluentMigrator.Tests.Integration
     {
         public override void Up()
         {
-            Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsAnsiString(100).Nullable();
+            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle))
+                .Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsAnsiString(100).Nullable();
         }
 
         public override void Down()
         {
-            Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsString(10).Nullable();
+            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle))
+                .Alter.Column("Name2").OnTable("TestTable2").InSchema("TestSchema").AsString(10).Nullable();
         }
     }
 
@@ -2234,12 +2267,20 @@ namespace FluentMigrator.Tests.Integration
     {
         public override void Up()
         {
-            Execute.Sql("select 1");
+            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle))
+                .Execute.Sql("select 1");
+
+            IfDatabase(processorId => processorId.Contains(ProcessorIdConstants.Oracle))
+                .Execute.Sql("select 1 from dual");
         }
 
         public override void Down()
         {
-            Execute.Sql("select 2");
+            IfDatabase(processorId => !processorId.Contains(ProcessorIdConstants.Oracle))
+                .Execute.Sql("select 1");
+
+            IfDatabase(processorId => processorId.Contains(ProcessorIdConstants.Oracle))
+                .Execute.Sql("select 1 from dual");
         }
     }
 }
