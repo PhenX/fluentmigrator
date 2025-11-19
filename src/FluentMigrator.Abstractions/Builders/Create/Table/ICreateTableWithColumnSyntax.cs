@@ -31,5 +31,11 @@ namespace FluentMigrator.Builders.Create.Table
         /// <param name="name">The column name</param>
         /// <returns>Define the columns type</returns>
         ICreateTableColumnAsTypeSyntax WithColumn(string name);
+
+        /// <summary>
+        /// Specify that the table should only be created if it does not exist
+        /// </summary>
+        /// <returns>Define a new column</returns>
+        ICreateTableWithColumnSyntax IfNotExists();
     }
 }

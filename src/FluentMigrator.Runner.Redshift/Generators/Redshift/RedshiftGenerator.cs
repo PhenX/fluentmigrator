@@ -106,7 +106,8 @@ namespace FluentMigrator.Runner.Generators.Redshift
             }
             var createStatement = new StringBuilder();
             var tableName = Quoter.Quote(expression.TableName);
-            createStatement.AppendFormat(CreateTable, Quoter.QuoteTableName(expression.TableName, expression.SchemaName), Column.Generate(expression.Columns, tableName));
+            var createTable = expression.IfNotExists ? CreateTableIfNotExists : CreateTable;
+            createStatement.AppendFormat(createTable, Quoter.QuoteTableName(expression.TableName, expression.SchemaName), Column.Generate(expression.Columns, tableName));
             var descriptionStatement = DescriptionGenerator.GenerateDescriptionStatements(expression)
                 ?.ToList();
 

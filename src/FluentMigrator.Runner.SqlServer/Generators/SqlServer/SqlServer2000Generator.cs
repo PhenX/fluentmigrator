@@ -69,6 +69,9 @@ namespace FluentMigrator.Runner.Generators.SqlServer
         }
 
         /// <inheritdoc />
+        public override string CreateTableIfNotExists => "IF OBJECT_ID('{0}','U') IS NULL CREATE TABLE {0} ({1})";
+
+        /// <inheritdoc />
         public override string DropTableIfExists => "IF OBJECT_ID('{0}') IS NOT NULL DROP TABLE {0}";
 
         /// <inheritdoc />

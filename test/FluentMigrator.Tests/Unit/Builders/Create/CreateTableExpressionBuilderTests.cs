@@ -642,6 +642,18 @@ namespace FluentMigrator.Tests.Unit.Builders.Create
             Assert.That(builderAsInterface.Column, Is.SameAs(curColumn));
         }
 
+        [Test]
+        public void CallingIfNotExistsSetsIfNotExistsToTrue()
+        {
+            var expressionMock = new Mock<CreateTableExpression>();
+            var contextMock = new Mock<IMigrationContext>();
+
+            var builder = new CreateTableExpressionBuilder(expressionMock.Object, contextMock.Object);
+            builder.IfNotExists();
+
+            expressionMock.VerifySet(e => e.IfNotExists = true);
+        }
+
         private void VerifyColumnHelperCall(Action<CreateTableExpressionBuilder> callToTest, System.Linq.Expressions.Expression<Action<ColumnExpressionBuilderHelper>> expectedHelperAction)
         {
             var expressionMock = new Mock<CreateTableExpression>();

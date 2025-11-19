@@ -223,8 +223,16 @@ namespace FluentMigrator.Runner.Generators.Oracle
         {
             var tableName = Quoter.QuoteTableName(expression.TableName);
             var schemaName = Quoter.QuoteSchemaName(expression.SchemaName);
+            var fullTableName = ExpandTableName(schemaName, tableName);
 
-            return FormatStatement("CREATE TABLE {0} ({1})", ExpandTableName(schemaName, tableName), Column.Generate(expression.Columns, tableName));
+            if (expression.IfNotExists)
+            {
+                return WrapInBlock(FormatStatement(
+                    "EXECUTE IMMEDIATE 'CREATE TABLE {0} ({1})'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF",
+                    fullTableName, Column.Generate(expression.Columns, tableName)));
+            }
+
+            return FormatStatement("CREATE TABLE {0} ({1})", fullTableName, Column.Generate(expression.Columns, tableName));
         }
 
         /// <inheritdoc />

@@ -293,6 +293,15 @@ namespace FluentMigrator.Tests.Unit.Generators.SqlServer2000
         }
 
         [Test]
+        public override void CanCreateTableIfNotExistsWithDefaultSchema()
+        {
+            var expression = GeneratorTestHelper.GetCreateTableIfNotExistsExpression();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("IF OBJECT_ID('[TestTable1]','U') IS NULL CREATE TABLE [TestTable1] ([TestColumn1] NVARCHAR(255) NOT NULL, [TestColumn2] INT NOT NULL);");
+        }
+
+        [Test]
         public override void CanRenameTableWithCustomSchema()
         {
             var expression = GeneratorTestHelper.GetRenameTableExpression();

@@ -129,6 +129,16 @@ namespace FluentMigrator.Runner.Generators.Hana
         private string InnerGenerate(CreateTableExpression expression)
         {
             var tableName = Quoter.QuoteTableName(expression.TableName);
+
+            if (expression.IfNotExists)
+            {
+                // Hana doesn't have native IF NOT EXISTS support, so we use a conditional check
+                return FormatStatement(
+                    "DO BEGIN DECLARE CONTINUE HANDLER FOR SQL_ERROR_CODE 259 BEGIN END; " +
+                    "CREATE COLUMN TABLE {0} ({1}); END",
+                    tableName, Column.Generate(expression.Columns, tableName));
+            }
+
             return FormatStatement("CREATE COLUMN TABLE {0} ({1})", tableName, Column.Generate(expression.Columns, tableName));
         }
 

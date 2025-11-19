@@ -247,6 +247,16 @@ namespace FluentMigrator.Tests.Unit.Generators.Jet
         }
 
         [Test]
+        public override void CanCreateTableIfNotExistsWithDefaultSchema()
+        {
+            Generator.CompatibilityMode = CompatibilityMode.LOOSE;
+            var expression = GeneratorTestHelper.GetCreateTableIfNotExistsExpression();
+
+            var result = Generator.Generate(expression);
+            result.ShouldBe("CREATE TABLE IF NOT EXISTS [TestTable1] ([TestColumn1] VARCHAR(255) NOT NULL, [TestColumn2] INTEGER NOT NULL);");
+        }
+
+        [Test]
         public void CantDropTableIfExistsWithDefaultSchemaInStrictCompatibilityMode()
         {
             Generator.CompatibilityMode = CompatibilityMode.STRICT;

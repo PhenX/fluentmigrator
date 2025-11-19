@@ -65,6 +65,14 @@ namespace FluentMigrator.Tests.Unit.Generators
             return expression;
         }
 
+        public static CreateTableExpression GetCreateTableIfNotExistsExpression()
+        {
+            CreateTableExpression expression = new CreateTableExpression() { TableName = TestTableName1, IfNotExists = true };
+            expression.Columns.Add(new ColumnDefinition { Name = TestColumnName1, Type = DbType.String });
+            expression.Columns.Add(new ColumnDefinition { Name = TestColumnName2, Type = DbType.Int32 });
+            return expression;
+        }
+
         public static CreateColumnExpression GetCreateBooleanColumnExpression()
         {
             ColumnDefinition column = new ColumnDefinition { Name = TestColumnName1, Type = DbType.Boolean, };

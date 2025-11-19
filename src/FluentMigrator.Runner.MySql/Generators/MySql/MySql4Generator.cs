@@ -97,7 +97,9 @@ namespace FluentMigrator.Runner.Generators.MySql
                 ? string.Empty
                 : string.Format(" COMMENT {0}", Quoter.QuoteValue(expression.TableDescription));
 
-            return FormatStatement("CREATE TABLE {0} ({1}){2} ENGINE = INNODB",
+            var createTableClause = expression.IfNotExists ? "CREATE TABLE IF NOT EXISTS {0} ({1}){2} ENGINE = INNODB" : "CREATE TABLE {0} ({1}){2} ENGINE = INNODB";
+
+            return FormatStatement(createTableClause,
                 quotedTableName,
                 Column.Generate(expression.Columns, quotedTableName),
                 tableDescription);
