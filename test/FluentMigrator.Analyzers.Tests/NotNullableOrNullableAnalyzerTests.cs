@@ -34,7 +34,7 @@ namespace FluentMigrator.Analyzers.Tests
     public class NotNullableOrNullableAnalyzerTests : VerifyTest
     {
         private static DiagnosticResult GetExpectedDiagnostic() =>
-            new(NotNullableOrNullableAnalyzer.DiagnosticId, DiagnosticSeverity.Info);
+            new DiagnosticResult(NotNullableOrNullableAnalyzer.DiagnosticId, DiagnosticSeverity.Info);
 
         public NotNullableOrNullableAnalyzerTests()
         {
@@ -46,19 +46,17 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task ColumnWithoutNotNullableOrNullable_ShouldReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class MigrationTest : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Users")
-                                                .WithColumn("Name").AsString()
-                                                .WithColumn("Login").AsString().NotNullable();
-                                        }
-                                    }
-                                    """;
+public class MigrationTest : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Users"")
+            .WithColumn(""Name"").AsString()
+            .WithColumn(""Login"").AsString().NotNullable();
+    }
+}";
 
             TestState.ExpectedDiagnostics.Add(GetExpectedDiagnostic()
                 .WithSpan(8, 25, 8, 31)
@@ -73,19 +71,17 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task ColumnWithNotNullable_ShouldNotReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class MigrationTest : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Users")
-                                                .WithColumn("Name").AsString().NotNullable()
-                                                .WithColumn("Login").AsString().NotNullable();
-                                        }
-                                    }
-                                    """;
+public class MigrationTest : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Users"")
+            .WithColumn(""Name"").AsString().NotNullable()
+            .WithColumn(""Login"").AsString().NotNullable();
+    }
+}";
 
             TestState.Sources.Add(testCode);
 
@@ -96,19 +92,17 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task ColumnWithNullable_ShouldNotReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class MigrationTest : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Users")
-                                                .WithColumn("Name").AsString().Nullable()
-                                                .WithColumn("Login").AsString().NotNullable();
-                                        }
-                                    }
-                                    """;
+public class MigrationTest : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Users"")
+            .WithColumn(""Name"").AsString().Nullable()
+            .WithColumn(""Login"").AsString().NotNullable();
+    }
+}";
 
             TestState.Sources.Add(testCode);
 
@@ -119,20 +113,18 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task MultipleColumnsWithoutNotNullableOrNullable_ShouldReportDiagnostics()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class MigrationTest : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Users")
-                                                .WithColumn("Name").AsString()
-                                                .WithColumn("Login").AsString()
-                                                .WithColumn("Password").AsString().NotNullable();
-                                        }
-                                    }
-                                    """;
+public class MigrationTest : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Users"")
+            .WithColumn(""Name"").AsString()
+            .WithColumn(""Login"").AsString()
+            .WithColumn(""Password"").AsString().NotNullable();
+    }
+}";
 
             var expectedDiagnostics = new[]
             {
@@ -154,25 +146,23 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task TableCreationWithForeignKey_ColumnsWithoutNotNullableOrNullable_ShouldReportDiagnostics()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class MigrationTest : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Orders")
-                                                .WithColumn("OrderId").AsInt32().PrimaryKey().Identity()
-                                                .WithColumn("UserId").AsInt32()
-                                                .WithColumn("OrderDate").AsDateTime().NotNullable()
-                                                .WithColumn("Total").AsDecimal().NotNullable();
+public class MigrationTest : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Orders"")
+            .WithColumn(""OrderId"").AsInt32().PrimaryKey().Identity()
+            .WithColumn(""UserId"").AsInt32()
+            .WithColumn(""OrderDate"").AsDateTime().NotNullable()
+            .WithColumn(""Total"").AsDecimal().NotNullable();
 
-                                            Create.ForeignKey()
-                                                .FromTable("Orders").ForeignColumn("UserId")
-                                                .ToTable("Users").PrimaryColumn("UserId");
-                                        }
-                                    }
-                                    """;
+        Create.ForeignKey()
+            .FromTable(""Orders"").ForeignColumn(""UserId"")
+            .ToTable(""Users"").PrimaryColumn(""UserId"");
+    }
+}";
 
             var expectedDiagnostic = GetExpectedDiagnostic()
                 .WithSpan(9, 25, 9, 33)
@@ -188,18 +178,16 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task TableAlterationWithColumnChange_ShouldReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class MigrationTest : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Alter.Table("Users")
-                                                .AddColumn("Email").AsString();
-                                        }
-                                    }
-                                    """;
+public class MigrationTest : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Alter.Table(""Users"")
+            .AddColumn(""Email"").AsString();
+    }
+}";
 
             var expectedDiagnostic = GetExpectedDiagnostic()
                 .WithSpan(8, 24, 8, 31)
@@ -215,18 +203,16 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task TableAlterationWithColumnChange_ShouldNotReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class Migration: ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Alter.Table("Users")
-                                                .AddColumn("Email").AsString().NotNullable();
-                                        }
-                                    }
-                                    """;
+public class Migration: ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Alter.Table(""Users"")
+            .AddColumn(""Email"").AsString().NotNullable();
+    }
+}";
 
             TestState.Sources.Add(testCode);
 
@@ -237,19 +223,17 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task TableAlterationWithMultipleColumnChanges_ShouldReportDiagnostics()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class Migration : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Alter.Table("Users")
-                                                .AddColumn("Email").AsString()
-                                                .AddColumn("PhoneNumber").AsString();
-                                        }
-                                    }
-                                    """;
+public class Migration : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Alter.Table(""Users"")
+            .AddColumn(""Email"").AsString()
+            .AddColumn(""PhoneNumber"").AsString();
+    }
+}";
 
             var expectedDiagnostics = new[]
             {
@@ -271,21 +255,19 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task TableCreationWithAllColumnsConfiguredCorrectly_ShouldNotReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class Migration : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Products")
-                                                .WithColumn("ProductId").AsInt32().PrimaryKey().Identity()
-                                                .WithColumn("ProductName").AsString().NotNullable()
-                                                .WithColumn("Price").AsDecimal().NotNullable()
-                                                .WithColumn("StockQuantity").AsInt32().NotNullable();
-                                        }
-                                    }
-                                    """;
+public class Migration : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Products"")
+            .WithColumn(""ProductId"").AsInt32().PrimaryKey().Identity()
+            .WithColumn(""ProductName"").AsString().NotNullable()
+            .WithColumn(""Price"").AsDecimal().NotNullable()
+            .WithColumn(""StockQuantity"").AsInt32().NotNullable();
+    }
+}";
 
             TestState.Sources.Add(testCode);
 
@@ -296,25 +278,23 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task TableCreationWithForeignKey_AllColumnsConfiguredCorrectly_ShouldNotReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class Migration : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Orders")
-                                                .WithColumn("OrderId").AsInt32().PrimaryKey().Identity()
-                                                .WithColumn("UserId").AsInt32().NotNullable()
-                                                .WithColumn("OrderDate").AsDateTime().NotNullable()
-                                                .WithColumn("Total").AsDecimal().NotNullable();
+public class Migration : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Orders"")
+            .WithColumn(""OrderId"").AsInt32().PrimaryKey().Identity()
+            .WithColumn(""UserId"").AsInt32().NotNullable()
+            .WithColumn(""OrderDate"").AsDateTime().NotNullable()
+            .WithColumn(""Total"").AsDecimal().NotNullable();
 
-                                            Create.ForeignKey()
-                                                .FromTable("Orders").ForeignColumn("UserId")
-                                                .ToTable("Users").PrimaryColumn("UserId");
-                                        }
-                                    }
-                                    """;
+        Create.ForeignKey()
+            .FromTable(""Orders"").ForeignColumn(""UserId"")
+            .ToTable(""Users"").PrimaryColumn(""UserId"");
+    }
+}";
 
             TestState.Sources.Add(testCode);
 

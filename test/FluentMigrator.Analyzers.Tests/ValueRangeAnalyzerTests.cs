@@ -40,18 +40,16 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task PrecisionOutOfRange_ShouldReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class Migration : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Products")
-                                                .WithColumn("Price").AsDecimal(10, 30);
-                                        }
-                                    }
-                                    """;
+public class Migration : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Products"")
+            .WithColumn(""Price"").AsDecimal(10, 30);
+    }
+}";
 
             var expectedDiagnostic = new DiagnosticResult(ValueRangeAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
                 .WithSpan(8, 48, 8, 50)
@@ -67,18 +65,16 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task PrecisionWithinRange_ShouldNotReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class Migration : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Products")
-                                                .WithColumn("Price").AsDecimal(10, 10);
-                                        }
-                                    }
-                                    """;
+public class Migration : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Products"")
+            .WithColumn(""Price"").AsDecimal(10, 10);
+    }
+}";
             TestState.Sources.Add(testCode);
 
             await RunAsync();
@@ -88,18 +84,16 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task PrecisionAtLowerBoundary_ShouldNotReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class Migration : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Products")
-                                                .WithColumn("Price").AsDecimal(10, 0);
-                                        }
-                                    }
-                                    """;
+public class Migration : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Products"")
+            .WithColumn(""Price"").AsDecimal(10, 0);
+    }
+}";
             TestState.Sources.Add(testCode);
 
             await RunAsync();
@@ -109,18 +103,16 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task PrecisionAtUpperBoundary_ShouldNotReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class Migration : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Products")
-                                                .WithColumn("Price").AsDecimal(10, 28);
-                                        }
-                                    }
-                                    """;
+public class Migration : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Products"")
+            .WithColumn(""Price"").AsDecimal(10, 28);
+    }
+}";
             TestState.Sources.Add(testCode);
 
             await RunAsync();
@@ -130,19 +122,17 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task MultipleColumnsWithPrecisionOutOfRange_ShouldReportDiagnostics()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class Migration : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Create.Table("Products")
-                                                .WithColumn("Price").AsDecimal(10, 30)
-                                                .WithColumn("Discount").AsDecimal(10, 29);
-                                        }
-                                    }
-                                    """;
+public class Migration : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Create.Table(""Products"")
+            .WithColumn(""Price"").AsDecimal(10, 30)
+            .WithColumn(""Discount"").AsDecimal(10, 29);
+    }
+}";
 
             var expectedDiagnostics = new[]
             {
@@ -164,18 +154,16 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task TableAlterationWithPrecisionOutOfRange_ShouldReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class Migration : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Alter.Table("Products")
-                                                .AddColumn("NewPrice").AsDecimal(10, 30);
-                                        }
-                                    }
-                                    """;
+public class Migration : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Alter.Table(""Products"")
+            .AddColumn(""NewPrice"").AsDecimal(10, 30);
+    }
+}";
 
             var expectedDiagnostic = new DiagnosticResult(ValueRangeAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
                 .WithSpan(8, 50, 8, 52)
@@ -191,18 +179,16 @@ namespace FluentMigrator.Analyzers.Tests
         public async Task TableAlterationWithPrecisionWithinRange_ShouldNotReportDiagnostic()
         {
             //language=csharp
-            const string testCode = """
-                                    using FluentMigrator;
+            const string testCode = @"using FluentMigrator;
 
-                                    public class Migration : ForwardOnlyMigration
-                                    {
-                                        public override void Up()
-                                        {
-                                            Alter.Table("Products")
-                                                .AddColumn("NewPrice").AsDecimal(10, 10);
-                                        }
-                                    }
-                                    """;
+public class Migration : ForwardOnlyMigration
+{
+    public override void Up()
+    {
+        Alter.Table(""Products"")
+            .AddColumn(""NewPrice"").AsDecimal(10, 10);
+    }
+}";
             TestState.Sources.Add(testCode);
 
             await RunAsync();
