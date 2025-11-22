@@ -17,7 +17,7 @@
 #endregion
 
 using System;
-using System.Data;
+using System.ComponentModel.DataAnnotations;
 
 using FluentMigrator.Infrastructure;
 using FluentMigrator.Model;
@@ -133,8 +133,9 @@ namespace FluentMigrator.Builders
         /// </summary>
         /// <param name="size">The number of digits</param>
         /// <param name="precision">The number of digits after the comma</param>
+        /// <remarks><see cref="System.Decimal" /> type in .NET supports 28 digits of precision, and the default behavior of FluentMigrator is to match that.</remarks>
         /// <returns>The next step</returns>
-        TNext AsDecimal(int size, int precision);
+        TNext AsDecimal(int size, [Range(0, 28)] int precision);
 
         /// <summary>
         /// Defines the column type as <see cref="double"/>
