@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <ToolCommandName>dotnet-fm-generator</ToolCommandName>
+    <PackAsTool>true</PackAsTool>
+    <OutputType>Exe</OutputType>
+    <Description>.NET Core CLI tool for generating FluentMigrator migration classes from existing databases</Description>
+  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)../../PackageTool.props" />
+  <ItemGroup>
+    <PackageReference Include="DatabaseSchemaReader" Version="2.7.8" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.7" />
+    <PackageReference Include="MySqlConnector" Version="2.4.0" />
+    <PackageReference Include="Npgsql" Version="8.0.7" />
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.8.0" />
+  </ItemGroup>
+</Project>
