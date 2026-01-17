@@ -105,8 +105,8 @@ namespace FluentMigrator.MigrationGenerator
             return tables.Where(t => !SystemTableNames.Contains(t.Name) &&
                                      !t.Name.StartsWith("pg_", StringComparison.OrdinalIgnoreCase) &&
                                      !t.Name.StartsWith("sql_", StringComparison.OrdinalIgnoreCase) &&
-                                     !t.Name.StartsWith("sys", StringComparison.OrdinalIgnoreCase) ||
-                                     t.Name.Equals("system", StringComparison.OrdinalIgnoreCase));
+                                     (!t.Name.StartsWith("sys", StringComparison.OrdinalIgnoreCase) ||
+                                      t.Name.Equals("system", StringComparison.OrdinalIgnoreCase)));
         }
 
         private IList<MigrationFile> GenerateSingleMigration(DatabaseSchema schema)

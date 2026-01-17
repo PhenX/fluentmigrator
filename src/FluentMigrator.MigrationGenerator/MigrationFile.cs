@@ -26,11 +26,11 @@ namespace FluentMigrator.MigrationGenerator
         /// <summary>
         /// Gets or sets the file name for the migration.
         /// </summary>
-        public string FileName { get; set; }
+        public required string FileName { get; set; }
 
         /// <summary>
         /// Gets or sets the content of the migration file.
         /// </summary>
-        public string Content { get; set; }
+        public required string Content { get; set; }
     }
 }
