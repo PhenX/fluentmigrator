@@ -33,50 +33,47 @@ namespace FluentMigrator.MigrationGenerator
     /// </summary>
     public class MigrationCodeGenerator
     {
-        private readonly string _connectionString;
-        private readonly string _providerName;
-        private readonly string _namespace;
-        private readonly string _schema;
+        private readonly MigrationGeneratorOptions _options;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MigrationCodeGenerator"/> class.
         /// </summary>
-        /// <param name="connectionString">The database connection string.</param>
-        /// <param name="providerName">The database provider name.</param>
-        /// <param name="namespace">The namespace for generated classes.</param>
-        /// <param name="schema">The schema to read (optional).</param>
-        public MigrationCodeGenerator(string connectionString, string providerName, string @namespace, string schema = null)
+        /// <param name="options">The migration generator options.</param>
+        public MigrationCodeGenerator(MigrationGeneratorOptions options)
         {
-            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
-            _providerName = providerName ?? throw new ArgumentNullException(nameof(providerName));
-            _namespace = @namespace ?? throw new ArgumentNullException(nameof(@namespace));
-            _schema = schema;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
+
+            if (string.IsNullOrEmpty(_options.ConnectionString))
+                throw new ArgumentException("ConnectionString is required", nameof(options));
+            if (string.IsNullOrEmpty(_options.Provider))
+                throw new ArgumentException("Provider is required", nameof(options));
+            if (string.IsNullOrEmpty(_options.Namespace))
+                throw new ArgumentException("Namespace is required", nameof(options));
         }
 
         /// <summary>
-        /// Generates migration files based on the specified mode.
+        /// Generates migration files based on the options.
         /// </summary>
-        /// <param name="mode">The generation mode.</param>
         /// <returns>A list of generated migration files.</returns>
-        public IList<MigrationFile> Generate(GenerationMode mode)
+        public IList<MigrationFile> Generate()
         {
-            using var connection = CreateConnection(_providerName, _connectionString);
+            using var connection = CreateConnection(_options.Provider, _options.ConnectionString);
             connection.Open();
 
             using var reader = new DatabaseReader(connection);
 
-            if (!string.IsNullOrEmpty(_schema))
+            if (!string.IsNullOrEmpty(_options.Schema))
             {
-                reader.Owner = _schema;
+                reader.Owner = _options.Schema;
             }
 
             var schema = reader.ReadAll();
 
-            return mode switch
+            return _options.Mode switch
             {
                 GenerationMode.SingleMigration => GenerateSingleMigration(schema),
                 GenerationMode.OnePerTable => GenerateOnePerTable(schema),
-                _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown generation mode")
+                _ => throw new ArgumentOutOfRangeException(nameof(_options.Mode), _options.Mode, "Unknown generation mode")
             };
         }
 
@@ -100,13 +97,29 @@ namespace FluentMigrator.MigrationGenerator
             "__EFMigrationsHistory", "__MigrationHistory", "VersionInfo"
         };
 
-        private static IEnumerable<DatabaseTable> FilterSystemTables(IEnumerable<DatabaseTable> tables)
+        private IEnumerable<DatabaseTable> FilterTables(IEnumerable<DatabaseTable> tables)
         {
-            return tables.Where(t => !SystemTableNames.Contains(t.Name) &&
+            var filtered = tables.Where(t => !SystemTableNames.Contains(t.Name) &&
                                      !t.Name.StartsWith("pg_", StringComparison.OrdinalIgnoreCase) &&
                                      !t.Name.StartsWith("sql_", StringComparison.OrdinalIgnoreCase) &&
                                      (!t.Name.StartsWith("sys", StringComparison.OrdinalIgnoreCase) ||
                                       t.Name.Equals("system", StringComparison.OrdinalIgnoreCase)));
+
+            // Apply include filter if specified
+            if (_options.IncludeTables?.Count > 0)
+            {
+                var includeSet = new HashSet<string>(_options.IncludeTables, StringComparer.OrdinalIgnoreCase);
+                filtered = filtered.Where(t => includeSet.Contains(t.Name));
+            }
+
+            // Apply exclude filter
+            if (_options.ExcludeTables?.Count > 0)
+            {
+                var excludeSet = new HashSet<string>(_options.ExcludeTables, StringComparer.OrdinalIgnoreCase);
+                filtered = filtered.Where(t => !excludeSet.Contains(t.Name));
+            }
+
+            return filtered;
         }
 
         private IList<MigrationFile> GenerateSingleMigration(DatabaseSchema schema)
@@ -115,7 +128,7 @@ namespace FluentMigrator.MigrationGenerator
             var className = "InitialMigration";
             var fileName = $"{timestamp}_{className}.cs";
 
-            var filteredTables = FilterSystemTables(schema.Tables);
+            var filteredTables = FilterTables(schema.Tables);
             var content = GenerateMigrationClass(className, timestamp, filteredTables);
 
             return new List<MigrationFile>
@@ -129,7 +142,7 @@ namespace FluentMigrator.MigrationGenerator
             var files = new List<MigrationFile>();
             var baseTimestamp = long.Parse(DateTime.UtcNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
 
-            var tables = FilterSystemTables(schema.Tables).OrderBy(t => t.Name).ToList();
+            var tables = FilterTables(schema.Tables).OrderBy(t => t.Name).ToList();
             for (int i = 0; i < tables.Count; i++)
             {
                 var table = tables[i];
@@ -149,27 +162,9 @@ namespace FluentMigrator.MigrationGenerator
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine("#region License");
-            sb.AppendLine("//");
-            sb.AppendLine("// Copyright (c) 2018, Fluent Migrator Project");
-            sb.AppendLine("//");
-            sb.AppendLine("// Licensed under the Apache License, Version 2.0 (the \"License\");");
-            sb.AppendLine("// you may not use this file except in compliance with the License.");
-            sb.AppendLine("// You may obtain a copy of the License at");
-            sb.AppendLine("//");
-            sb.AppendLine("//   http://www.apache.org/licenses/LICENSE-2.0");
-            sb.AppendLine("//");
-            sb.AppendLine("// Unless required by applicable law or agreed to in writing, software");
-            sb.AppendLine("// distributed under the License is distributed on an \"AS IS\" BASIS,");
-            sb.AppendLine("// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.");
-            sb.AppendLine("// See the License for the specific language governing permissions and");
-            sb.AppendLine("// limitations under the License.");
-            sb.AppendLine("//");
-            sb.AppendLine("#endregion");
-            sb.AppendLine();
             sb.AppendLine("using FluentMigrator;");
             sb.AppendLine();
-            sb.AppendLine($"namespace {_namespace}");
+            sb.AppendLine($"namespace {_options.Namespace}");
             sb.AppendLine("{");
             sb.AppendLine($"    [Migration({timestamp})]");
             sb.AppendLine($"    public class {className} : Migration");

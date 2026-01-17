@@ -16,11 +16,11 @@
 //
 #endregion
 
-using FluentMigrator.MigrationGenerator.Commands;
+using FluentMigrator.MigrationGenerator.Cli.Commands;
 
 using McMaster.Extensions.CommandLineUtils;
 
-namespace FluentMigrator.MigrationGenerator
+namespace FluentMigrator.MigrationGenerator.Cli
 {
     public static class Program
     {
