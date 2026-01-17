@@ -26,6 +26,8 @@ using System.Text;
 using DatabaseSchemaReader;
 using DatabaseSchemaReader.DataSchema;
 
+using FluentMigrator.MigrationGenerator.Generators;
+
 namespace FluentMigrator.MigrationGenerator
 {
     /// <summary>
@@ -52,6 +54,20 @@ namespace FluentMigrator.MigrationGenerator
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="MigrationCodeGenerator"/> class
+        /// for use with a pre-loaded schema (useful for testing).
+        /// </summary>
+        /// <param name="options">The migration generator options.</param>
+        /// <param name="schema">The pre-loaded database schema.</param>
+        public MigrationCodeGenerator(MigrationGeneratorOptions options, DatabaseSchema schema)
+        {
+            _options = options ?? throw new ArgumentNullException(nameof(options));
+
+            if (string.IsNullOrEmpty(_options.Namespace))
+                throw new ArgumentException("Namespace is required", nameof(options));
+        }
+
+        /// <summary>
         /// Generates migration files based on the options.
         /// </summary>
         /// <returns>A list of generated migration files.</returns>
@@ -69,6 +85,16 @@ namespace FluentMigrator.MigrationGenerator
 
             var schema = reader.ReadAll();
 
+            return GenerateFromSchema(schema);
+        }
+
+        /// <summary>
+        /// Generates migration files from a pre-loaded database schema.
+        /// </summary>
+        /// <param name="schema">The database schema.</param>
+        /// <returns>A list of generated migration files.</returns>
+        public IList<MigrationFile> GenerateFromSchema(DatabaseSchema schema)
+        {
             return _options.Mode switch
             {
                 GenerationMode.SingleMigration => GenerateSingleMigration(schema),
@@ -122,14 +148,60 @@ namespace FluentMigrator.MigrationGenerator
             return filtered;
         }
 
+        /// <summary>
+        /// Orders tables for creation based on foreign key dependencies.
+        /// Tables with no foreign keys come first, then tables that reference them, etc.
+        /// </summary>
+        private static IList<DatabaseTable> OrderTablesForCreation(IEnumerable<DatabaseTable> tables)
+        {
+            var tableList = tables.ToList();
+            var result = new List<DatabaseTable>();
+            var processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var tableDict = tableList.ToDictionary(t => t.Name, StringComparer.OrdinalIgnoreCase);
+
+            // Iteratively add tables whose dependencies are already processed
+            while (result.Count < tableList.Count)
+            {
+                var added = false;
+                foreach (var table in tableList.Where(t => !processed.Contains(t.Name)))
+                {
+                    var dependencies = table.ForeignKeys
+                        .Select(fk => fk.RefersToTable)
+                        .Where(refTable => tableDict.ContainsKey(refTable) && refTable != table.Name)
+                        .Distinct(StringComparer.OrdinalIgnoreCase);
+
+                    if (dependencies.All(d => processed.Contains(d)))
+                    {
+                        result.Add(table);
+                        processed.Add(table.Name);
+                        added = true;
+                    }
+                }
+
+                // If no tables were added but we still have unprocessed tables,
+                // there's a circular dependency - just add remaining tables
+                if (!added)
+                {
+                    foreach (var table in tableList.Where(t => !processed.Contains(t.Name)))
+                    {
+                        result.Add(table);
+                        processed.Add(table.Name);
+                    }
+                }
+            }
+
+            return result;
+        }
+
         private IList<MigrationFile> GenerateSingleMigration(DatabaseSchema schema)
         {
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
             var className = "InitialMigration";
             var fileName = $"{timestamp}_{className}.cs";
 
-            var filteredTables = FilterTables(schema.Tables);
-            var content = GenerateMigrationClass(className, timestamp, filteredTables);
+            var filteredTables = FilterTables(schema.Tables).ToList();
+            var orderedTables = OrderTablesForCreation(filteredTables);
+            var content = GenerateMigrationClass(className, timestamp, orderedTables, schema);
 
             return new List<MigrationFile>
             {
@@ -142,15 +214,17 @@ namespace FluentMigrator.MigrationGenerator
             var files = new List<MigrationFile>();
             var baseTimestamp = long.Parse(DateTime.UtcNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
 
-            var tables = FilterTables(schema.Tables).OrderBy(t => t.Name).ToList();
-            for (int i = 0; i < tables.Count; i++)
+            var filteredTables = FilterTables(schema.Tables).ToList();
+            var orderedTables = OrderTablesForCreation(filteredTables);
+
+            for (int i = 0; i < orderedTables.Count; i++)
             {
-                var table = tables[i];
+                var table = orderedTables[i];
                 var timestamp = (baseTimestamp + i).ToString(CultureInfo.InvariantCulture);
                 var className = $"Create{SanitizeClassName(table.Name)}Table";
                 var fileName = $"{timestamp}_{className}.cs";
 
-                var content = GenerateMigrationClass(className, timestamp, new List<DatabaseTable> { table });
+                var content = GenerateMigrationClass(className, timestamp, new List<DatabaseTable> { table }, schema);
 
                 files.Add(new MigrationFile { FileName = fileName, Content = content });
             }
@@ -158,7 +232,7 @@ namespace FluentMigrator.MigrationGenerator
             return files;
         }
 
-        private string GenerateMigrationClass(string className, string timestamp, IEnumerable<DatabaseTable> tables)
+        private string GenerateMigrationClass(string className, string timestamp, IList<DatabaseTable> tables, DatabaseSchema schema)
         {
             var sb = new StringBuilder();
 
@@ -172,9 +246,29 @@ namespace FluentMigrator.MigrationGenerator
             sb.AppendLine("        public override void Up()");
             sb.AppendLine("        {");
 
+            // Order of operations in Up():
+            // 1. Create tables (without foreign keys, just columns and primary keys)
             foreach (var table in tables)
             {
-                GenerateCreateTable(sb, table);
+                TableGenerator.GenerateCreateTable(sb, table);
+            }
+
+            // 2. Create indexes
+            foreach (var table in tables)
+            {
+                IndexGenerator.GenerateIndexes(sb, table);
+            }
+
+            // 3. Create unique constraints
+            foreach (var table in tables)
+            {
+                ConstraintGenerator.GenerateUniqueConstraints(sb, table);
+            }
+
+            // 4. Create foreign keys (after all tables exist)
+            foreach (var table in tables)
+            {
+                ConstraintGenerator.GenerateForeignKeys(sb, table);
             }
 
             sb.AppendLine("        }");
@@ -182,9 +276,29 @@ namespace FluentMigrator.MigrationGenerator
             sb.AppendLine("        public override void Down()");
             sb.AppendLine("        {");
 
+            // Order of operations in Down() - reverse of Up():
+            // 1. Delete foreign keys first
             foreach (var table in tables.Reverse())
             {
-                sb.AppendLine($"            Delete.Table(\"{table.Name}\");");
+                ConstraintGenerator.GenerateDeleteForeignKeys(sb, table);
+            }
+
+            // 2. Delete unique constraints
+            foreach (var table in tables.Reverse())
+            {
+                ConstraintGenerator.GenerateDeleteUniqueConstraints(sb, table);
+            }
+
+            // 3. Delete indexes
+            foreach (var table in tables.Reverse())
+            {
+                IndexGenerator.GenerateDeleteIndexes(sb, table);
+            }
+
+            // 4. Delete tables
+            foreach (var table in tables.Reverse())
+            {
+                TableGenerator.GenerateDeleteTable(sb, table);
             }
 
             sb.AppendLine("        }");
@@ -192,208 +306,6 @@ namespace FluentMigrator.MigrationGenerator
             sb.AppendLine("}");
 
             return sb.ToString();
-        }
-
-        private void GenerateCreateTable(StringBuilder sb, DatabaseTable table)
-        {
-            sb.AppendLine($"            Create.Table(\"{table.Name}\")");
-
-            var columns = table.Columns.OrderBy(c => c.IsPrimaryKey ? 0 : 1).ThenBy(c => c.Ordinal).ToList();
-            for (int i = 0; i < columns.Count; i++)
-            {
-                var column = columns[i];
-                var isLast = i == columns.Count - 1;
-                GenerateColumn(sb, column, isLast);
-            }
-
-            sb.AppendLine();
-        }
-
-        private void GenerateColumn(StringBuilder sb, DatabaseColumn column, bool isLast)
-        {
-            var columnLine = new StringBuilder();
-            columnLine.Append($"                .WithColumn(\"{column.Name}\")");
-
-            columnLine.Append(GetColumnType(column));
-
-            if (column.IsPrimaryKey)
-            {
-                columnLine.Append(".PrimaryKey()");
-            }
-
-            if (column.IsAutoNumber)
-            {
-                columnLine.Append(".Identity()");
-            }
-
-            if (column.IsUniqueKey && !column.IsPrimaryKey)
-            {
-                columnLine.Append(".Unique()");
-            }
-
-            if (column.IsIndexed && !column.IsPrimaryKey && !column.IsUniqueKey)
-            {
-                columnLine.Append(".Indexed()");
-            }
-
-            if (!column.IsPrimaryKey)
-            {
-                if (column.Nullable)
-                {
-                    columnLine.Append(".Nullable()");
-                }
-                else
-                {
-                    columnLine.Append(".NotNullable()");
-                }
-            }
-
-            if (!string.IsNullOrEmpty(column.DefaultValue))
-            {
-                var defaultValue = EscapeDefaultValue(column.DefaultValue, column.DataType);
-                columnLine.Append($".WithDefaultValue({defaultValue})");
-            }
-
-            if (isLast)
-            {
-                columnLine.Append(';');
-            }
-
-            sb.AppendLine(columnLine.ToString());
-        }
-
-        private static string GetColumnType(DatabaseColumn column)
-        {
-            var dataType = column.DbDataType?.ToUpperInvariant() ?? column.DataType?.TypeName?.ToUpperInvariant() ?? "NVARCHAR";
-
-            return dataType switch
-            {
-                "INT" or "INTEGER" or "INT4" => ".AsInt32()",
-                "BIGINT" or "INT8" => ".AsInt64()",
-                "SMALLINT" or "INT2" => ".AsInt16()",
-                "TINYINT" => ".AsByte()",
-                "BIT" or "BOOLEAN" or "BOOL" => ".AsBoolean()",
-                "DECIMAL" or "NUMERIC" or "MONEY" or "SMALLMONEY" => GetDecimalType(column),
-                "FLOAT" or "REAL" or "DOUBLE" or "DOUBLE PRECISION" => ".AsDouble()",
-                "DATE" => ".AsDate()",
-                "TIME" => ".AsTime()",
-                "DATETIME" or "DATETIME2" or "SMALLDATETIME" or "TIMESTAMP" => ".AsDateTime()",
-                "DATETIMEOFFSET" or "TIMESTAMPTZ" => ".AsDateTimeOffset()",
-                "UNIQUEIDENTIFIER" or "UUID" or "GUID" => ".AsGuid()",
-                "BINARY" or "VARBINARY" or "IMAGE" or "BYTEA" => GetBinaryType(column),
-                "TEXT" or "NTEXT" or "CLOB" or "LONGTEXT" or "MEDIUMTEXT" => ".AsString(int.MaxValue)",
-                "CHAR" or "NCHAR" => GetStringType(column, true),
-                "VARCHAR" or "NVARCHAR" or "VARCHAR2" or "NVARCHAR2" or "CHARACTER VARYING" => GetStringType(column, false),
-                "XML" => ".AsXml()",
-                _ => GetDefaultStringType(column)
-            };
-        }
-
-        private static string GetDecimalType(DatabaseColumn column)
-        {
-            if (column.Precision.HasValue && column.Scale.HasValue)
-            {
-                return $".AsDecimal({column.Precision.Value}, {column.Scale.Value})";
-            }
-            return ".AsDecimal()";
-        }
-
-        private static string GetBinaryType(DatabaseColumn column)
-        {
-            if (column.Length.HasValue && column.Length.Value > 0 && column.Length.Value < int.MaxValue)
-            {
-                return $".AsBinary({column.Length.Value})";
-            }
-            return ".AsBinary()";
-        }
-
-        private static string GetStringType(DatabaseColumn column, bool isFixedLength)
-        {
-            var method = isFixedLength ? ".AsFixedLengthString" : ".AsString";
-            if (column.Length.HasValue && column.Length.Value > 0 && column.Length.Value < int.MaxValue)
-            {
-                return $"{method}({column.Length.Value})";
-            }
-            return $"{method}()";
-        }
-
-        private static string GetDefaultStringType(DatabaseColumn column)
-        {
-            if (column.Length.HasValue && column.Length.Value > 0 && column.Length.Value < int.MaxValue)
-            {
-                return $".AsString({column.Length.Value})";
-            }
-            return ".AsString()";
-        }
-
-        private static string EscapeDefaultValue(string defaultValue, DataType dataType)
-        {
-            if (defaultValue is null)
-            {
-                return "null";
-            }
-
-            var value = defaultValue.Trim();
-
-            if (value.StartsWith("(") && value.EndsWith(")"))
-            {
-                value = value.Substring(1, value.Length - 2);
-            }
-
-            if (value.StartsWith("'") && value.EndsWith("'"))
-            {
-                value = value.Substring(1, value.Length - 2);
-                return $"\"{value.Replace("\"", "\\\"")}\"";
-            }
-
-            if (string.Equals(value, "GETDATE()", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(value, "CURRENT_TIMESTAMP", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(value, "NOW()", StringComparison.OrdinalIgnoreCase))
-            {
-                return "SystemMethods.CurrentDateTime";
-            }
-
-            if (string.Equals(value, "GETUTCDATE()", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(value, "UTC_TIMESTAMP()", StringComparison.OrdinalIgnoreCase))
-            {
-                return "SystemMethods.CurrentUTCDateTime";
-            }
-
-            if (string.Equals(value, "NEWID()", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(value, "UUID()", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(value, "GEN_RANDOM_UUID()", StringComparison.OrdinalIgnoreCase))
-            {
-                return "SystemMethods.NewGuid";
-            }
-
-            if (string.Equals(value, "NEWSEQUENTIALID()", StringComparison.OrdinalIgnoreCase))
-            {
-                return "SystemMethods.NewSequentialId";
-            }
-
-            if (bool.TryParse(value, out var boolValue))
-            {
-                return boolValue ? "true" : "false";
-            }
-
-            if (string.Equals(value, "1", StringComparison.Ordinal) && 
-                dataType?.TypeName?.ToUpperInvariant() is "BIT" or "BOOLEAN" or "BOOL")
-            {
-                return "true";
-            }
-
-            if (string.Equals(value, "0", StringComparison.Ordinal) &&
-                dataType?.TypeName?.ToUpperInvariant() is "BIT" or "BOOLEAN" or "BOOL")
-            {
-                return "false";
-            }
-
-            if (decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out _))
-            {
-                return value;
-            }
-
-            return $"\"{value.Replace("\"", "\\\"")}\"";
         }
 
         private static string SanitizeClassName(string name)

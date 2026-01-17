@@ -1,0 +1,26 @@
+﻿using FluentMigrator;
+
+namespace TestMigrations
+{
+    [Migration(DateTime_1)]
+    public class InitialMigration : Migration
+    {
+        public override void Up()
+        {
+            Create.Table("Users")
+                .WithColumn("Id").AsInt32().PrimaryKey().Identity()
+                .WithColumn("Username").AsString(50).NotNullable()
+                .WithColumn("Email").AsString(255).NotNullable();
+
+            Create.UniqueConstraint("UK_Users_Email").OnTable("Users").Column("Email");
+            Create.UniqueConstraint("UK_Users_Username").OnTable("Users").Column("Username");
+        }
+
+        public override void Down()
+        {
+            Delete.UniqueConstraint("UK_Users_Username").FromTable("Users");
+            Delete.UniqueConstraint("UK_Users_Email").FromTable("Users");
+            Delete.Table("Users");
+        }
+    }
+}
