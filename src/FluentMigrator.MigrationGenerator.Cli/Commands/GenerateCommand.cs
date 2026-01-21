@@ -17,6 +17,7 @@
 #endregion
 
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Text.Json;
 
@@ -39,17 +40,20 @@ namespace FluentMigrator.MigrationGenerator.Cli.Commands
         [Option("-k|--connection-key <CONNECTION_KEY>", Description = "The key of the connection string in the appsettings.json file (e.g., 'DefaultConnection').")]
         public string ConnectionKey { get; set; }
 
+        [Required]
         [Option("-o|--output <OUTPUT_PATH>", Description = "The output directory where migration files will be generated.")]
         public string OutputPath { get; set; }
 
+        [Required]
         [Option("-n|--namespace <NAMESPACE>", Description = "The namespace for the generated migration classes.")]
         public string Namespace { get; set; }
 
         [Option("-m|--mode <MODE>", Description = "Generation mode: 'SingleMigration' for all tables in one file, 'OnePerTable' for separate files per table.")]
         public GenerationMode? Mode { get; set; }
 
+        [Required]
         [Option("-p|--provider <PROVIDER>", Description = "The database provider type (e.g., 'SqlServer', 'PostgreSql', 'MySql', 'SQLite', 'Oracle').")]
-        public string Provider { get; set; }
+        public ProviderType Provider { get; set; }
 
         [Option("-s|--schema <SCHEMA>", Description = "The database schema to read. If not specified, the default schema is used.")]
         public string Schema { get; set; }
@@ -76,24 +80,6 @@ namespace FluentMigrator.MigrationGenerator.Cli.Commands
                 if (string.IsNullOrEmpty(options.ConnectionString))
                 {
                     console.Error.WriteLine("Error: A connection string must be provided either via --connection-string, --appsettings with --connection-key, or in the config file.");
-                    return 1;
-                }
-
-                if (string.IsNullOrEmpty(options.Provider))
-                {
-                    console.Error.WriteLine("Error: A database provider must be specified via --provider or in the config file.");
-                    return 1;
-                }
-
-                if (string.IsNullOrEmpty(options.Namespace))
-                {
-                    console.Error.WriteLine("Error: A namespace must be specified via --namespace or in the config file.");
-                    return 1;
-                }
-
-                if (string.IsNullOrEmpty(options.OutputPath))
-                {
-                    console.Error.WriteLine("Error: An output path must be specified via --output or in the config file.");
                     return 1;
                 }
 
@@ -161,20 +147,9 @@ namespace FluentMigrator.MigrationGenerator.Cli.Commands
                 }
             }
 
-            if (!string.IsNullOrEmpty(Provider))
-            {
-                options.Provider = Provider;
-            }
-
-            if (!string.IsNullOrEmpty(Namespace))
-            {
-                options.Namespace = Namespace;
-            }
-
-            if (!string.IsNullOrEmpty(OutputPath))
-            {
-                options.OutputPath = OutputPath;
-            }
+            options.Provider = Provider;
+            options.Namespace = Namespace;
+            options.OutputPath = OutputPath;
 
             if (Mode.HasValue)
             {

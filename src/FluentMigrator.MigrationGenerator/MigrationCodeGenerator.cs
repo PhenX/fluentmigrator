@@ -46,11 +46,9 @@ namespace FluentMigrator.MigrationGenerator
             _options = options ?? throw new ArgumentNullException(nameof(options));
 
             if (string.IsNullOrEmpty(_options.ConnectionString))
+            {
                 throw new ArgumentException("ConnectionString is required", nameof(options));
-            if (string.IsNullOrEmpty(_options.Provider))
-                throw new ArgumentException("Provider is required", nameof(options));
-            if (string.IsNullOrEmpty(_options.Namespace))
-                throw new ArgumentException("Namespace is required", nameof(options));
+            }
         }
 
         /// <summary>
@@ -62,9 +60,6 @@ namespace FluentMigrator.MigrationGenerator
         public MigrationCodeGenerator(MigrationGeneratorOptions options, DatabaseSchema schema)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
-
-            if (string.IsNullOrEmpty(_options.Namespace))
-                throw new ArgumentException("Namespace is required", nameof(options));
         }
 
         /// <summary>
@@ -103,15 +98,15 @@ namespace FluentMigrator.MigrationGenerator
             };
         }
 
-        private static DbConnection CreateConnection(string provider, string connectionString)
+        private static DbConnection CreateConnection(ProviderType provider, string connectionString)
         {
-            return provider?.ToLowerInvariant() switch
+            return provider switch
             {
-                "sqlserver" or "mssql" or "sql" => new Microsoft.Data.SqlClient.SqlConnection(connectionString),
-                "postgresql" or "postgres" or "npgsql" => new Npgsql.NpgsqlConnection(connectionString),
-                "mysql" or "mariadb" => new MySqlConnector.MySqlConnection(connectionString),
-                "sqlite" => new Microsoft.Data.Sqlite.SqliteConnection(connectionString),
-                "oracle" => new Oracle.ManagedDataAccess.Client.OracleConnection(connectionString),
+                ProviderType.SqlServer  => new Microsoft.Data.SqlClient.SqlConnection(connectionString),
+                ProviderType.PostgreSql => new Npgsql.NpgsqlConnection(connectionString),
+                ProviderType.MySql      => new MySqlConnector.MySqlConnection(connectionString),
+                ProviderType.SQLite     => new Microsoft.Data.Sqlite.SqliteConnection(connectionString),
+                ProviderType.Oracle     => new Oracle.ManagedDataAccess.Client.OracleConnection(connectionString),
                 _ => throw new ArgumentException($"Unknown database provider: {provider}. Supported providers: SqlServer, PostgreSql, MySql, SQLite, Oracle", nameof(provider))
             };
         }
@@ -125,11 +120,12 @@ namespace FluentMigrator.MigrationGenerator
 
         private IEnumerable<DatabaseTable> FilterTables(IEnumerable<DatabaseTable> tables)
         {
-            var filtered = tables.Where(t => !SystemTableNames.Contains(t.Name) &&
-                                     !t.Name.StartsWith("pg_", StringComparison.OrdinalIgnoreCase) &&
-                                     !t.Name.StartsWith("sql_", StringComparison.OrdinalIgnoreCase) &&
-                                     (!t.Name.StartsWith("sys", StringComparison.OrdinalIgnoreCase) ||
-                                      t.Name.Equals("system", StringComparison.OrdinalIgnoreCase)));
+            var filtered = tables
+                .Where(t =>
+                    !SystemTableNames.Contains(t.Name) &&
+                    !t.Name.StartsWith("pg_", StringComparison.OrdinalIgnoreCase) &&
+                    !t.Name.StartsWith("sql_", StringComparison.OrdinalIgnoreCase)
+                );
 
             // Apply include filter if specified
             if (_options.IncludeTables?.Count > 0)

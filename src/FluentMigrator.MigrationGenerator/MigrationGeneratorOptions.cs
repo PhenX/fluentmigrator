@@ -33,7 +33,7 @@ namespace FluentMigrator.MigrationGenerator
         /// <summary>
         /// Gets or sets the database provider type (e.g., 'SqlServer', 'PostgreSql', 'MySql', 'SQLite', 'Oracle').
         /// </summary>
-        public string Provider { get; set; }
+        public ProviderType Provider { get; set; }
 
         /// <summary>
         /// Gets or sets the namespace for the generated migration classes.
