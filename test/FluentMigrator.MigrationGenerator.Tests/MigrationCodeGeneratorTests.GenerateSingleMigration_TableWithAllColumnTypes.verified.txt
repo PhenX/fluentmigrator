@@ -1,0 +1,36 @@
+﻿using FluentMigrator;
+
+namespace TestMigrations
+{
+    [Migration(DateTime_1)]
+    public class InitialMigration : Migration
+    {
+        public override void Up()
+        {
+            Create.Table("AllTypes")
+                .WithColumn("Id").AsInt32().PrimaryKey().Identity()
+                .WithColumn("IntCol").AsInt32().Nullable()
+                .WithColumn("BigIntCol").AsInt64().Nullable()
+                .WithColumn("SmallIntCol").AsInt16().Nullable()
+                .WithColumn("TinyIntCol").AsByte().Nullable()
+                .WithColumn("BoolCol").AsBoolean().Nullable()
+                .WithColumn("DecimalCol").AsDecimal(18, 2).Nullable()
+                .WithColumn("FloatCol").AsDouble().Nullable()
+                .WithColumn("DateCol").AsDate().Nullable()
+                .WithColumn("TimeCol").AsTime().Nullable()
+                .WithColumn("DateTimeCol").AsDateTime().Nullable()
+                .WithColumn("GuidCol").AsGuid().Nullable()
+                .WithColumn("BinaryCol").AsBinary(100).Nullable()
+                .WithColumn("TextCol").AsString(int.MaxValue).Nullable()
+                .WithColumn("XmlCol").AsXml().Nullable()
+                .WithColumn("CharCol").AsFixedLengthString(10).Nullable()
+                .WithColumn("VarcharCol").AsString(50).Nullable();
+
+        }
+
+        public override void Down()
+        {
+            Delete.Table("AllTypes");
+        }
+    }
+}
