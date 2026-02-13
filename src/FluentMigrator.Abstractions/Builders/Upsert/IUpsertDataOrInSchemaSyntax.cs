@@ -16,33 +16,20 @@
 //
 #endregion
 
-using System.Collections.Generic;
+using FluentMigrator.Infrastructure;
 
-namespace FluentMigrator.Model
+namespace FluentMigrator.Builders.Upsert
 {
     /// <summary>
-    /// A list of column name/value pairs used for INSERT data
+    /// Specify the schema or define match criteria for the upsert operation
     /// </summary>
-    public class InsertionDataDefinition : List<KeyValuePair<string, object>>
+    public interface IUpsertDataOrInSchemaSyntax : IUpsertDataSyntax, IFluentSyntax
     {
         /// <summary>
-        /// Attempts to get a value by column name
+        /// Specify the schema for the table
         /// </summary>
-        public bool TryGetValue(string columnName, out object value)
-        {
-            foreach (var kvp in this)
-            {
-                if (kvp.Key != columnName)
-                {
-                    continue;
-                }
-
-                value = kvp.Value;
-                return true;
-            }
-
-            value = null;
-            return false;
-        }
+        /// <param name="schemaName">The schema name</param>
+        /// <returns>The next step</returns>
+        IUpsertDataSyntax InSchema(string schemaName);
     }
 }

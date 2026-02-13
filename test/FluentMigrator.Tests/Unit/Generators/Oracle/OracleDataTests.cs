@@ -292,5 +292,59 @@ namespace FluentMigrator.Tests.Unit.Generators.Oracle
             var result = Generator.Generate(expression);
             result.ShouldBe(LargeUpdateStringExpected);
         }
+
+        #region UPSERT Tests
+
+        [Test]
+        public void CanUpsertDataWithSingleRow()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpression();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("MERGE INTO TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'github.com' AS Website FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name)" + Environment.NewLine + "WHEN MATCHED THEN" + Environment.NewLine + "    UPDATE SET Website = source.Website" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Website)" + Environment.NewLine + "    VALUES (source.Name, source.Website);");
+        }
+
+        [Test]
+        public void CanUpsertDataWithCustomSchema()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpression();
+            expression.SchemaName = "TestSchema";
+            var result = Generator.Generate(expression);
+            result.ShouldBe("MERGE INTO TestSchema.TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'github.com' AS Website FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name)" + Environment.NewLine + "WHEN MATCHED THEN" + Environment.NewLine + "    UPDATE SET Website = source.Website" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Website)" + Environment.NewLine + "    VALUES (source.Name, source.Website);");
+        }
+
+        [Test]
+        public void CanUpsertDataWithSpecificUpdateColumns()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithUpdateColumns();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("MERGE INTO TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'github.com' AS Website, 30 AS Age FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name)" + Environment.NewLine + "WHEN MATCHED THEN" + Environment.NewLine + "    UPDATE SET Website = source.Website" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Website, Age)" + Environment.NewLine + "    VALUES (source.Name, source.Website, source.Age);");
+        }
+
+        [Test]
+        public void CanUpsertDataWithMultiColumnMatching()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithMultipleMatchColumns();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("MERGE INTO TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'Developer' AS Category, 'github.com' AS Website FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name AND target.Category = source.Category)" + Environment.NewLine + "WHEN MATCHED THEN" + Environment.NewLine + "    UPDATE SET Website = source.Website" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Category, Website)" + Environment.NewLine + "    VALUES (source.Name, source.Category, source.Website);");
+        }
+
+        [Test]
+        public void CanUpsertDataWithIgnoreInsertIfExists()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpression();
+            expression.IgnoreInsertIfExists = true;
+            var result = Generator.Generate(expression);
+            result.ShouldBe("MERGE INTO TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'github.com' AS Website FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name)" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Website)" + Environment.NewLine + "    VALUES (source.Name, source.Website);");
+        }
+
+        [Test]
+        public void CanUpsertDataWithRawSqlUpdateValues()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithRawUpdateValues();
+            var result = Generator.Generate(expression);
+            result.ShouldBe("MERGE INTO TestTable1 target" + Environment.NewLine + "USING (SELECT 'Just''in' AS Name, 'github.com' AS Website, 'test@example.com' AS Email FROM dual) source" + Environment.NewLine + "ON (target.Name = source.Name)" + Environment.NewLine + "WHEN MATCHED THEN" + Environment.NewLine + "    UPDATE SET Website = 'codethinked.com', Email = UPPER('admin@example.com')" + Environment.NewLine + "WHEN NOT MATCHED THEN" + Environment.NewLine + "    INSERT (Name, Website, Email)" + Environment.NewLine + "    VALUES (source.Name, source.Website, source.Email);");
+        }
+
+        #endregion UPSERT Tests
     }
 }

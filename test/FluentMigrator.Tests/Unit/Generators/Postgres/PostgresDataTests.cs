@@ -215,6 +215,76 @@ namespace FluentMigrator.Tests.Unit.Generators.Postgres
             result.ShouldBe("UPDATE \"public\".\"TestTable1\" SET \"Name\" = 'Just''in', \"Age\" = 25 WHERE \"Id\" = 9 AND \"Homepage\" IS NULL;");
         }
 
+        [Test]
+        public virtual void CanUpsertData()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpression();
+
+            var result = Generator.Generate(expression);
+            result.ShouldContain("INSERT INTO \"public\".\"TestTable1\"");
+            result.ShouldContain("VALUES ('Just''in', 'github.com')");
+            result.ShouldContain("ON CONFLICT (\"Name\") DO UPDATE SET");
+            result.ShouldContain("\"Website\" = EXCLUDED.\"Website\"");
+        }
+
+        [Test]
+        public virtual void CanUpsertDataWithCustomSchema()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpression();
+            expression.SchemaName = "TestSchema";
+
+            var result = Generator.Generate(expression);
+            result.ShouldContain("INSERT INTO \"TestSchema\".\"TestTable1\"");
+            result.ShouldContain("ON CONFLICT (\"Name\") DO UPDATE SET");
+        }
+
+        [Test]
+        public virtual void CanUpsertDataWithSpecificUpdateColumns()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithUpdateColumns();
+
+            var result = Generator.Generate(expression);
+            result.ShouldContain("INSERT INTO \"public\".\"TestTable1\"");
+            result.ShouldContain("ON CONFLICT (\"Name\") DO UPDATE SET");
+            result.ShouldContain("\"Website\" = EXCLUDED.\"Website\"");
+            result.ShouldNotContain("\"Age\" = EXCLUDED.\"Age\""); // Age should not be updated
+        }
+
+        [Test]
+        public virtual void CanUpsertDataWithMultipleMatchColumns()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithMultipleKeys();
+
+            var result = Generator.Generate(expression);
+            result.ShouldContain("INSERT INTO \"public\".\"TestTable1\"");
+            result.ShouldContain("ON CONFLICT (\"Name\", \"Age\") DO UPDATE SET");
+            result.ShouldContain("\"Website\" = EXCLUDED.\"Website\"");
+        }
+
+        [Test]
+        public virtual void CanUpsertDataWithIgnoreInsertIfExists()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithIgnoreInsertIfExists();
+
+            var result = Generator.Generate(expression);
+            result.ShouldContain("INSERT INTO \"public\".\"TestTable1\"");
+            result.ShouldContain("VALUES ('Just''in', 'github.com')");
+            result.ShouldContain("ON CONFLICT (\"Name\") DO NOTHING");
+            result.ShouldNotContain("DO UPDATE"); // Should not contain any UPDATE clause
+        }
+
+        [Test]
+        public virtual void CanUpsertDataWithRawUpdateValues()
+        {
+            var expression = GeneratorTestHelper.GetUpsertDataExpressionWithRawUpdateValues();
+
+            var result = Generator.Generate(expression);
+            result.ShouldContain("INSERT INTO \"public\".\"TestTable1\"");
+            result.ShouldContain("ON CONFLICT (\"Name\") DO UPDATE SET");
+            result.ShouldContain("\"Website\" = 'codethinked.com'");
+            result.ShouldContain("\"Email\" = UPPER('admin@example.com')");
+        }
+
         protected virtual PostgresGenerator CreateGenerator(PostgresQuoter quoter)
         {
             return new PostgresGenerator(quoter);

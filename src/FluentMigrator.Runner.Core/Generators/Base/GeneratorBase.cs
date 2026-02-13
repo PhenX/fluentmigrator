@@ -81,6 +81,8 @@ namespace FluentMigrator.Runner.Generators.Base
         /// <inheritdoc />
         public abstract string Generate(UpdateDataExpression expression);
         /// <inheritdoc />
+        public abstract string Generate(UpsertDataExpression expression);
+        /// <inheritdoc />
         public abstract string Generate(AlterSchemaExpression expression);
         /// <inheritdoc />
         public abstract string Generate(CreateSequenceExpression expression);

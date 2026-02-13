@@ -199,6 +199,12 @@ namespace FluentMigrator
         void Process(UpdateDataExpression expression);
 
         /// <summary>
+        /// Executes an SQL expression to UPSERT (insert or update) data using MERGE or equivalent
+        /// </summary>
+        /// <param name="expression">The expression to execute</param>
+        void Process(UpsertDataExpression expression);
+
+        /// <summary>
         /// Executes a <c>ALTER SCHEMA</c> SQL expression
         /// </summary>
         /// <param name="expression">The expression to execute</param>
